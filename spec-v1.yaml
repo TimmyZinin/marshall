@@ -1,0 +1,1125 @@
+# =============================================================================
+# Marshall AI Tech - Dispatch Automation System
+# Specification Driven Development (SDD) - v1.0 DRAFT
+# =============================================================================
+# Date: 2026-03-05
+# Author: Tim Zinin + Claude (AI Corp)
+# Status: DRAFT for review
+# Context: Sprint 0 + Sprint 1 from Telegram Roadmap
+# Critical constraint: Telegram blocked in Russia from April 1, 2026
+# =============================================================================
+
+meta:
+  project: marshal-dispatch
+  version: "1.0.0-draft"
+  codename: "Dispatcher"
+  language: ru  # primary UI language
+  license: proprietary
+  repository: TBD  # github.com/marshal-ai-tech/dispatcher
+  updated: "2026-03-05"
+
+# =============================================================================
+# 1. PRODUCT VISION
+# =============================================================================
+product:
+  name: "Marshal Dispatcher"
+  tagline: "Единая диспетчерская в мессенджере для 500+ партнёров"
+
+  problem_statement: |
+    Диспетчеры Marshall координируют рейсы через 4+ мессенджера одновременно
+    (WhatsApp, Telegram, Viber, Max). Водители не знают правил заказчиков,
+    документы теряются, статусы рейсов — на словах. Штрафы за срывы достигают
+    30-100% стоимости рейса. При среднем рейсе 80 000 руб и 50 авто — каждый
+    штраф 30% = 24 000 руб потерь.
+
+  solution: |
+    Платформо-агностичный бот-диспетчер, работающий в мессенджерах (Max, Telegram,
+    WhatsApp) и через веб-интерфейс. Единый канал коммуникации: водитель получает
+    задания, проходит чек-листы, отмечает статусы кнопками, отправляет фото документов.
+    Система знает правила каждого заказчика и расписание смен диспетчеров.
+
+  target_users:
+    - role: dispatcher
+      description: "Диспетчер Marshall, координирует рейсы посменно"
+      platform: "Web dashboard + мессенджер"
+      count: "~10-20 человек"
+
+    - role: driver
+      description: "Водитель-исполнитель рейса, Android, в полях"
+      platform: "Мессенджер (Max/Telegram/WhatsApp) — приоритет мобильный"
+      count: "500+ партнёрских водителей"
+
+    - role: carrier
+      description: "Перевозчик — владелец парка, управляет водителями"
+      platform: "Мессенджер + Web dashboard"
+      count: "500+ компаний"
+
+    - role: manager
+      description: "Менеджер Marshall, контролирует документы и согласования"
+      platform: "Web dashboard"
+      count: "~5-10 человек"
+
+# =============================================================================
+# 2. PLATFORM STRATEGY (CRITICAL)
+# =============================================================================
+platform_strategy:
+  context: |
+    Telegram блокируется в России с 1 апреля 2026 (РБК, The Bell).
+    Max (VK) — основная замена: 70M+ пользователей, Bot API (dev.max.ru),
+    inline keyboards, callbacks, mini-apps. API структурно близок к Telegram.
+    Необходима абстракция транспортного слоя с первого дня.
+
+  primary_platform: max
+  secondary_platforms:
+    - telegram  # для пользователей с VPN / за рубежом
+    - whatsapp  # Business API, часть водителей уже там
+    - web       # PWA fallback, всегда работает
+
+  transport_abstraction:
+    description: |
+      Абстрактный слой MessengerTransport инкапсулирует различия между
+      платформами. Бизнес-логика НЕ зависит от конкретного мессенджера.
+      Добавление новой платформы = новый адаптер, 0 изменений в ядре.
+
+    interface: MessengerTransport
+    methods:
+      - name: send_message
+        params:
+          - user_id: str
+          - text: str
+          - buttons: list[Button] | null
+          - attachments: list[Attachment] | null
+        returns: MessageResult
+
+      - name: send_photo_request
+        params:
+          - user_id: str
+          - prompt: str
+          - required: bool
+        returns: PhotoResult
+
+      - name: send_inline_keyboard
+        params:
+          - user_id: str
+          - text: str
+          - keyboard: list[list[InlineButton]]
+        returns: MessageResult
+
+      - name: receive_callback
+        params:
+          - callback_id: str
+          - data: str
+        returns: CallbackResult
+
+      - name: receive_message
+        description: "Webhook/long-polling handler for incoming messages"
+        returns: IncomingMessage
+
+      - name: send_location_request
+        params:
+          - user_id: str
+          - prompt: str
+        returns: LocationResult
+
+    adapters:
+      - name: MaxTransport
+        sdk: "maxapi (PyPI) / max-botapi-python (GitHub)"
+        api_docs: "https://dev.max.ru/docs-api"
+        features:
+          inline_keyboard: true
+          callbacks: true
+          mini_apps: true
+          file_upload: true
+          location: true
+          live_location: false  # TBD — проверить
+          webhooks: true
+          long_polling: true
+        constraints:
+          - "Публикация ботов — только верифицированные юрлица РФ"
+          - "Mini-apps — централизованный подход (не как Telegram Web Apps)"
+
+      - name: TelegramTransport
+        sdk: "python-telegram-bot / aiogram"
+        features:
+          inline_keyboard: true
+          callbacks: true
+          mini_apps: true  # Telegram Web Apps
+          file_upload: true
+          location: true
+          live_location: true
+          webhooks: true
+          long_polling: true
+        constraints:
+          - "Заблокирован в РФ с 01.04.2026 — fallback only"
+          - "Работает через VPN / за рубежом"
+
+      - name: WhatsAppTransport
+        sdk: "WhatsApp Business Cloud API"
+        features:
+          inline_keyboard: false  # только list messages и reply buttons (до 3)
+          callbacks: true  # через interactive messages
+          mini_apps: false
+          file_upload: true
+          location: true
+          live_location: false
+          webhooks: true
+          long_polling: false
+        constraints:
+          - "Ограничение 3 кнопки в reply, 10 в list"
+          - "Платный API (per-conversation pricing)"
+          - "Нет inline keyboards — адаптировать UI под list messages"
+
+      - name: WebTransport
+        description: "PWA / веб-интерфейс как fallback"
+        features:
+          inline_keyboard: true  # HTML buttons
+          callbacks: true
+          mini_apps: false  # это и есть app
+          file_upload: true
+          location: true  # через Geolocation API
+          live_location: true  # через Geolocation watchPosition
+          webhooks: false  # WebSocket / SSE
+          long_polling: false  # WebSocket
+        constraints:
+          - "Требует интернет-браузер"
+          - "Push notifications через Service Worker"
+
+  migration_plan:
+    phase_1:
+      date: "2026-03 (до блокировки)"
+      actions:
+        - "Разработка на Max как primary"
+        - "Telegram адаптер для текущих пользователей"
+        - "Тестирование с реальными диспетчерами на Max"
+    phase_2:
+      date: "2026-04 (после блокировки)"
+      actions:
+        - "Max — основная платформа для всех"
+        - "Telegram — только для пользователей с VPN"
+        - "Запуск Web PWA fallback"
+    phase_3:
+      date: "2026-05+"
+      actions:
+        - "WhatsApp Business API для расширения охвата"
+        - "Web PWA как полноценный канал"
+
+# =============================================================================
+# 3. SPRINT 0: PASSIVE LOGGER (1-3 дня)
+# =============================================================================
+sprint_0:
+  name: "Passive Logger"
+  goal: "Собрать данные из рабочих чатов без изменения процессов"
+  duration: "1-3 дня"
+  risk: low
+  changes_for_users: none  # ноль изменений в работе людей
+
+  features:
+
+    - id: S0-F01
+      name: "Chat Listener (Telethon/MTProto)"
+      priority: critical
+      description: |
+        Подключение к рабочим групповым чатам диспетчеров через MTProto.
+        Пассивное чтение ВСЕХ сообщений. Запись в БД с метаданными.
+        ВАЖНО: Telethon работает через MTProto (user account),
+        не через Bot API. Это позволяет читать существующие чаты.
+
+      acceptance_criteria:
+        - "Подключение к минимум 3 рабочим чатам (WB, Тандер, Сельта)"
+        - "Каждое сообщение сохраняется: text, sender, timestamp, chat_id, media_type"
+        - "Uptime >99% (автопереподключение при разрыве)"
+        - "Логирование ошибок подключения"
+
+      technical:
+        stack:
+          - "Python 3.11+"
+          - "Telethon (MTProto client)"
+          - "PostgreSQL 15+"
+          - "Docker"
+
+        data_model:
+          raw_message:
+            id: bigint  # PK
+            chat_id: bigint
+            chat_name: varchar(255)
+            sender_id: bigint
+            sender_name: varchar(255)
+            text: text
+            media_type: varchar(50)  # photo, document, voice, null
+            media_file_id: varchar(255)
+            timestamp: timestamptz
+            raw_json: jsonb
+            created_at: timestamptz
+
+        notes:
+          - "Telethon session string — хранить в env, НЕ в коде"
+          - "Rate limiting: не более 30 req/sec к Telegram API"
+          - "Для Max — аналогичный listener через Max API (если есть MTProto-аналог)"
+          - "Если Max не поддерживает чтение групповых чатов — только бот-подход"
+
+    - id: S0-F02
+      name: "AI Message Parser"
+      priority: critical
+      description: |
+        LLM извлекает из хаотичного потока сообщений структурированные данные:
+        номер рейса, маршрут, слот, статус, проблему, заказчика.
+        Превращает поток мессенджера в таймлайн рейса.
+
+      acceptance_criteria:
+        - "Из сообщения извлекается: trip_id, route, slot_time, status, issue, customer"
+        - "Точность извлечения >80% на тестовой выборке 100 сообщений"
+        - "Обработка в реальном времени (latency <5 сек на сообщение)"
+        - "Обработка голосовых сообщений (STT -> парсинг)"
+
+      technical:
+        stack:
+          - "Groq API (Llama 3.3 70B) — бесплатный tier 100K токенов/день"
+          - "Fallback: OpenRouter / GPT-4o-mini"
+          - "Whisper (OpenAI) — для голосовых"
+
+        prompt_template: |
+          Ты — парсер логистических сообщений Marshall AI Tech.
+          Из сообщения диспетчера/водителя извлеки:
+          - trip_id: номер рейса или заявки (если есть)
+          - route: откуда -> куда
+          - slot_time: время слота погрузки/выгрузки
+          - status: один из [assigned, departed, arrived_loading, loading, departed_loaded, arrived_unloading, unloading, completed, problem, cancelled]
+          - issue: описание проблемы (если есть)
+          - customer: заказчик (Тандер, Сельта, WB, X5, Магнит, Сибур)
+          - urgency: low / medium / high / critical
+
+          Сообщение: {message_text}
+          Чат: {chat_name}
+          Отправитель: {sender_name}
+
+          Ответь JSON.
+
+        data_model:
+          parsed_event:
+            id: bigint  # PK
+            raw_message_id: bigint  # FK -> raw_message
+            trip_id: varchar(50)
+            route_from: varchar(255)
+            route_to: varchar(255)
+            slot_time: timestamptz
+            status: varchar(50)
+            issue: text
+            customer: varchar(100)
+            urgency: varchar(20)
+            confidence: float  # 0.0 - 1.0
+            parsed_at: timestamptz
+            llm_model: varchar(100)
+            llm_raw_response: jsonb
+
+    - id: S0-F03
+      name: "Real-time Alerts"
+      priority: high
+      description: |
+        AI детектирует проблемные сообщения и мгновенно уведомляет
+        менеджера в отдельном канале. Ключевые слова + LLM-классификация.
+
+      acceptance_criteria:
+        - "Детекция ключевых слов: опаздываю, проблема, не могу, сломался, ДТП, отказ"
+        - "Alert доставляется менеджеру за <30 сек после исходного сообщения"
+        - "Alert содержит: исходное сообщение, чат, отправитель, уровень urgency"
+        - "False positive rate <20%"
+
+      technical:
+        detection_rules:
+          keywords:
+            critical: ["ДТП", "авария", "утрата груза", "пожар"]
+            high: ["опаздываю", "не успеваю", "сломался", "поломка", "отказ", "не выйду"]
+            medium: ["проблема", "задержка", "не могу", "стою", "пробка"]
+            low: ["вопрос", "уточнение", "подскажите"]
+
+          llm_classification: true  # дополнительно прогоняем через LLM для контекста
+
+        alert_channel:
+          primary: "Max group/channel (manager alerts)"
+          secondary: "Telegram channel (fallback)"
+          format: |
+            ALERT [{urgency}]
+            Chat: {chat_name}
+            From: {sender_name}
+            Time: {timestamp}
+            Message: {original_text}
+            ---
+            AI Assessment: {llm_summary}
+            Trip: {trip_id} | Customer: {customer}
+
+    - id: S0-F04
+      name: "Analytics Dashboard"
+      priority: medium
+      description: |
+        Веб-страница с аналитикой по собранным данным.
+        Время ответа диспетчера, потерянные сообщения, частота проблем.
+
+      acceptance_criteria:
+        - "Дашборд доступен по URL (защищён паролем)"
+        - "Метрики: среднее время ответа, кол-во проблем/день, топ причин"
+        - "Фильтры: по заказчику, по дате, по диспетчеру"
+        - "Автообновление каждые 60 сек"
+
+      technical:
+        stack:
+          - "FastAPI (backend)"
+          - "HTML + Chart.js (frontend) — single page, no framework"
+          - "PostgreSQL (data source)"
+
+        metrics:
+          - name: avg_response_time
+            description: "Среднее время ответа диспетчера на сообщение водителя"
+            unit: minutes
+          - name: problems_per_day
+            description: "Количество проблемных сообщений в день"
+          - name: problems_by_customer
+            description: "Распределение проблем по заказчикам"
+          - name: unanswered_messages
+            description: "Сообщения без ответа >30 мин"
+          - name: peak_hours
+            description: "Часы пиковой нагрузки на диспетчеров"
+
+# =============================================================================
+# 4. SPRINT 1: INTERACTIVE BOT (2-3 недели)
+# =============================================================================
+sprint_1:
+  name: "Interactive Dispatch Bot"
+  goal: "Единый бот для водителей: задания, чек-листы, статусы, памятки"
+  duration: "2-3 недели"
+  risk: medium
+  depends_on: [sprint_0]
+
+  platform_note: |
+    Бот запускается одновременно на Max (primary) и Telegram (secondary).
+    Одна кодовая база, два адаптера через MessengerTransport.
+    После 01.04 — Max only (Telegram через VPN для тех кто остался).
+
+  features:
+
+    - id: S1-F01
+      name: "User Registration & Role Binding"
+      priority: critical
+      description: |
+        Водитель/перевозчик запускает бота, выбирает роль,
+        привязывается к аккаунту в IRM Marshall.
+
+      acceptance_criteria:
+        - "Пользователь выбирает роль: Водитель / Перевозчик / Диспетчер"
+        - "Привязка к IRM по номеру телефона или коду приглашения"
+        - "Один пользователь = одна роль (смена через настройки)"
+        - "Данные пользователя сохраняются: messenger_id, platform, role, irm_id, phone"
+
+      technical:
+        flow:
+          - "START -> Welcome message + role selection (inline keyboard)"
+          - "Role selected -> phone number request"
+          - "Phone -> IRM lookup -> binding confirmation"
+          - "If not found in IRM -> manual registration request to manager"
+
+        data_model:
+          user:
+            id: bigint
+            messenger_id: varchar(100)  # platform-specific user ID
+            platform: varchar(20)  # max, telegram, whatsapp, web
+            role: varchar(20)  # driver, carrier, dispatcher, manager
+            irm_id: varchar(100)  # ID in Marshall IRM system
+            phone: varchar(20)
+            first_name: varchar(100)
+            last_name: varchar(100)
+            company_name: varchar(255)  # for carriers
+            registered_at: timestamptz
+            last_active_at: timestamptz
+            is_active: bool
+
+    - id: S1-F02
+      name: "Trip Assignment with Customer Memo"
+      priority: critical
+      description: |
+        Диспетчер назначает рейс -> водитель получает push с деталями
+        маршрута, слота, температуры + автоматическая памятка заказчика.
+
+      acceptance_criteria:
+        - "Push приходит за <60 сек после назначения"
+        - "Содержит: маршрут, дата, слот, температура, тип ТС"
+        - "Памятка заказчика отправляется автоматически (по customer_id)"
+        - "Водитель подтверждает получение кнопкой [Принял]"
+        - "Нет подтверждения за 15 мин -> алерт диспетчеру"
+
+      technical:
+        customer_memos:
+          tander:
+            name: "Тандер"
+            rules:
+              - "Предварительное охлаждение рефрижератора до +2...+4"
+              - "Термописец обязателен, бумага проверена"
+              - "Медкнижка водителя актуальна"
+          selta:
+            name: "Сельта"
+            rules:
+              - "Выход из кабины ТОЛЬКО в каске, жилете, ботинках с железным носом"
+              - "Фотоотчёт обязателен при погрузке/выгрузке"
+          wildberries:
+            name: "WB (Wildberries)"
+            rules:
+              - "Регистрация в WB Drive обязательна"
+              - "Слоты приёмки — строго по расписанию"
+              - "Штраф за опоздание на слот"
+          x5:
+            name: "X5 Retail Group"
+            rules:
+              - "НЕЛЬЗЯ стоять на территории грузоотправителя"
+              - "Время выгрузки ограничено"
+          magnit:
+            name: "Магнит"
+            rules:
+              - "Можно стоять на территории грузоотправителя"
+          sibur:
+            name: "Сибур"
+            rules:
+              - "Особые требования безопасности"
+              - "Отдельные условия по договору"
+
+        data_model:
+          trip_assignment:
+            id: bigint
+            irm_trip_id: varchar(100)
+            driver_user_id: bigint  # FK -> user
+            dispatcher_user_id: bigint  # FK -> user
+            customer: varchar(100)
+            route_from: varchar(255)
+            route_to: varchar(255)
+            slot_time: timestamptz
+            temperature_min: float
+            temperature_max: float
+            vehicle_type: varchar(50)
+            vehicle_plate: varchar(20)
+            memo_sent: bool
+            acknowledged: bool
+            acknowledged_at: timestamptz
+            assigned_at: timestamptz
+
+    - id: S1-F03
+      name: "Pre-trip Checklist (with Photos)"
+      priority: critical
+      description: |
+        Пошаговый чек-лист перед рейсом. Каждый пункт — подтверждение
+        или фото. Без завершения чек-листа рейс не стартует.
+
+      acceptance_criteria:
+        - "Чек-лист из 5-7 пунктов (зависит от заказчика)"
+        - "Пункты с фото: санобработка, термописец, медкнижка, температура"
+        - "Фото сохраняется в S3/MinIO с привязкой к рейсу"
+        - "Пропуск обязательного пункта = блокировка старта"
+        - "Менеджер получает уведомление о завершении чек-листа"
+
+      technical:
+        checklist_template:
+          default:
+            - step: 1
+              title: "Санитарная обработка"
+              type: photo_required
+              prompt: "Отправьте фото свидетельства о санобработке"
+            - step: 2
+              title: "Термописец"
+              type: photo_required
+              prompt: "Отправьте фото термописца (бумага вставлена, работает)"
+            - step: 3
+              title: "Медкнижка"
+              type: photo_required
+              prompt: "Отправьте фото медкнижки (актуальная дата)"
+            - step: 4
+              title: "Температура рефрижератора"
+              type: photo_required
+              prompt: "Отправьте фото показаний температуры ({temp_min}...{temp_max})"
+            - step: 5
+              title: "Внешний осмотр ТС"
+              type: confirm
+              prompt: "Осмотр ТС выполнен, повреждений нет?"
+              buttons: ["Подтверждаю", "Есть повреждения"]
+
+        data_model:
+          checklist_response:
+            id: bigint
+            trip_id: bigint  # FK -> trip_assignment
+            step_number: int
+            step_title: varchar(255)
+            response_type: varchar(20)  # photo, confirm, text
+            photo_url: varchar(500)
+            text_response: text
+            is_passed: bool
+            responded_at: timestamptz
+
+    - id: S1-F04
+      name: "Status Buttons (Timeline)"
+      priority: critical
+      description: |
+        Водитель отмечает статусы кнопками. Каждый статус = timestamp
+        в БД. Автоматические напоминания если статус не обновлён.
+
+      acceptance_criteria:
+        - "Статусы: Выехал -> На погрузке -> Погрузка начата -> Погрузка завершена -> В пути -> На выгрузке -> Выгрузка начата -> Выгрузка завершена -> Рейс завершён"
+        - "Каждый переход = inline keyboard с 2-3 кнопками"
+        - "Timestamp записывается автоматически"
+        - "Если статус не обновлён за N часов -> auto-запрос + алерт диспетчеру"
+        - "Кнопка [Проблема] доступна на каждом этапе"
+
+      technical:
+        status_flow:
+          - from: assigned
+            to: [departed_to_loading, cancelled, problem]
+            auto_remind_after_hours: 2
+            buttons:
+              - text: "Выехал на погрузку"
+                callback: "status:departed_to_loading"
+              - text: "Не могу выехать"
+                callback: "status:problem"
+
+          - from: departed_to_loading
+            to: [arrived_loading, problem]
+            auto_remind_after_hours: null  # ETA-based
+            buttons:
+              - text: "Прибыл на погрузку"
+                callback: "status:arrived_loading"
+              - text: "Опаздываю"
+                callback: "status:problem:late"
+
+          - from: arrived_loading
+            to: [loading_started, problem]
+            auto_remind_after_hours: 1
+            buttons:
+              - text: "Погрузка началась"
+                callback: "status:loading_started"
+              - text: "Жду/Простой"
+                callback: "status:waiting"
+              - text: "Проблема"
+                callback: "status:problem"
+
+          - from: loading_started
+            to: [loading_completed, problem]
+            auto_remind_after_hours: 3
+            buttons:
+              - text: "Погрузка завершена"
+                callback: "status:loading_completed"
+              - text: "Проблема"
+                callback: "status:problem"
+
+          - from: loading_completed
+            to: [departed_loaded, problem]
+            auto_remind_after_hours: 1
+            buttons:
+              - text: "Выехал (в пути)"
+                callback: "status:departed_loaded"
+              - text: "Задержка"
+                callback: "status:problem:delay"
+
+          - from: departed_loaded
+            to: [arrived_unloading, problem]
+            periodic_poll_hours: 2  # каждые 2 часа: [В пути] / [На стоянке] / [Проблема]
+            buttons:
+              - text: "Прибыл на выгрузку"
+                callback: "status:arrived_unloading"
+              - text: "Опаздываю"
+                callback: "status:problem:late"
+
+          - from: arrived_unloading
+            to: [unloading_started, problem]
+            auto_remind_after_hours: 1
+            idle_rules_by_customer: true  # Магнит: можно стоять, X5: нельзя
+            buttons:
+              - text: "Выгрузка началась"
+                callback: "status:unloading_started"
+              - text: "Жду/Простой"
+                callback: "status:waiting"
+
+          - from: unloading_started
+            to: [unloading_completed, problem]
+            auto_remind_after_hours: 3
+            buttons:
+              - text: "Выгрузка завершена"
+                callback: "status:unloading_completed"
+              - text: "Проблема"
+                callback: "status:problem"
+
+          - from: unloading_completed
+            to: [completed]
+            post_unload_tasks:
+              - "Фото ТСД"
+              - "Чек Почты России с трек-номером"
+              - "Термограмма -> email"
+            buttons:
+              - text: "Документы отправлены, рейс завершён"
+                callback: "status:completed"
+
+        data_model:
+          status_event:
+            id: bigint
+            trip_id: bigint
+            status: varchar(50)
+            previous_status: varchar(50)
+            driver_user_id: bigint
+            timestamp: timestamptz
+            location_lat: float
+            location_lon: float
+            note: text
+            is_problem: bool
+
+    - id: S1-F05
+      name: "Departure Confirmation (2-3h before)"
+      priority: high
+      description: |
+        Автоматический push за 3 часа и за 1 час до подачи.
+        "Подтвердите выезд". Нет ответа 15 мин -> алерт диспетчеру.
+
+      acceptance_criteria:
+        - "Push за 3 часа: 'Рейс {route} через 3 часа. Подтвердите выезд.'"
+        - "Push за 1 час: 'Рейс {route} через 1 час. Вы выезжаете?'"
+        - "Кнопки: [Выезжаю] / [Не смогу выехать]"
+        - "Нет ответа 15 мин -> алерт диспетчеру + повторный push водителю"
+        - "[Не смогу выехать] -> немедленный алерт диспетчеру для замены"
+
+      technical:
+        scheduler: "APScheduler / Celery Beat"
+        timing:
+          - offset_hours: -3
+            message: "Рейс {route} через 3 часа. Подтвердите готовность."
+            buttons: ["Готов, выезжаю", "Не смогу"]
+          - offset_hours: -1
+            message: "Рейс {route} через 1 час. Вы выехали?"
+            buttons: ["Да, в пути", "Задерживаюсь", "Не смогу"]
+
+        escalation:
+          no_response_minutes: 15
+          action: "Alert to on-duty dispatcher"
+
+    - id: S1-F06
+      name: "Auto-escalation to On-duty Dispatcher"
+      priority: high
+      description: |
+        Бот знает расписание смен. Кнопка "Проблема" или таймаут
+        -> мгновенное уведомление диспетчеру текущей смены.
+
+      acceptance_criteria:
+        - "Расписание смен хранится в БД (dispatcher_id, shift_start, shift_end)"
+        - "При нажатии [Проблема] -> бот определяет текущего диспетчера"
+        - "Диспетчер получает: рейс, водитель, проблема, контакт"
+        - "Если диспетчер не ответил за 5 мин -> эскалация на менеджера"
+
+      technical:
+        data_model:
+          shift_schedule:
+            id: bigint
+            dispatcher_user_id: bigint
+            shift_date: date
+            shift_start: time
+            shift_end: time
+            is_backup: bool
+
+        escalation_chain:
+          - level: 1
+            target: on_duty_dispatcher
+            timeout_minutes: 5
+          - level: 2
+            target: backup_dispatcher
+            timeout_minutes: 5
+          - level: 3
+            target: manager
+            timeout_minutes: null  # no timeout
+
+    - id: S1-F07
+      name: "Document Control (Acts, Photos, Thermogram)"
+      priority: high
+      description: |
+        Контроль подписания актов (фото -> менеджеру на согласование).
+        Автоотправка термограммы на email. Напоминания о ТСД и чеках.
+
+      acceptance_criteria:
+        - "Перед подписанием акта: водитель фоткает -> менеджер [ОК] / [Не подписывай]"
+        - "Термограмма: фото -> auto-forward на m.anokhina@marshalteam.ru"
+        - "После выгрузки: бот запрашивает фото ТСД + чек Почты с трек-номером"
+        - "Напоминание каждые 30 мин пока не отправлены"
+
+      technical:
+        document_types:
+          - type: act
+            flow: photo -> manager_approval -> sign/reject
+            approval_required: true
+          - type: thermogram
+            flow: photo -> auto_email
+            email_to: "m.anokhina@marshalteam.ru"
+            approval_required: false
+          - type: tsd_photo
+            flow: photo -> storage
+            reminder_interval_minutes: 30
+            approval_required: false
+          - type: post_receipt
+            flow: photo -> storage
+            description: "Чек Почты России с трек-номером"
+            reminder_interval_minutes: 30
+            approval_required: false
+
+    - id: S1-F08
+      name: "Customer App Guides (WB Drive etc.)"
+      priority: medium
+      description: |
+        База знаний в боте. Водитель спрашивает — бот отвечает
+        пошаговой инструкцией со скриншотами.
+
+      acceptance_criteria:
+        - "Команда /help или кнопка 'Инструкции'"
+        - "Список заказчиков -> выбор -> пошаговый гайд"
+        - "Гайды: WB Drive, регистрация у заказчиков, правила приёмки"
+        - "Каждый шаг: текст + скриншот (если есть)"
+
+      technical:
+        knowledge_base:
+          format: "YAML/JSON с текстами и ссылками на картинки"
+          storage: "PostgreSQL (guides table) + S3 (images)"
+          search: "Keyword match + LLM fallback для свободных вопросов"
+
+    - id: S1-F09
+      name: "Periodic In-transit Poll"
+      priority: medium
+      description: |
+        Каждые 2 часа в пути: [В пути] / [На стоянке] / [Проблема].
+        Контроль транзитного времени без GPS.
+
+      acceptance_criteria:
+        - "Poll каждые 2 часа когда статус = departed_loaded"
+        - "[На стоянке] -> бот записывает время стоянки"
+        - "[Проблема] -> эскалация на диспетчера"
+        - "Нет ответа 30 мин -> алерт диспетчеру"
+
+# =============================================================================
+# 5. DATA ARCHITECTURE
+# =============================================================================
+data:
+  database:
+    type: PostgreSQL
+    version: "15+"
+    hosting: "Docker on RUVDS / managed DB"
+
+  file_storage:
+    type: "MinIO (S3-compatible)"
+    purpose: "Photos from checklists, documents, thermograms"
+    retention: "1 year"
+
+  schemas:
+    - name: users
+      tables: [user, shift_schedule]
+    - name: trips
+      tables: [trip_assignment, status_event, checklist_response]
+    - name: documents
+      tables: [document]
+    - name: analytics
+      tables: [raw_message, parsed_event, alert]
+    - name: knowledge
+      tables: [customer_memo, guide, guide_step]
+
+# =============================================================================
+# 6. ARCHITECTURE
+# =============================================================================
+architecture:
+  style: "Modular monolith (Sprint 0-1), extract to microservices later"
+
+  components:
+    - name: transport-layer
+      description: "MessengerTransport abstraction + platform adapters"
+      language: Python
+
+    - name: bot-core
+      description: "Business logic: registration, trips, checklists, statuses"
+      language: Python
+      depends_on: [transport-layer]
+
+    - name: listener
+      description: "Passive chat listener (Telethon/MTProto)"
+      language: Python
+      standalone: true  # runs as separate process
+
+    - name: ai-parser
+      description: "LLM message parsing + alert detection"
+      language: Python
+      depends_on: [listener]
+
+    - name: scheduler
+      description: "Timed tasks: reminders, polls, departure confirmations"
+      language: Python
+      tech: "APScheduler / Celery Beat"
+
+    - name: dashboard
+      description: "Web analytics dashboard"
+      language: "Python (FastAPI) + HTML/JS"
+
+    - name: api
+      description: "REST API for IRM integration and dashboard"
+      language: "Python (FastAPI)"
+
+  deployment:
+    containerization: Docker
+    orchestration: "Docker Compose (single server)"
+    target: "RUVDS VPS or Marshall's infrastructure"
+
+    services:
+      - name: bot
+        image: marshal-dispatcher-bot
+        ports: []  # webhook only
+        env:
+          - MAX_BOT_TOKEN
+          - TELEGRAM_BOT_TOKEN  # fallback
+          - DATABASE_URL
+          - GROQ_API_KEY
+          - MINIO_ENDPOINT
+
+      - name: listener
+        image: marshal-dispatcher-listener
+        env:
+          - TELETHON_SESSION_STRING
+          - DATABASE_URL
+          - GROQ_API_KEY
+
+      - name: dashboard
+        image: marshal-dispatcher-dashboard
+        ports: ["8080:8080"]
+        env:
+          - DATABASE_URL
+          - AUTH_SECRET
+
+      - name: postgres
+        image: postgres:15
+        volumes: ["pg_data:/var/lib/postgresql/data"]
+
+      - name: minio
+        image: minio/minio
+        volumes: ["minio_data:/data"]
+
+# =============================================================================
+# 7. INTEGRATION POINTS
+# =============================================================================
+integrations:
+  - name: IRM (Marshall Internal)
+    type: REST API
+    direction: bidirectional
+    status: "TBD — need API docs from Marshall dev team"
+    data_exchanged:
+      - "Trip assignments (IRM -> Bot)"
+      - "Status updates (Bot -> IRM)"
+      - "Driver profiles (IRM -> Bot)"
+    priority: sprint_2  # Sprint 1 = manual entry, Sprint 2 = auto
+
+  - name: MOVIZOR (GSM tracking)
+    type: "API / manual"
+    direction: read
+    status: "Currently manual — dispatcher connects per trip"
+    priority: sprint_2
+
+  - name: 1C (Accounting)
+    type: "via IRM"
+    direction: indirect
+    priority: sprint_3
+
+  - name: Email (thermograms)
+    type: SMTP
+    direction: outbound
+    target: "m.anokhina@marshalteam.ru"
+    priority: sprint_1
+
+# =============================================================================
+# 8. NON-FUNCTIONAL REQUIREMENTS
+# =============================================================================
+nfr:
+  availability:
+    target: "99.5% uptime"
+    monitoring: "Health checks + Telegram/Max alerts on downtime"
+
+  performance:
+    message_delivery: "<5 sec"
+    alert_delivery: "<30 sec"
+    dashboard_load: "<3 sec"
+    concurrent_users: 500  # drivers online simultaneously
+
+  security:
+    authentication: "Messenger-native (user_id binding)"
+    authorization: "Role-based (driver, dispatcher, manager)"
+    data_encryption: "TLS in transit, AES at rest (photos)"
+    secrets: "Environment variables, never in code"
+    gdpr_note: "Compliant with Russian 152-FZ (personal data law)"
+
+  observability:
+    logging: "Structured JSON logs (Python structlog)"
+    metrics: "Prometheus + Grafana (if infra allows)"
+    alerts: "Critical errors -> Max/Telegram channel"
+
+  localization:
+    language: "Russian only (v1)"
+    timezone: "Moscow (UTC+3) default, configurable per user"
+
+# =============================================================================
+# 9. RISKS & MITIGATIONS
+# =============================================================================
+risks:
+  - id: R01
+    name: "Telegram fully blocked, Max not adopted"
+    probability: high
+    impact: high
+    mitigation: |
+      Transport abstraction from day 1. Web PWA as ultimate fallback.
+      WhatsApp Business API as additional channel.
+
+  - id: R02
+    name: "Max Bot API limitations vs Telegram"
+    probability: medium
+    impact: medium
+    mitigation: |
+      Validate ALL required features on Max API before Sprint 1.
+      Checklist: inline keyboards, file upload, callbacks, webhooks.
+      Fallback: Web PWA for features Max doesn't support.
+
+  - id: R03
+    name: "Drivers refuse to install Max / switch messengers"
+    probability: high
+    impact: high
+    mitigation: |
+      Multi-platform from day 1. WhatsApp adapter for reluctant users.
+      Web PWA requires no installation. Gradual migration, not forced.
+
+  - id: R04
+    name: "Max requires verified legal entity for bots"
+    probability: certain
+    impact: low
+    mitigation: |
+      Marshall AI Tech is a legal entity. Register bot through them.
+      Process: юрлицо верификация -> бот публикация.
+
+  - id: R05
+    name: "IRM API not available / not documented"
+    probability: medium
+    impact: medium
+    mitigation: |
+      Sprint 0 and Sprint 1 work WITHOUT IRM integration.
+      Manual trip entry by dispatcher. IRM integration = Sprint 2.
+
+  - id: R06
+    name: "LLM accuracy insufficient for message parsing"
+    probability: low
+    impact: medium
+    mitigation: |
+      Start with keyword detection (high precision).
+      LLM as enhancement layer. Manual review for edge cases.
+      Feedback loop: dispatcher corrects -> model improves.
+
+  - id: R07
+    name: "Voice messages not parsed correctly"
+    probability: medium
+    impact: low
+    mitigation: |
+      Whisper STT for voice-to-text. Then same LLM pipeline.
+      If quality low — ask driver to resend as text.
+
+# =============================================================================
+# 10. SUCCESS METRICS
+# =============================================================================
+success_metrics:
+  sprint_0:
+    - metric: "Messages captured per day"
+      target: ">100"
+    - metric: "Alert detection accuracy"
+      target: ">80%"
+    - metric: "Dashboard uptime"
+      target: ">99%"
+
+  sprint_1:
+    - metric: "Driver registration rate"
+      target: ">50% of active drivers within 2 weeks"
+    - metric: "Checklist completion rate"
+      target: ">90%"
+    - metric: "Penalty reduction"
+      target: "-50% vs baseline"
+    - metric: "Document loss rate"
+      target: "<5% (vs current ~20%)"
+    - metric: "Avg dispatcher response time"
+      target: "<10 min (vs current ~30 min)"
+
+# =============================================================================
+# 11. OPEN QUESTIONS (for Marshall team)
+# =============================================================================
+open_questions:
+  - id: Q01
+    question: "Есть ли API у IRM? Документация? Sandbox?"
+    owner: "Marshall dev team"
+    blocking: false  # Sprint 0-1 работают без IRM
+
+  - id: Q02
+    question: "Какое юрлицо будет регистрировать бота в Max?"
+    owner: "Marshall management"
+    blocking: true  # для публикации в Max
+
+  - id: Q03
+    question: "Сколько рабочих чатов нужно подключить в Sprint 0?"
+    owner: "Dispatchers"
+    blocking: false
+
+  - id: Q04
+    question: "Есть ли у Marshall аккаунт WhatsApp Business?"
+    owner: "Marshall management"
+    blocking: false  # WhatsApp = Phase 2+
+
+  - id: Q05
+    question: "Готовы ли водители использовать Max? Текущее проникновение?"
+    owner: "Dispatchers / Carriers"
+    blocking: false
+
+  - id: Q06
+    question: "Можно ли получить доступ к МОВИЗОР API?"
+    owner: "Marshall tech team"
+    blocking: false  # Sprint 2
+
+  - id: Q07
+    question: "Бюджет на LLM API (если Groq free tier не хватит)?"
+    owner: "Marshall management"
+    blocking: false
+
+# =============================================================================
+# 12. TIMELINE SUMMARY
+# =============================================================================
+timeline:
+  - phase: "Sprint 0: Passive Logger"
+    start: "Week 1"
+    end: "Week 1"
+    deliverables:
+      - "Chat listener collecting messages"
+      - "AI parser extracting trip events"
+      - "Real-time alerts channel"
+      - "Basic analytics dashboard"
+
+  - phase: "Sprint 1: Interactive Bot"
+    start: "Week 2"
+    end: "Week 4"
+    deliverables:
+      - "Bot on Max + Telegram (dual platform)"
+      - "User registration + role binding"
+      - "Trip assignments with customer memos"
+      - "Pre-trip photo checklists"
+      - "Status buttons with timeline"
+      - "Departure confirmations"
+      - "Auto-escalation to on-duty dispatcher"
+      - "Document control (acts, thermograms)"
+      - "Periodic in-transit polls"
+
+  - phase: "Sprint 2: IRM + GPS (future)"
+    start: "Week 5"
+    end: "Week 8"
+    deliverables:
+      - "IRM API integration"
+      - "GPS tracking (Telegram live location / MOVIZOR)"
+      - "ETA predictions"
+      - "Web dashboard for managers"
+      - "Driver scoring system"
+
+  - phase: "Sprint 3: AI Dispatcher (future)"
+    start: "Week 9+"
+    deliverables:
+      - "AI answers to common questions"
+      - "Predictive analytics (no-shows, delays)"
+      - "Smart driver-vehicle matching"
+      - "IoT temperature monitoring"
+      - "Computer vision for load verification"
