@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marshall AI Listener — Схема данных</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --accent: #f59e0b;
+            --accent-light: #fef3c7;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+        .nav {
+            position: sticky; top: 0; z-index: 100;
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            padding: 12px 24px;
+            display: flex; align-items: center; gap: 16px;
+            overflow-x: auto; white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        }
+        .nav a {
+            color: rgba(255,255,255,.85); text-decoration: none;
+            font-size: 13px; padding: 6px 12px; border-radius: 6px;
+            transition: all .2s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,.2); color: #fff; }
+        .nav .brand { font-weight: 700; font-size: 15px; color: #fff; margin-right: 8px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+        h1 { font-size: 2rem; margin-bottom: 8px; color: var(--primary); }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 32px; }
+        h2 {
+            font-size: 1.4rem; margin: 40px 0 16px;
+            padding-bottom: 8px; border-bottom: 2px solid var(--primary-light);
+            color: var(--primary);
+        }
+        h3 { font-size: 1.15rem; margin: 24px 0 12px; color: var(--text); }
+        h4 { font-size: 1rem; margin: 20px 0 10px; color: var(--text); }
+        p { margin-bottom: 12px; }
+        .card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .card-accent { border-left: 4px solid var(--primary); }
+        .card-success { border-left: 4px solid var(--success); background: var(--success-light); }
+        .card-warning { border-left: 4px solid var(--warning); background: var(--accent-light); }
+        .card-danger { border-left: 4px solid var(--danger); background: var(--danger-light); }
+        ul { padding-left: 20px; margin-bottom: 12px; }
+        li { margin-bottom: 6px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: .95rem; }
+        th { background: var(--primary); color: white; padding: 10px 14px; text-align: left; }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) { background: #f8fafc; }
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 8px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+        }
+        .badge-must { background: var(--danger-light); color: var(--danger); }
+        .badge-should { background: var(--accent-light); color: #d97706; }
+        .badge-high { background: #fee2e2; color: #dc2626; }
+        .badge-medium { background: var(--accent-light); color: #d97706; }
+        .badge-low { background: var(--success-light); color: var(--success); }
+        pre, code { font-family: 'Courier New', monospace; }
+        pre {
+            background: #f1f5f9;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            line-height: 1.4;
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.88em;
+        }
+        pre code { background: none; padding: 0; }
+        .mermaid { background: white; padding: 16px; border-radius: 8px; }
+        .scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .tag {
+            display: inline-block; background: var(--primary-light); color: var(--primary);
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+            margin-right: 6px; margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <span class="brand">Marshall SDD</span>
+    <a href="index.html">Обзор</a>
+    <a href="master_brief.html">Контекст</a>
+    <a href="product_brief.html">Продукт</a>
+    <a href="spec-tool-chat-listener.html">Chat Listener</a>
+    <a href="spec-tool-ai-parser.html">AI Parser</a>
+    <a href="spec-tool-alert-engine.html">Alert Engine</a>
+    <a href="spec-data-schema.html" class="active">Схема БД</a>
+    <a href="spec-tool-dashboard-api.html">Dashboard API</a>
+    <a href="spec-design-dashboard.html">Дизайн</a>
+    <a href="spec-architecture-overview.html">Архитектура</a>
+    <a href="spec-process-sprint0-plan.html">План</a>
+    <a href="sdd_orchestration.html">SDD</a>
+</nav>
+
+<div class="container">
+    <h1>Marshall AI Listener — Спецификация схемы данных</h1>
+    <p class="subtitle">version 1.0 &nbsp;|&nbsp; Sprint 0 &nbsp;|&nbsp; module: data-schema &nbsp;|&nbsp; 2026-03-06</p>
+
+    <!-- ================================================================ -->
+    <h2>1. Цель и скоуп</h2>
+
+    <h3>1.1 Цель</h3>
+    <p>Определить полную схему базы данных PostgreSQL для системы Marshall AI Listener (Sprint 0), обеспечивающую хранение сырых сообщений из диспетчерских чатов, результатов LLM-парсинга, алертов, агрегированных данных по рейсам и пользователей дашборда.</p>
+
+    <h3>1.2 Скоуп</h3>
+    <p>Схема покрывает четыре модуля Sprint 0:</p>
+    <table>
+        <thead><tr><th>Модуль</th><th>Таблицы</th><th>Назначение</th></tr></thead>
+        <tbody>
+            <tr><td>Chat Listener (S0-F01)</td><td><code>raw_messages</code></td><td>Сырые текстовые сообщения из Telegram-чатов</td></tr>
+            <tr><td>AI Parser (S0-F02)</td><td><code>parsed_messages</code></td><td>Структурированные данные, извлечённые LLM</td></tr>
+            <tr><td>Alert Engine (S0-F03)</td><td><code>alerts</code></td><td>Критические события, обнаруженные по правилам</td></tr>
+            <tr><td>Dashboard (S0-F04)</td><td><code>trips</code>, <code>dashboard_users</code></td><td>Агрегированные рейсы и авторизация</td></tr>
+        </tbody>
+    </table>
+
+    <h3>1.3 Границы</h3>
+    <div class="scope-grid">
+        <div class="card card-success">
+            <h4>Входит в скоуп</h4>
+            <ul>
+                <li>5 таблиц, перечисленных в модульном брифе</li>
+                <li>Индексы для типичных запросов дашборда</li>
+                <li>CHECK-ограничения для бизнес-правил</li>
+                <li>Миграционные SQL-файлы (plain SQL, без ORM/Alembic)</li>
+                <li>Seed data для 3 тестовых чатов</li>
+            </ul>
+        </div>
+        <div class="card card-warning">
+            <h4>Выходит из скоупа (Sprint 1+)</h4>
+            <ul>
+                <li>Таблицы: <code>users</code>, <code>trip_assignments</code>, <code>checklist_responses</code>, <code>status_events</code>, <code>shift_schedules</code>, <code>documents</code>, <code>customer_memos</code>, <code>guides</code></li>
+                <li>Партиционирование таблиц</li>
+                <li>Read-реплики и шардинг</li>
+                <li>Полнотекстовый поиск (GIN-индексы)</li>
+                <li>Хранение медиафайлов (MinIO/S3)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <h2>2. Определения</h2>
+    <table>
+        <thead><tr><th>Термин</th><th>Описание</th></tr></thead>
+        <tbody>
+            <tr><td><strong>PostgreSQL</strong></td><td>Реляционная СУБД, версия 15+. Используется вместо SQLite для масштаба 500+ партнёров</td></tr>
+            <tr><td><strong>TIMESTAMPTZ</strong></td><td>Тип данных PostgreSQL <code>TIMESTAMP WITH TIME ZONE</code>. Все временные метки хранятся в UTC</td></tr>
+            <tr><td><strong>BIGSERIAL</strong></td><td>Автоинкрементный 64-битный целочисленный тип для первичных ключей</td></tr>
+            <tr><td><strong>FK</strong></td><td>Foreign Key — внешний ключ, обеспечивающий ссылочную целостность между таблицами</td></tr>
+            <tr><td><strong>Индекс</strong></td><td>Структура данных для ускорения поиска по столбцам. B-tree по умолчанию</td></tr>
+            <tr><td><strong>Миграция</strong></td><td>SQL-скрипт, изменяющий схему БД. Нумерация: <code>001_</code>, <code>002_</code>, … Идемпотентный</td></tr>
+            <tr><td><strong>trip_id</strong></td><td>Идентификатор рейса в системе Marshall (например, «4521»). Извлекается LLM из текста</td></tr>
+            <tr><td><strong>confidence</strong></td><td>Уверенность LLM в результате парсинга. Диапазон 0.0–1.0</td></tr>
+            <tr><td><strong>severity</strong></td><td>Критичность алерта: <code>high</code> (блокирует рейс), <code>medium</code> (требует внимания), <code>low</code> (информационный)</td></tr>
+            <tr><td><strong>raw_message</strong></td><td>Исходное текстовое сообщение из чата, без обработки</td></tr>
+            <tr><td><strong>parsed_message</strong></td><td>Результат парсинга raw_message через LLM — структурированные поля</td></tr>
+            <tr><td><strong>CHECK constraint</strong></td><td>Ограничение уровня строки, проверяющее допустимость значений при вставке/обновлении</td></tr>
+            <tr><td><strong>seed data</strong></td><td>Тестовые данные для разработки и демонстрации. Не для продакшна</td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>3. Требования, ограничения и рекомендации</h2>
+
+    <h3>3.1 Требования</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Категория</th><th>Описание</th><th>Приоритет</th></tr></thead>
+        <tbody>
+            <tr><td>REQ-DS-001</td><td>Хранение</td><td>Все сырые сообщения из мониторимых чатов сохраняются в <code>raw_messages</code> с метаданными отправителя, чата и временной меткой</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DS-002</td><td>Уникальность</td><td><code>message_id</code> в <code>raw_messages</code> уникален — защита от дублирования при переподключении Telethon</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DS-003</td><td>Парсинг</td><td>Каждый результат LLM-парсинга привязан к исходному сообщению через FK <code>raw_message_id</code></td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DS-004</td><td>Допустимые значения</td><td>Поля <code>status</code>, <code>urgency</code>, <code>severity</code>, <code>alert type</code> ограничены фиксированными наборами через CHECK constraints</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DS-005</td><td>Агрегация</td><td>Таблица <code>trips</code> агрегирует данные из <code>parsed_messages</code> по <code>trip_id</code>, обновляясь при каждом новом сообщении по рейсу</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DS-006</td><td>Индексация</td><td>Индексы на столбцах, используемых в фильтрах дашборда: <code>chat_id</code>, <code>trip_id</code>, <code>customer</code>, <code>severity</code>, <code>status</code>, <code>timestamp</code></td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DS-007</td><td>Временные зоны</td><td>Все временные метки хранятся в типе <code>TIMESTAMPTZ</code> (UTC). Приложение конвертирует в MSK (UTC+3) при отображении</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DS-008</td><td>Каскадное удаление</td><td>При удалении <code>raw_message</code> каскадно удаляются связанные <code>parsed_messages</code>. При удалении <code>parsed_message</code> каскадно удаляются связанные <code>alerts</code></td><td><span class="badge badge-should">SHOULD</span></td></tr>
+            <tr><td>REQ-DS-009</td><td>Авторизация</td><td>Таблица <code>dashboard_users</code> хранит bcrypt-хеш пароля и роль пользователя</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DS-010</td><td>Аудит</td><td>Все таблицы содержат поле <code>created_at</code> с автоматическим заполнением <code>DEFAULT NOW()</code>. Таблица <code>alerts</code> дополнительно содержит <code>reviewed_at</code></td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DS-011</td><td>Метрики LLM</td><td><code>parsed_messages</code> хранит модель LLM, количество потреблённых токенов и длительность парсинга в миллисекундах</td><td><span class="badge badge-should">SHOULD</span></td></tr>
+            <tr><td>REQ-DS-012</td><td>Масштаб</td><td>Схема рассчитана на 500+ партнёров, тысячи сообщений/день. Типы данных выбраны с запасом (BIGSERIAL, TEXT)</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DS-013</td><td>Миграции</td><td>Схема поставляется как plain SQL миграции (без Alembic/ORM). Каждая миграция идемпотентна (<code>IF NOT EXISTS</code>)</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DS-014</td><td>Тестовые данные</td><td>Seed data покрывает 3 тестовых чата (WB, Тандер, Общая Диспетчерская) с реалистичными сценариями</td><td><span class="badge badge-should">SHOULD</span></td></tr>
+        </tbody>
+    </table>
+
+    <h3>3.2 Ограничения</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Описание</th></tr></thead>
+        <tbody>
+            <tr><td>CON-DS-001</td><td>PostgreSQL 15+ — минимальная поддерживаемая версия</td></tr>
+            <tr><td>CON-DS-002</td><td>Деплой через Docker Compose на RUVDS (88.218.248.114). Образ <code>postgres:15</code></td></tr>
+            <tr><td>CON-DS-003</td><td>Sprint 0 — без ORM. Запросы через <code>asyncpg</code> (асинхронный драйвер) или <code>psycopg2</code></td></tr>
+            <tr><td>CON-DS-004</td><td>Sprint 0 — без партиционирования. Единая таблица <code>raw_messages</code> (оценить после 100K записей)</td></tr>
+            <tr><td>CON-DS-005</td><td>Sprint 0 — без полнотекстового поиска. Поиск по <code>text</code> через <code>LIKE</code> или приложение</td></tr>
+            <tr><td>CON-DS-006</td><td>Авторизация дашборда — простой пароль (bcrypt), без OAuth/SSO</td></tr>
+            <tr><td>CON-DS-007</td><td>Нет хранения медиафайлов в БД. Поле <code>media_type</code> зарезервировано для Sprint 1</td></tr>
+            <tr><td>CON-DS-008</td><td>Часовой пояс по умолчанию — UTC. Бизнес-логика отображения в MSK (UTC+3) на уровне API</td></tr>
+        </tbody>
+    </table>
+
+    <h3>3.3 Рекомендации</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Описание</th><th>Обоснование</th></tr></thead>
+        <tbody>
+            <tr><td>REC-DS-001</td><td>Использовать <code>BIGSERIAL</code> для PK вместо UUID</td><td>Компактнее, быстрее для JOIN, достаточно для однопроцессной системы Sprint 0</td></tr>
+            <tr><td>REC-DS-002</td><td>CHECK constraints вместо ENUM types</td><td>Проще мигрировать (ALTER TABLE vs DROP/CREATE TYPE). Допустимые значения явно видны в DDL</td></tr>
+            <tr><td>REC-DS-003</td><td>Индексы создавать с <code>CONCURRENTLY</code> в продакшне</td><td>Не блокирует таблицу. В миграции Sprint 0 допустимо без CONCURRENTLY (пустая БД)</td></tr>
+            <tr><td>REC-DS-004</td><td>Рассмотреть партиционирование <code>raw_messages</code> по месяцам после 3 месяцев</td><td>При объёме >1M строк. Партиция по <code>timestamp</code> (RANGE)</td></tr>
+            <tr><td>REC-DS-005</td><td>Добавить <code>updated_at</code> с триггером на <code>trips</code></td><td>Отслеживание последнего обновления агрегата без ручного управления</td></tr>
+            <tr><td>REC-DS-006</td><td>Использовать connection pool (pgbouncer или asyncpg pool)</td><td>FastAPI + asyncio → конкурентные подключения. Pool size: 10–20</td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>4. Интерфейсы и контракты данных</h2>
+
+    <h3>4.1 ER-диаграмма</h3>
+    <div class="card card-accent">
+<pre>raw_messages (1) ----&lt; (N) parsed_messages (1) ----&lt; (N) alerts
+     |                           |
+     |                           |
+     |                     trips (агрегат по trip_id,
+     |                      обновляется из parsed_messages)
+     |
+     +-- dashboard_users (независимая таблица)</pre>
+        <p><strong>Связи:</strong></p>
+        <ul>
+            <li><code>raw_messages</code> 1:N <code>parsed_messages</code> — одно сообщение может быть распаршено повторно</li>
+            <li><code>parsed_messages</code> 1:N <code>alerts</code> — одно распаршенное сообщение может породить несколько алертов</li>
+            <li><code>trips</code> агрегируется из <code>parsed_messages</code> по полю <code>trip_id</code> — нет FK, связь логическая</li>
+            <li><code>dashboard_users</code> — независимая таблица, не связана FK с остальными</li>
+        </ul>
+    </div>
+
+    <h3>4.2 Полные CREATE TABLE statements</h3>
+
+    <h4>4.2.1 Таблица <code>raw_messages</code></h4>
+    <p>Хранит все сырые текстовые сообщения из мониторимых Telegram-чатов. Одна строка = одно сообщение.</p>
+    <pre><code>CREATE TABLE IF NOT EXISTS raw_messages (
+    -- Первичный ключ
+    id              BIGSERIAL       PRIMARY KEY,
+
+    -- Идентификаторы Telegram
+    chat_id         BIGINT          NOT NULL,           -- ID чата Telegram
+    chat_name       VARCHAR(255),                       -- Название чата (для отображения)
+    sender_id       BIGINT,                             -- ID отправителя (NULL для системных)
+    sender_name     VARCHAR(255),                       -- Имя отправителя (для отображения)
+    message_id      BIGINT          NOT NULL UNIQUE,    -- Telegram message_id, защита от дублей
+
+    -- Содержимое
+    text            TEXT            NOT NULL,            -- Текст сообщения
+
+    -- Метаданные
+    timestamp       TIMESTAMPTZ     NOT NULL,            -- Время отправки сообщения (из Telegram)
+    created_at      TIMESTAMPTZ     NOT NULL DEFAULT NOW() -- Время записи в БД
+);
+
+-- Комментарии к таблице
+COMMENT ON TABLE  raw_messages IS 'Сырые текстовые сообщения из Telegram-чатов диспетчеров';
+COMMENT ON COLUMN raw_messages.chat_id IS 'Telegram chat ID. Отрицательный для групповых чатов';
+COMMENT ON COLUMN raw_messages.message_id IS 'Уникальный Telegram message_id. Предотвращает дубли при переподключении';
+COMMENT ON COLUMN raw_messages.timestamp IS 'Время отправки сообщения в Telegram (UTC)';
+COMMENT ON COLUMN raw_messages.created_at IS 'Время записи сообщения в БД (UTC). Может отличаться от timestamp при пакетной загрузке';</code></pre>
+
+    <h4>4.2.2 Таблица <code>parsed_messages</code></h4>
+    <p>Результаты LLM-парсинга. Каждая строка — результат обработки одного сырого сообщения.</p>
+    <pre><code>CREATE TABLE IF NOT EXISTS parsed_messages (
+    -- Первичный ключ
+    id                  BIGSERIAL       PRIMARY KEY,
+
+    -- Связь с исходным сообщением
+    raw_message_id      BIGINT          NOT NULL
+                        REFERENCES raw_messages(id) ON DELETE CASCADE,
+
+    -- Извлечённые поля рейса
+    trip_id             VARCHAR(50),                    -- Номер рейса (NULL если не распознан)
+    route_from          VARCHAR(255),                   -- Пункт отправления
+    route_to            VARCHAR(255),                   -- Пункт назначения
+    slot_time           TIME,                           -- Время слота погрузки/выгрузки
+
+    -- Классификация
+    status              VARCHAR(30)
+                        CHECK (status IN (
+                            'assigned',       -- Рейс назначен
+                            'in_transit',     -- В пути
+                            'loading',        -- Погрузка
+                            'unloading',      -- Выгрузка
+                            'completed',      -- Рейс завершён
+                            'problem',        -- Проблема
+                            'cancelled'       -- Рейс отменён
+                        )),
+    customer            VARCHAR(100),                   -- Заказчик (Тандер, WB, X5, Магнит, Сельта, Сибур)
+    urgency             VARCHAR(10)     NOT NULL DEFAULT 'low'
+                        CHECK (urgency IN ('low', 'medium', 'high')),
+    issue               TEXT,                           -- Описание проблемы (NULL если нет)
+
+    -- Метрики LLM
+    confidence          REAL            NOT NULL DEFAULT 0.0
+                        CHECK (confidence >= 0.0 AND confidence <= 1.0),
+    llm_model           VARCHAR(50),                    -- Модель: 'minimax' или 'groq'
+    llm_tokens_used     INTEGER         CHECK (llm_tokens_used IS NULL OR llm_tokens_used >= 0),
+    parse_duration_ms   INTEGER         CHECK (parse_duration_ms IS NULL OR parse_duration_ms >= 0),
+
+    -- Метаданные
+    created_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE  parsed_messages IS 'Результаты LLM-парсинга сырых сообщений. Структурированные логистические данные';
+COMMENT ON COLUMN parsed_messages.trip_id IS 'Номер рейса, извлечённый LLM. NULL если не распознан';
+COMMENT ON COLUMN parsed_messages.confidence IS 'Уверенность LLM в парсинге. 0.0 = не уверен, 1.0 = полная уверенность. Порог для алертов: 0.7';
+COMMENT ON COLUMN parsed_messages.llm_model IS 'Какая LLM использовалась: minimax (основная) или groq (fallback)';
+COMMENT ON COLUMN parsed_messages.parse_duration_ms IS 'Время парсинга в миллисекундах. Цель: &lt;5000 мс';</code></pre>
+
+    <h4>4.2.3 Таблица <code>alerts</code></h4>
+    <p>Алерты, созданные Alert Engine на основе распаршенных сообщений и бизнес-правил.</p>
+    <pre><code>CREATE TABLE IF NOT EXISTS alerts (
+    -- Первичный ключ
+    id                  BIGSERIAL       PRIMARY KEY,
+
+    -- Привязка к рейсу и источнику
+    trip_id             VARCHAR(50),                    -- Номер рейса (может быть NULL для общих алертов)
+    parsed_message_id   BIGINT          NOT NULL
+                        REFERENCES parsed_messages(id) ON DELETE CASCADE,
+
+    -- Классификация алерта
+    type                VARCHAR(30)     NOT NULL
+                        CHECK (type IN (
+                            'delay',              -- Опоздание
+                            'equipment_failure',  -- Поломка оборудования (реф, компрессор)
+                            'downtime',           -- Простой (превышение допустимого)
+                            'safety_violation',   -- Нарушение техники безопасности
+                            'docs_missing'        -- Отсутствие документов
+                        )),
+    severity            VARCHAR(10)     NOT NULL
+                        CHECK (severity IN ('high', 'medium', 'low')),
+    message             TEXT            NOT NULL,        -- Человекочитаемое описание алерта
+
+    -- Контекст
+    customer            VARCHAR(100),                    -- Заказчик (для правил, специфичных заказчику)
+    rule_id             VARCHAR(50),                     -- ID правила из конфигурации (напр. 'X5_NO_IDLE')
+
+    -- Жизненный цикл
+    status              VARCHAR(15)     NOT NULL DEFAULT 'new'
+                        CHECK (status IN ('new', 'reviewed', 'resolved')),
+    reviewed_by         VARCHAR(100),                    -- Имя пользователя, обработавшего алерт
+    reviewed_at         TIMESTAMPTZ,                     -- Время обработки
+
+    -- Метаданные
+    created_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE  alerts IS 'Алерты о критических событиях. Отображаются в дашборде. Sprint 0 — без отправки в Telegram';
+COMMENT ON COLUMN alerts.type IS 'Тип алерта. 5 категорий: delay, equipment_failure, downtime, safety_violation, docs_missing';
+COMMENT ON COLUMN alerts.severity IS 'high = блокирует рейс (штраф), medium = требует внимания, low = информационный';
+COMMENT ON COLUMN alerts.rule_id IS 'Ссылка на правило из конфигурации Alert Engine (YAML). Например: DELAY_GT_4H, X5_NO_IDLE, REEFER_TEMP';
+COMMENT ON COLUMN alerts.status IS 'Жизненный цикл: new -&gt; reviewed (менеджер увидел) -&gt; resolved (проблема закрыта)';</code></pre>
+
+    <h4>4.2.4 Таблица <code>trips</code></h4>
+    <p>Агрегированные данные по рейсам. Собирается и обновляется из <code>parsed_messages</code> при каждом новом сообщении, содержащем <code>trip_id</code>.</p>
+    <pre><code>CREATE TABLE IF NOT EXISTS trips (
+    -- Первичный ключ
+    id                  BIGSERIAL       PRIMARY KEY,
+
+    -- Идентификатор рейса
+    trip_id             VARCHAR(50)     NOT NULL UNIQUE, -- Номер рейса (из парсинга)
+
+    -- Маршрут
+    route_from          VARCHAR(255),                    -- Пункт отправления
+    route_to            VARCHAR(255),                    -- Пункт назначения
+
+    -- Участники
+    customer            VARCHAR(100),                    -- Заказчик
+    driver_name         VARCHAR(255),                    -- Имя водителя (из sender_name)
+    dispatcher_name     VARCHAR(255),                    -- Имя диспетчера (из sender_name)
+
+    -- Статус и тайминги
+    status              VARCHAR(30)     NOT NULL DEFAULT 'assigned'
+                        CHECK (status IN (
+                            'assigned',
+                            'in_transit',
+                            'loading',
+                            'unloading',
+                            'completed',
+                            'problem',
+                            'cancelled'
+                        )),
+    slot_time           TIMESTAMPTZ,                     -- Плановое время слота (дата + время)
+    departure_time      TIMESTAMPTZ,                     -- Фактическое время выезда
+    arrival_time        TIMESTAMPTZ,                     -- Фактическое время прибытия
+
+    -- Счётчики
+    alert_count         INTEGER         NOT NULL DEFAULT 0
+                        CHECK (alert_count >= 0),
+
+    -- Метаданные
+    last_update         TIMESTAMPTZ,                     -- Время последнего обновления из parsed_messages
+    created_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE  trips IS 'Агрегированные данные по рейсам. Обновляется при каждом новом parsed_message с trip_id';
+COMMENT ON COLUMN trips.trip_id IS 'Номер рейса Marshall (напр. 4521). Уникален. Источник — LLM-парсинг';
+COMMENT ON COLUMN trips.alert_count IS 'Количество алертов по рейсу. Инкрементируется при создании алерта';
+COMMENT ON COLUMN trips.last_update IS 'Время последнего обновления агрегата. Для определения «устаревших» рейсов на дашборде';</code></pre>
+
+    <h4>4.2.5 Таблица <code>dashboard_users</code></h4>
+    <p>Пользователи веб-дашборда. Простая авторизация без OAuth.</p>
+    <pre><code>CREATE TABLE IF NOT EXISTS dashboard_users (
+    -- Первичный ключ
+    id                  SERIAL          PRIMARY KEY,
+
+    -- Учётные данные
+    username            VARCHAR(100)    NOT NULL UNIQUE,
+    password_hash       VARCHAR(255)    NOT NULL,        -- bcrypt hash
+
+    -- Роль
+    role                VARCHAR(20)     NOT NULL DEFAULT 'viewer'
+                        CHECK (role IN ('admin', 'manager', 'viewer')),
+
+    -- Метаданные
+    is_active           BOOLEAN         NOT NULL DEFAULT TRUE,
+    last_login_at       TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE  dashboard_users IS 'Пользователи веб-дашборда. Простая авторизация bcrypt. Sprint 0 — без OAuth';
+COMMENT ON COLUMN dashboard_users.password_hash IS 'bcrypt hash пароля. Длина 60 символов для bcrypt, 255 с запасом';
+COMMENT ON COLUMN dashboard_users.role IS 'admin = полный доступ, manager = просмотр + управление алертами, viewer = только просмотр';</code></pre>
+
+    <h3>4.3 Индексы</h3>
+    <pre><code>-- =============================================================================
+-- raw_messages: поиск по чату и временному диапазону
+-- =============================================================================
+CREATE INDEX IF NOT EXISTS idx_raw_messages_chat_id
+    ON raw_messages (chat_id);
+
+CREATE INDEX IF NOT EXISTS idx_raw_messages_timestamp
+    ON raw_messages (timestamp DESC);
+
+CREATE INDEX IF NOT EXISTS idx_raw_messages_chat_timestamp
+    ON raw_messages (chat_id, timestamp DESC);
+
+CREATE INDEX IF NOT EXISTS idx_raw_messages_sender_id
+    ON raw_messages (sender_id)
+    WHERE sender_id IS NOT NULL;
+
+-- =============================================================================
+-- parsed_messages: поиск по trip_id, customer, status
+-- =============================================================================
+CREATE INDEX IF NOT EXISTS idx_parsed_messages_raw_message_id
+    ON parsed_messages (raw_message_id);
+
+CREATE INDEX IF NOT EXISTS idx_parsed_messages_trip_id
+    ON parsed_messages (trip_id)
+    WHERE trip_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_parsed_messages_customer
+    ON parsed_messages (customer)
+    WHERE customer IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_parsed_messages_status
+    ON parsed_messages (status)
+    WHERE status IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_parsed_messages_created_at
+    ON parsed_messages (created_at DESC);
+
+-- =============================================================================
+-- alerts: поиск по severity, status, trip_id, customer
+-- =============================================================================
+CREATE INDEX IF NOT EXISTS idx_alerts_severity
+    ON alerts (severity);
+
+CREATE INDEX IF NOT EXISTS idx_alerts_status
+    ON alerts (status);
+
+CREATE INDEX IF NOT EXISTS idx_alerts_trip_id
+    ON alerts (trip_id)
+    WHERE trip_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_alerts_customer
+    ON alerts (customer)
+    WHERE customer IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_alerts_created_at
+    ON alerts (created_at DESC);
+
+-- Составной индекс: активные HIGH-алерты (основной запрос дашборда)
+CREATE INDEX IF NOT EXISTS idx_alerts_active_high
+    ON alerts (severity, created_at DESC)
+    WHERE status = 'new';
+
+CREATE INDEX IF NOT EXISTS idx_alerts_parsed_message_id
+    ON alerts (parsed_message_id);
+
+-- =============================================================================
+-- trips: поиск по trip_id, customer, status
+-- =============================================================================
+-- trip_id уже имеет UNIQUE constraint -> автоматический индекс
+
+CREATE INDEX IF NOT EXISTS idx_trips_customer
+    ON trips (customer)
+    WHERE customer IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_trips_status
+    ON trips (status);
+
+CREATE INDEX IF NOT EXISTS idx_trips_created_at
+    ON trips (created_at DESC);
+
+-- Составной индекс: активные рейсы для дашборда
+CREATE INDEX IF NOT EXISTS idx_trips_active
+    ON trips (status, last_update DESC)
+    WHERE status NOT IN ('completed', 'cancelled');</code></pre>
+
+    <h3>4.4 Триггер автообновления <code>updated_at</code></h3>
+    <pre><code>-- Функция триггера для автоматического обновления updated_at
+CREATE OR REPLACE FUNCTION trigger_set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Триггер на таблице trips
+CREATE TRIGGER trg_trips_updated_at
+    BEFORE UPDATE ON trips
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_set_updated_at();</code></pre>
+
+    <h3>4.5 Контракты данных между модулями</h3>
+
+    <h4>Chat Listener → raw_messages</h4>
+    <pre><code>-- Контракт вставки (asyncpg)
+INSERT INTO raw_messages (chat_id, chat_name, sender_id, sender_name, message_id, text, timestamp)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+ON CONFLICT (message_id) DO NOTHING  -- Идемпотентность при переподключении
+RETURNING id</code></pre>
+
+    <h4>AI Parser → parsed_messages</h4>
+    <pre><code>-- Контракт чтения (необработанные сообщения)
+SELECT id, text, chat_name, sender_name, timestamp
+FROM raw_messages
+WHERE id NOT IN (SELECT raw_message_id FROM parsed_messages)
+ORDER BY timestamp ASC
+LIMIT 100
+
+-- Контракт вставки
+INSERT INTO parsed_messages
+    (raw_message_id, trip_id, route_from, route_to, slot_time,
+     status, customer, urgency, issue, confidence,
+     llm_model, llm_tokens_used, parse_duration_ms)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+RETURNING id</code></pre>
+
+    <h4>Alert Engine → alerts</h4>
+    <pre><code>-- Контракт чтения (новые parsed_messages с проблемами)
+SELECT pm.id, pm.trip_id, pm.status, pm.customer, pm.urgency, pm.issue,
+       pm.confidence, rm.text, rm.chat_name, rm.sender_name
+FROM parsed_messages pm
+JOIN raw_messages rm ON rm.id = pm.raw_message_id
+WHERE pm.id > $1  -- last_processed_id
+  AND pm.confidence >= 0.7
+  AND (pm.urgency IN ('medium', 'high') OR pm.status = 'problem')
+ORDER BY pm.id ASC
+
+-- Контракт вставки
+INSERT INTO alerts
+    (trip_id, parsed_message_id, type, severity, message, customer, rule_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id</code></pre>
+
+    <h4>Dashboard API → trips, alerts</h4>
+    <pre><code>-- Активные рейсы
+SELECT t.trip_id, t.route_from, t.route_to, t.customer, t.status,
+       t.driver_name, t.slot_time, t.alert_count, t.last_update
+FROM trips t
+WHERE t.status NOT IN ('completed', 'cancelled')
+ORDER BY t.last_update DESC
+
+-- Активные алерты (лента)
+SELECT a.id, a.trip_id, a.type, a.severity, a.message, a.customer,
+       a.status, a.created_at, a.reviewed_by, a.reviewed_at
+FROM alerts a
+WHERE a.created_at >= $1  -- фильтр по дате
+ORDER BY
+    CASE a.severity WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
+    a.created_at DESC
+
+-- Статистика за период
+SELECT
+    COUNT(DISTINCT t.trip_id) AS total_trips,
+    COUNT(DISTINCT t.trip_id) FILTER (WHERE t.status = 'completed') AS completed_trips,
+    COUNT(a.id) AS total_alerts,
+    COUNT(a.id) FILTER (WHERE a.severity = 'high') AS high_alerts,
+    AVG(EXTRACT(EPOCH FROM (t.arrival_time - t.departure_time)) / 3600)
+        FILTER (WHERE t.departure_time IS NOT NULL AND t.arrival_time IS NOT NULL) AS avg_transit_hours
+FROM trips t
+LEFT JOIN alerts a ON a.trip_id = t.trip_id
+WHERE t.created_at BETWEEN $1 AND $2</code></pre>
+
+    <!-- ================================================================ -->
+    <h2>5. Критерии приёмки</h2>
+    <table>
+        <thead><tr><th>ID</th><th>Критерий</th></tr></thead>
+        <tbody>
+            <tr><td>AC-DS-001</td><td><strong>Given</strong> Chat Listener получает новое сообщение из Telegram, <strong>When</strong> Listener выполняет INSERT в <code>raw_messages</code>, <strong>Then</strong> строка создаётся с заполненными <code>chat_id</code>, <code>message_id</code>, <code>text</code>, <code>timestamp</code>; повторная вставка того же <code>message_id</code> не вызывает ошибку (ON CONFLICT DO NOTHING)</td></tr>
+            <tr><td>AC-DS-002</td><td><strong>Given</strong> AI Parser обработал сообщение через LLM, <strong>When</strong> Parser выполняет INSERT в <code>parsed_messages</code>, <strong>Then</strong> строка содержит валидный <code>raw_message_id</code> (FK), <code>confidence</code> в диапазоне 0.0–1.0, <code>status</code> из допустимого набора</td></tr>
+            <tr><td>AC-DS-003</td><td><strong>Given</strong> <code>parsed_messages</code> содержит запись со <code>status = 'problem'</code> и <code>confidence >= 0.7</code>, <strong>When</strong> Alert Engine обрабатывает эту запись, <strong>Then</strong> создаётся запись в <code>alerts</code> с <code>type</code>, <code>severity</code>, <code>message</code>; <code>status</code> алерта = 'new'</td></tr>
+            <tr><td>AC-DS-004</td><td><strong>Given</strong> дашборд запрашивает активные рейсы, <strong>When</strong> API выполняет SELECT из <code>trips</code> с фильтром по <code>status</code> и <code>customer</code>, <strong>Then</strong> ответ возвращается за время &lt;100 мс благодаря индексам <code>idx_trips_active</code> и <code>idx_trips_customer</code></td></tr>
+            <tr><td>AC-DS-005</td><td><strong>Given</strong> менеджер отмечает алерт как 'reviewed' в дашборде, <strong>When</strong> API выполняет UPDATE <code>alerts SET status = 'reviewed'</code>, <strong>Then</strong> поля <code>reviewed_by</code> и <code>reviewed_at</code> заполняются; алерт перестаёт отображаться в ленте 'new'</td></tr>
+            <tr><td>AC-DS-006</td><td><strong>Given</strong> пользователь дашборда вводит логин и пароль, <strong>When</strong> API проверяет credentials, <strong>Then</strong> <code>password_hash</code> сверяется через bcrypt; при успехе записывается <code>last_login_at</code>; при неверном пароле — отказ без раскрытия причины</td></tr>
+            <tr><td>AC-DS-007</td><td><strong>Given</strong> <code>parsed_messages</code> содержит запись с <code>trip_id = '4521'</code>, <strong>When</strong> агрегатор обновляет <code>trips</code>, <strong>Then</strong> строка в <code>trips</code> с <code>trip_id = '4521'</code> обновляется: <code>status</code>, <code>last_update</code>, <code>alert_count</code> актуальны; если строки нет — создаётся (UPSERT)</td></tr>
+            <tr><td>AC-DS-008</td><td><strong>Given</strong> запись в <code>raw_messages</code> удаляется, <strong>When</strong> CASCADE срабатывает, <strong>Then</strong> все связанные <code>parsed_messages</code> удаляются; все связанные <code>alerts</code> удаляются каскадно через <code>parsed_messages</code></td></tr>
+            <tr><td>AC-DS-009</td><td><strong>Given</strong> попытка вставить <code>parsed_messages</code> со <code>status = 'unknown_value'</code>, <strong>When</strong> INSERT выполняется, <strong>Then</strong> PostgreSQL возвращает ошибку CHECK constraint violation</td></tr>
+            <tr><td>AC-DS-010</td><td><strong>Given</strong> миграция <code>001_initial_schema.sql</code> применяется к пустой БД, <strong>When</strong> скрипт выполняется повторно, <strong>Then</strong> ошибок нет (все CREATE используют IF NOT EXISTS). Все 5 таблиц, индексы и триггеры созданы</td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>6. Стратегия тестирования</h2>
+
+    <h3>6.1 Уровни тестирования</h3>
+    <table>
+        <thead><tr><th>Уровень</th><th>Что тестируем</th><th>Инструмент</th><th>Количество</th></tr></thead>
+        <tbody>
+            <tr><td>Unit (схема)</td><td>CHECK constraints, NOT NULL, UNIQUE, FK</td><td>SQL-тесты в транзакции</td><td>&ge; 15 тестов</td></tr>
+            <tr><td>Unit (индексы)</td><td>EXPLAIN ANALYZE на типовых запросах</td><td>SQL + pytest</td><td>&ge; 5 тестов</td></tr>
+            <tr><td>Интеграция</td><td>Полный flow: raw → parsed → alert → trip</td><td>pytest + asyncpg</td><td>&ge; 5 тестов</td></tr>
+            <tr><td>Нагрузка</td><td>10K сообщений, время вставки и запросов</td><td>pgbench / скрипт</td><td>1 сценарий</td></tr>
+            <tr><td>Миграция</td><td>Идемпотентность, откат</td><td>SQL-скрипт</td><td>1 тест</td></tr>
+        </tbody>
+    </table>
+
+    <h3>6.2 Тестовые сценарии (SQL)</h3>
+    <pre><code>-- =============================================================================
+-- Тест 1: CHECK constraint на status
+-- =============================================================================
+BEGIN;
+INSERT INTO parsed_messages (raw_message_id, status, confidence)
+VALUES (1, 'invalid_status', 0.5);
+-- ERROR: new row violates check constraint
+ROLLBACK;
+
+-- =============================================================================
+-- Тест 2: CHECK constraint на confidence (диапазон)
+-- =============================================================================
+BEGIN;
+INSERT INTO parsed_messages (raw_message_id, confidence)
+VALUES (1, 1.5);
+-- ERROR: value 1.5 violates check constraint
+ROLLBACK;
+
+-- =============================================================================
+-- Тест 3: UNIQUE constraint на message_id
+-- =============================================================================
+BEGIN;
+INSERT INTO raw_messages (chat_id, message_id, text, timestamp)
+VALUES (-100123, 999, 'Test', NOW());
+INSERT INTO raw_messages (chat_id, message_id, text, timestamp)
+VALUES (-100123, 999, 'Duplicate', NOW());
+-- ERROR: duplicate key violates unique constraint
+ROLLBACK;
+
+-- =============================================================================
+-- Тест 4: CASCADE delete
+-- =============================================================================
+BEGIN;
+INSERT INTO raw_messages (chat_id, message_id, text, timestamp)
+VALUES (-100, 1000, 'Test cascade', NOW());
+INSERT INTO parsed_messages (raw_message_id, confidence) VALUES (currval('raw_messages_id_seq'), 0.9);
+INSERT INTO alerts (parsed_message_id, type, severity, message)
+VALUES (currval('parsed_messages_id_seq'), 'delay', 'high', 'Test alert');
+DELETE FROM raw_messages WHERE message_id = 1000;
+-- parsed_messages и alerts каскадно удалены
+SELECT COUNT(*) FROM parsed_messages WHERE raw_message_id = currval('raw_messages_id_seq');
+-- Ожидание: 0
+ROLLBACK;
+
+-- =============================================================================
+-- Тест 5: FK нарушение
+-- =============================================================================
+BEGIN;
+INSERT INTO parsed_messages (raw_message_id, confidence)
+VALUES (999999999, 0.5);
+-- ERROR: foreign key violation
+ROLLBACK;
+
+-- =============================================================================
+-- Тест 6: Индекс используется (EXPLAIN)
+-- =============================================================================
+EXPLAIN ANALYZE
+SELECT * FROM alerts
+WHERE severity = 'high' AND status = 'new'
+ORDER BY created_at DESC
+LIMIT 20;
+-- Ожидание: Index Scan using idx_alerts_active_high</code></pre>
+
+    <h3>6.3 Нагрузочный тест</h3>
+    <table>
+        <thead><tr><th>Метрика</th><th>Целевое значение</th></tr></thead>
+        <tbody>
+            <tr><td>INSERT в <code>raw_messages</code> (bulk 1000)</td><td>&lt; 500 мс</td></tr>
+            <tr><td>INSERT в <code>parsed_messages</code> (одиночный)</td><td>&lt; 5 мс</td></tr>
+            <tr><td>SELECT активных рейсов (50 строк)</td><td>&lt; 50 мс</td></tr>
+            <tr><td>SELECT алертов HIGH + NEW (50 строк)</td><td>&lt; 50 мс</td></tr>
+            <tr><td>SELECT статистики за день (агрегация)</td><td>&lt; 200 мс</td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>7. Зависимости</h2>
+
+    <h3>7.1 Входящие зависимости</h3>
+    <table>
+        <thead><tr><th>Зависимость</th><th>Источник</th><th>Влияние</th></tr></thead>
+        <tbody>
+            <tr><td>PostgreSQL 15+</td><td>Docker образ <code>postgres:15</code></td><td>Минимальная версия для поддержки всех конструкций DDL</td></tr>
+            <tr><td>Стек Sprint 0</td><td><code>master_brief.md</code> раздел 5</td><td>Python 3.11+, asyncpg, FastAPI</td></tr>
+            <tr><td>Модель данных LLM-парсера</td><td><code>spec-v1.yaml</code> раздел S0-F02</td><td>Набор полей <code>parsed_messages</code></td></tr>
+            <tr><td>Типы алертов</td><td><code>product_brief.md</code> раздел S0-F03</td><td>5 типов, 3 уровня severity</td></tr>
+            <tr><td>Тестовые чаты</td><td><code>master_brief.md</code> раздел 14</td><td>3 чата, синтетические данные</td></tr>
+        </tbody>
+    </table>
+
+    <h3>7.2 Исходящие зависимости</h3>
+    <table>
+        <thead><tr><th>Зависимый модуль</th><th>Спецификация</th><th>Что использует</th></tr></thead>
+        <tbody>
+            <tr><td>Chat Listener</td><td><code>spec-tool-chat-listener.md</code></td><td>Таблица <code>raw_messages</code>, контракт вставки (раздел 4.5)</td></tr>
+            <tr><td>AI Parser</td><td><code>spec-tool-ai-parser.md</code></td><td>Таблицы <code>raw_messages</code> (чтение), <code>parsed_messages</code> (запись)</td></tr>
+            <tr><td>Alert Engine</td><td><code>spec-tool-alert-engine.md</code></td><td>Таблицы <code>parsed_messages</code> (чтение), <code>alerts</code> (запись), <code>trips</code> (обновление <code>alert_count</code>)</td></tr>
+            <tr><td>Dashboard API</td><td><code>spec-tool-dashboard-api.md</code></td><td>Все таблицы (чтение), <code>dashboard_users</code> (авторизация), <code>alerts</code> (обновление статуса)</td></tr>
+        </tbody>
+    </table>
+
+    <h3>7.3 Порядок инициализации</h3>
+    <pre><code>1. PostgreSQL контейнер стартует (docker-compose)
+2. Миграция 001_initial_schema.sql применяется (initdb или entrypoint)
+3. Миграция 002_seed_data.sql (только dev/test)
+4. Chat Listener подключается к БД и начинает запись
+5. AI Parser подключается к БД и начинает обработку
+6. Alert Engine подключается к БД и начинает мониторинг
+7. Dashboard API подключается к БД и обслуживает запросы</code></pre>
+
+    <!-- ================================================================ -->
+    <h2>8. Примеры и граничные случаи</h2>
+
+    <h3>8.1 Граничные случаи</h3>
+    <table>
+        <thead><tr><th>Случай</th><th>Поведение</th><th>Обработка</th></tr></thead>
+        <tbody>
+            <tr><td>Сообщение без текста (медиа)</td><td>В Sprint 0 — пропускается</td><td>Listener фильтрует: <code>if not message.text: skip</code></td></tr>
+            <tr><td>Дубль сообщения (переподключение Telethon)</td><td>Идемпотентность</td><td><code>ON CONFLICT (message_id) DO NOTHING</code></td></tr>
+            <tr><td>LLM вернул невалидный JSON</td><td>Запись с <code>confidence = 0.0</code></td><td>Parser записывает строку с пустыми полями, issue = 'LLM parse error'</td></tr>
+            <tr><td>LLM не извлёк trip_id</td><td><code>trip_id = NULL</code></td><td>Сообщение парсится, но не агрегируется в <code>trips</code></td></tr>
+            <tr><td>Два сообщения с разным trip_id в одном тексте</td><td>Парсится только первый</td><td>Ограничение Sprint 0. В Sprint 1 — multi-trip парсинг</td></tr>
+            <tr><td>Алерт для неизвестного заказчика</td><td><code>customer = NULL</code> в алерте</td><td>Alert Engine создаёт алерт без привязки к правилам заказчика</td></tr>
+            <tr><td>Очень длинный текст (&gt;10 000 символов)</td><td>TEXT без ограничения</td><td>PostgreSQL TEXT — до 1 GB. LLM может обрезать на своей стороне</td></tr>
+            <tr><td>Отрицательный <code>chat_id</code></td><td>Нормально для групповых чатов Telegram</td><td>BIGINT поддерживает отрицательные значения</td></tr>
+            <tr><td><code>sender_id = NULL</code></td><td>Системное сообщение Telegram</td><td>Допускается: <code>sender_id BIGINT</code> (nullable)</td></tr>
+            <tr><td>Конкурентные INSERT (два экземпляра Listener)</td><td>Конфликт на <code>message_id</code></td><td><code>ON CONFLICT DO NOTHING</code> — второй INSERT просто пропускается</td></tr>
+        </tbody>
+    </table>
+
+    <h3>8.2 Примеры записей</h3>
+
+    <h4>raw_messages</h4>
+    <table>
+        <thead><tr><th>id</th><th>chat_id</th><th>chat_name</th><th>sender_name</th><th>message_id</th><th>text</th><th>timestamp</th></tr></thead>
+        <tbody>
+            <tr><td>1</td><td>-100001</td><td>Marshall Test — WB Рейсы</td><td>Диспетчер Алексей</td><td>10001</td><td>Рейс 4521, Москва-Краснодар, слот на погрузку WB 14:00, реф охладить до +2. Водитель Иванов подтверди.</td><td>2026-03-06 09:15:00+00</td></tr>
+            <tr><td>2</td><td>-100001</td><td>Marshall Test — WB Рейсы</td><td>Водитель Иван</td><td>10002</td><td>Принял, выезжаю через 30 мин. Реф включил.</td><td>2026-03-06 09:18:00+00</td></tr>
+        </tbody>
+    </table>
+
+    <h4>parsed_messages</h4>
+    <table>
+        <thead><tr><th>id</th><th>raw_message_id</th><th>trip_id</th><th>route_from</th><th>route_to</th><th>status</th><th>customer</th><th>urgency</th><th>confidence</th><th>llm_model</th></tr></thead>
+        <tbody>
+            <tr><td>1</td><td>1</td><td>4521</td><td>Москва</td><td>Краснодар</td><td>assigned</td><td>WB</td><td>low</td><td>0.95</td><td>minimax</td></tr>
+            <tr><td>2</td><td>2</td><td>4521</td><td>NULL</td><td>NULL</td><td>in_transit</td><td>WB</td><td>low</td><td>0.85</td><td>minimax</td></tr>
+        </tbody>
+    </table>
+
+    <h4>alerts</h4>
+    <table>
+        <thead><tr><th>id</th><th>trip_id</th><th>parsed_message_id</th><th>type</th><th>severity</th><th>message</th><th>customer</th><th>rule_id</th><th>status</th></tr></thead>
+        <tbody>
+            <tr><td>1</td><td>4521</td><td>5</td><td>delay</td><td>medium</td><td>Возможное опоздание ~40 мин на рейс 4521 WB</td><td>WB</td><td>DELAY_REPORTED</td><td>new</td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>9. ER-диаграмма</h2>
+    <div class="card card-accent">
+<pre>+-------------------+
+|   raw_messages    |
+|-------------------|
+| id (PK, BIGSERIAL)|
+| chat_id           |
+| chat_name         |
+| sender_id         |
+| sender_name       |
+| message_id (UQ)   |
+| text              |
+| timestamp         |
+| created_at        |
++--------+----------+
+         |
+         | 1:N (raw_message_id FK, ON DELETE CASCADE)
+         |
++--------v----------+
+| parsed_messages   |
+|-------------------|
+| id (PK, BIGSERIAL)|
+| raw_message_id(FK)|-----> raw_messages.id
+| trip_id           |
+| route_from        |
+| route_to          |
+| slot_time         |
+| status            |
+| customer          |
+| urgency           |
+| issue             |
+| confidence        |
+| llm_model         |
+| llm_tokens_used   |
+| parse_duration_ms |
+| created_at        |
++--------+----------+
+         |
+         | 1:N (parsed_message_id FK, ON DELETE CASCADE)
+         |
++--------v----------+        +-------------------+
+|      alerts       |        |      trips        |
+|-------------------|        |-------------------|
+| id (PK, BIGSERIAL)|        | id (PK, BIGSERIAL)|
+| trip_id           |        | trip_id (UQ)      |
+| parsed_message_id |        | route_from        |
+| type              |        | route_to          |
+| severity          |        | customer          |
+| message           |        | driver_name       |
+| customer          |        | dispatcher_name   |
+| rule_id           |        | status            |
+| status            |        | slot_time         |
+| reviewed_by       |        | departure_time    |
+| reviewed_at       |        | arrival_time      |
+| created_at        |        | alert_count       |
++-------------------+        | last_update       |
+                              | created_at        |
++-------------------+        | updated_at        |
+| dashboard_users   |        +-------------------+
+|-------------------|
+| id (PK, SERIAL)   |    Связь trips &lt;-&gt; parsed_messages:
+| username (UQ)     |    Логическая, по значению trip_id.
+| password_hash     |    Нет FK — trips агрегат,
+| role              |    обновляется программно.
+| is_active         |
+| last_login_at     |    Связь trips &lt;-&gt; alerts:
+| created_at        |    Логическая, по значению trip_id.
++-------------------+    Нет FK — для гибкости.</pre>
+    </div>
+
+    <h3>9.2 Кардинальности</h3>
+    <table>
+        <thead><tr><th>Связь</th><th>Кардинальность</th><th>FK constraint</th></tr></thead>
+        <tbody>
+            <tr><td>raw_messages → parsed_messages</td><td>1:N</td><td><code>parsed_messages.raw_message_id → raw_messages.id</code> ON DELETE CASCADE</td></tr>
+            <tr><td>parsed_messages → alerts</td><td>1:N</td><td><code>alerts.parsed_message_id → parsed_messages.id</code> ON DELETE CASCADE</td></tr>
+            <tr><td>trips &lt;-&gt; parsed_messages</td><td>Логическая по <code>trip_id</code></td><td>Нет FK. Агрегат обновляется программно</td></tr>
+            <tr><td>trips &lt;-&gt; alerts</td><td>Логическая по <code>trip_id</code></td><td>Нет FK. <code>alert_count</code> инкрементируется программно</td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>10. Миграции</h2>
+
+    <h3>10.1 Файл: <code>001_initial_schema.sql</code></h3>
+    <pre><code>-- =============================================================================
+-- Marshall AI Listener — Миграция 001: Начальная схема
+-- Sprint 0 | Версия: 1.0 | Дата: 2026-03-06 | Автор: Zinin Corp
+--
+-- Запуск: psql -h localhost -U marshall -d marshall_db -f 001_initial_schema.sql
+-- Идемпотентно: да (все CREATE используют IF NOT EXISTS)
+-- =============================================================================
+
+BEGIN;
+
+-- =============================================================================
+-- 1. ТАБЛИЦЫ
+-- =============================================================================
+
+-- 1.1 raw_messages
+CREATE TABLE IF NOT EXISTS raw_messages (
+    id              BIGSERIAL       PRIMARY KEY,
+    chat_id         BIGINT          NOT NULL,
+    chat_name       VARCHAR(255),
+    sender_id       BIGINT,
+    sender_name     VARCHAR(255),
+    message_id      BIGINT          NOT NULL UNIQUE,
+    text            TEXT            NOT NULL,
+    timestamp       TIMESTAMPTZ     NOT NULL,
+    created_at      TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+
+-- 1.2 parsed_messages
+CREATE TABLE IF NOT EXISTS parsed_messages (
+    id                  BIGSERIAL       PRIMARY KEY,
+    raw_message_id      BIGINT          NOT NULL
+                        REFERENCES raw_messages(id) ON DELETE CASCADE,
+    trip_id             VARCHAR(50),
+    route_from          VARCHAR(255),
+    route_to            VARCHAR(255),
+    slot_time           TIME,
+    status              VARCHAR(30)
+                        CHECK (status IN (
+                            'assigned', 'in_transit', 'loading', 'unloading',
+                            'completed', 'problem', 'cancelled'
+                        )),
+    customer            VARCHAR(100),
+    urgency             VARCHAR(10)     NOT NULL DEFAULT 'low'
+                        CHECK (urgency IN ('low', 'medium', 'high')),
+    issue               TEXT,
+    confidence          REAL            NOT NULL DEFAULT 0.0
+                        CHECK (confidence >= 0.0 AND confidence &lt;= 1.0),
+    llm_model           VARCHAR(50),
+    llm_tokens_used     INTEGER         CHECK (llm_tokens_used IS NULL OR llm_tokens_used >= 0),
+    parse_duration_ms   INTEGER         CHECK (parse_duration_ms IS NULL OR parse_duration_ms >= 0),
+    created_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+
+-- 1.3 alerts
+CREATE TABLE IF NOT EXISTS alerts (
+    id                  BIGSERIAL       PRIMARY KEY,
+    trip_id             VARCHAR(50),
+    parsed_message_id   BIGINT          NOT NULL
+                        REFERENCES parsed_messages(id) ON DELETE CASCADE,
+    type                VARCHAR(30)     NOT NULL
+                        CHECK (type IN (
+                            'delay', 'equipment_failure', 'downtime',
+                            'safety_violation', 'docs_missing'
+                        )),
+    severity            VARCHAR(10)     NOT NULL
+                        CHECK (severity IN ('high', 'medium', 'low')),
+    message             TEXT            NOT NULL,
+    customer            VARCHAR(100),
+    rule_id             VARCHAR(50),
+    status              VARCHAR(15)     NOT NULL DEFAULT 'new'
+                        CHECK (status IN ('new', 'reviewed', 'resolved')),
+    reviewed_by         VARCHAR(100),
+    reviewed_at         TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+
+-- 1.4 trips
+CREATE TABLE IF NOT EXISTS trips (
+    id                  BIGSERIAL       PRIMARY KEY,
+    trip_id             VARCHAR(50)     NOT NULL UNIQUE,
+    route_from          VARCHAR(255),
+    route_to            VARCHAR(255),
+    customer            VARCHAR(100),
+    driver_name         VARCHAR(255),
+    dispatcher_name     VARCHAR(255),
+    status              VARCHAR(30)     NOT NULL DEFAULT 'assigned'
+                        CHECK (status IN (
+                            'assigned', 'in_transit', 'loading', 'unloading',
+                            'completed', 'problem', 'cancelled'
+                        )),
+    slot_time           TIMESTAMPTZ,
+    departure_time      TIMESTAMPTZ,
+    arrival_time        TIMESTAMPTZ,
+    alert_count         INTEGER         NOT NULL DEFAULT 0
+                        CHECK (alert_count >= 0),
+    last_update         TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+
+-- 1.5 dashboard_users
+CREATE TABLE IF NOT EXISTS dashboard_users (
+    id                  SERIAL          PRIMARY KEY,
+    username            VARCHAR(100)    NOT NULL UNIQUE,
+    password_hash       VARCHAR(255)    NOT NULL,
+    role                VARCHAR(20)     NOT NULL DEFAULT 'viewer'
+                        CHECK (role IN ('admin', 'manager', 'viewer')),
+    is_active           BOOLEAN         NOT NULL DEFAULT TRUE,
+    last_login_at       TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+
+-- =============================================================================
+-- 2. ИНДЕКСЫ
+-- =============================================================================
+
+CREATE INDEX IF NOT EXISTS idx_raw_messages_chat_id       ON raw_messages (chat_id);
+CREATE INDEX IF NOT EXISTS idx_raw_messages_timestamp     ON raw_messages (timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_raw_messages_chat_timestamp ON raw_messages (chat_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_raw_messages_sender_id     ON raw_messages (sender_id) WHERE sender_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_parsed_messages_raw_message_id ON parsed_messages (raw_message_id);
+CREATE INDEX IF NOT EXISTS idx_parsed_messages_trip_id    ON parsed_messages (trip_id) WHERE trip_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_parsed_messages_customer   ON parsed_messages (customer) WHERE customer IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_parsed_messages_status     ON parsed_messages (status) WHERE status IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_parsed_messages_created_at ON parsed_messages (created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_alerts_severity            ON alerts (severity);
+CREATE INDEX IF NOT EXISTS idx_alerts_status              ON alerts (status);
+CREATE INDEX IF NOT EXISTS idx_alerts_trip_id             ON alerts (trip_id) WHERE trip_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_alerts_customer            ON alerts (customer) WHERE customer IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_alerts_created_at          ON alerts (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_alerts_active_high         ON alerts (severity, created_at DESC) WHERE status = 'new';
+CREATE INDEX IF NOT EXISTS idx_alerts_parsed_message_id   ON alerts (parsed_message_id);
+
+CREATE INDEX IF NOT EXISTS idx_trips_customer             ON trips (customer) WHERE customer IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_trips_status               ON trips (status);
+CREATE INDEX IF NOT EXISTS idx_trips_created_at           ON trips (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_trips_active               ON trips (status, last_update DESC)
+    WHERE status NOT IN ('completed', 'cancelled');
+
+-- =============================================================================
+-- 3. ТРИГГЕРЫ
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION trigger_set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_trips_updated_at ON trips;
+CREATE TRIGGER trg_trips_updated_at
+    BEFORE UPDATE ON trips
+    FOR EACH ROW
+    EXECUTE FUNCTION trigger_set_updated_at();
+
+COMMIT;
+
+-- Проверка: все объекты созданы
+DO $$
+DECLARE
+    tbl TEXT;
+    tables TEXT[] := ARRAY['raw_messages', 'parsed_messages', 'alerts', 'trips', 'dashboard_users'];
+BEGIN
+    FOREACH tbl IN ARRAY tables LOOP
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = tbl
+        ) THEN
+            RAISE EXCEPTION 'Таблица % не создана!', tbl;
+        END IF;
+    END LOOP;
+    RAISE NOTICE 'Миграция 001: все 5 таблиц успешно созданы';
+END $$;</code></pre>
+
+    <h3>10.2 Файл: <code>002_seed_data.sql</code> (фрагмент)</h3>
+    <pre><code>-- =============================================================================
+-- Marshall AI Listener — Миграция 002: Тестовые данные (Seed)
+-- ТОЛЬКО для dev/test. НЕ запускать в продакшне.
+-- =============================================================================
+
+BEGIN;
+
+-- Пользователи (пароли: admin123, manager123, viewer123)
+INSERT INTO dashboard_users (username, password_hash, role) VALUES
+    ('admin',   '$2b$12$LJ3m4ys3GZ.ZG0R1XdKqYe...', 'admin'),
+    ('nikolya', '$2b$12$5v5K0M7z8R1QzJhP4uO9s....', 'manager'),
+    ('viewer',  '$2b$12$8dH9kL3nY6tM1wX4pZ7qWe..', 'viewer')
+ON CONFLICT (username) DO NOTHING;
+
+-- Чат WB Рейсы: 10 сообщений (message_id 10001–10010)
+INSERT INTO raw_messages (chat_id, chat_name, sender_id, sender_name, message_id, text, timestamp) VALUES
+    (-100001, 'Marshall Test -- WB Рейсы', 501, 'Диспетчер Алексей', 10001,
+     'Рейс 4521, Москва-Краснодар, слот на погрузку WB 14:00, реф охладить до +2.',
+     '2026-03-06 06:15:00+00'),
+    -- ... (полный набор в файле 002_seed_data.sql)
+ON CONFLICT (message_id) DO NOTHING;
+
+-- Агрегированные рейсы
+INSERT INTO trips (trip_id, route_from, route_to, customer, driver_name, status, alert_count, last_update) VALUES
+    ('4521', 'Москва', 'Краснодар', 'WB', 'Водитель Иван', 'unloading', 2, '2026-03-06 19:10:00+00'),
+    ('7803', 'Ростов', 'Воронеж', 'Тандер', 'Водитель Сергей', 'loading', 1, '2026-03-06 09:40:00+00'),
+    ('7804', 'Краснодар', 'Сочи', 'Тандер', 'Водитель Олег', 'cancelled', 2, '2026-03-06 04:50:00+00'),
+    ('7790', NULL, NULL, 'X5', 'Петров', 'problem', 1, '2026-03-06 05:10:00+00')
+ON CONFLICT (trip_id) DO NOTHING;
+
+COMMIT;</code></pre>
+
+    <h3>10.3 Порядок применения миграций</h3>
+    <pre><code># Создание базы данных
+createdb -U postgres marshall_db
+
+# Применение схемы
+psql -U marshall -d marshall_db -f migrations/001_initial_schema.sql
+
+# Загрузка тестовых данных (только dev/test)
+psql -U marshall -d marshall_db -f migrations/002_seed_data.sql</code></pre>
+
+    <h3>10.4 Docker Compose интеграция</h3>
+    <pre><code># Фрагмент docker-compose.yml
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: marshall_db
+      POSTGRES_USER: marshall
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/001_initial_schema.sql
+      # Для dev/test:
+      # - ./migrations/002_seed_data.sql:/docker-entrypoint-initdb.d/002_seed_data.sql
+    ports:
+      - "5432:5432"</code></pre>
+
+    <!-- ================================================================ -->
+    <h2>Приложение А. Эволюция схемы (Sprint 1+)</h2>
+    <table>
+        <thead><tr><th>Таблица</th><th>Назначение</th><th>Связь с текущей схемой</th></tr></thead>
+        <tbody>
+            <tr><td><code>users</code></td><td>Регистрация водителей/диспетчеров/менеджеров</td><td>Заменит <code>sender_name</code> на FK к <code>users.id</code></td></tr>
+            <tr><td><code>trip_assignments</code></td><td>Назначение рейсов через бота</td><td>Расширит <code>trips</code> данными назначения</td></tr>
+            <tr><td><code>status_events</code></td><td>Кнопки статусов (timeline)</td><td>Дополнит <code>trips</code> детальной историей</td></tr>
+            <tr><td><code>checklist_responses</code></td><td>Фото-чеклисты перед рейсом</td><td>FK к <code>trip_assignments</code></td></tr>
+            <tr><td><code>shift_schedules</code></td><td>Расписание смен диспетчеров</td><td>Для авто-эскалации алертов</td></tr>
+            <tr><td><code>customer_memos</code></td><td>Памятки заказчиков</td><td>Для Alert Engine (правила по заказчикам)</td></tr>
+            <tr><td><code>documents</code></td><td>Термограммы, ТСД, чеки</td><td>FK к <code>trip_assignments</code>, URL в MinIO/S3</td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>Приложение Б. Быстрая справка по типовым запросам</h2>
+    <pre><code>-- Последние 50 сообщений из чата
+SELECT * FROM raw_messages
+WHERE chat_id = -100001
+ORDER BY timestamp DESC
+LIMIT 50;
+
+-- Все parsed_messages по рейсу (хронология)
+SELECT pm.*, rm.text, rm.sender_name, rm.timestamp
+FROM parsed_messages pm
+JOIN raw_messages rm ON rm.id = pm.raw_message_id
+WHERE pm.trip_id = '4521'
+ORDER BY rm.timestamp ASC;
+
+-- Активные HIGH-алерты (лента дашборда)
+SELECT a.*, rm.text AS original_text, rm.sender_name
+FROM alerts a
+JOIN parsed_messages pm ON pm.id = a.parsed_message_id
+JOIN raw_messages rm ON rm.id = pm.raw_message_id
+WHERE a.status = 'new' AND a.severity = 'high'
+ORDER BY a.created_at DESC;
+
+-- Статистика за сегодня
+SELECT
+    COUNT(DISTINCT trip_id) AS total_trips,
+    COUNT(DISTINCT trip_id) FILTER (WHERE status = 'completed') AS completed,
+    COUNT(DISTINCT trip_id) FILTER (WHERE status = 'problem') AS with_problems
+FROM trips
+WHERE created_at >= CURRENT_DATE;
+
+-- Топ заказчиков по алертам за неделю
+SELECT customer, COUNT(*) AS alert_count,
+       COUNT(*) FILTER (WHERE severity = 'high') AS high_count
+FROM alerts
+WHERE created_at >= NOW() - INTERVAL '7 days'
+  AND customer IS NOT NULL
+GROUP BY customer
+ORDER BY alert_count DESC;
+
+-- Средние метрики LLM за день (контроль расходов)
+SELECT
+    llm_model,
+    COUNT(*) AS messages_parsed,
+    SUM(llm_tokens_used) AS total_tokens,
+    AVG(parse_duration_ms)::INT AS avg_parse_ms,
+    AVG(confidence)::NUMERIC(3,2) AS avg_confidence
+FROM parsed_messages
+WHERE created_at >= CURRENT_DATE
+GROUP BY llm_model;
+
+-- UPSERT для trips (используется агрегатором)
+INSERT INTO trips (trip_id, route_from, route_to, customer, status, last_update)
+VALUES ($1, $2, $3, $4, $5, NOW())
+ON CONFLICT (trip_id) DO UPDATE SET
+    route_from = COALESCE(EXCLUDED.route_from, trips.route_from),
+    route_to = COALESCE(EXCLUDED.route_to, trips.route_to),
+    customer = COALESCE(EXCLUDED.customer, trips.customer),
+    status = EXCLUDED.status,
+    last_update = NOW();</code></pre>
+
+</div>
+</body>
+</html>

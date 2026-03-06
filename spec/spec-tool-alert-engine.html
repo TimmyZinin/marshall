@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marshall AI Listener — Спецификация Alert Engine</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --accent: #f59e0b;
+            --accent-light: #fef3c7;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+        .nav {
+            position: sticky; top: 0; z-index: 100;
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            padding: 12px 24px;
+            display: flex; align-items: center; gap: 16px;
+            overflow-x: auto; white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        }
+        .nav a {
+            color: rgba(255,255,255,.85); text-decoration: none;
+            font-size: 13px; padding: 6px 12px; border-radius: 6px;
+            transition: all .2s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,.2); color: #fff; }
+        .nav .brand { font-weight: 700; font-size: 15px; color: #fff; margin-right: 8px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+        h1 { font-size: 2rem; margin-bottom: 8px; color: var(--primary); }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 32px; }
+        h2 {
+            font-size: 1.4rem; margin: 40px 0 16px;
+            padding-bottom: 8px; border-bottom: 2px solid var(--primary-light);
+            color: var(--primary);
+        }
+        h3 { font-size: 1.15rem; margin: 24px 0 12px; color: var(--text); }
+        h4 { font-size: 1rem; margin: 16px 0 8px; color: var(--text); }
+        p { margin-bottom: 12px; }
+        .card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .card-accent { border-left: 4px solid var(--primary); }
+        .card-success { border-left: 4px solid var(--success); background: var(--success-light); }
+        .card-warning { border-left: 4px solid var(--warning); background: var(--accent-light); }
+        .card-danger { border-left: 4px solid var(--danger); background: var(--danger-light); }
+        .vision {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white; border-radius: 16px; padding: 32px;
+            margin-bottom: 32px; font-size: 1.2rem; text-align: center;
+        }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 20px; }
+        .feature-card {
+            background: var(--card); border-radius: 12px; padding: 24px;
+            border: 1px solid var(--border);
+        }
+        .feature-card .tag {
+            display: inline-block; background: var(--primary-light); color: var(--primary);
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .feature-card h3 { margin-top: 4px; }
+        ul { padding-left: 20px; margin-bottom: 12px; }
+        li { margin-bottom: 6px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: .95rem; }
+        th { background: var(--primary); color: white; padding: 10px 14px; text-align: left; }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) { background: #f8fafc; }
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 8px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+        }
+        .badge-must { background: var(--danger-light); color: var(--danger); }
+        .badge-high { background: #fee2e2; color: #dc2626; }
+        .badge-medium { background: var(--accent-light); color: #d97706; }
+        .badge-low { background: var(--success-light); color: var(--success); }
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        .metric-card {
+            background: var(--card); border-radius: 12px; padding: 20px;
+            border: 1px solid var(--border); text-align: center;
+        }
+        .metric-card .value { font-size: 2rem; font-weight: 800; color: var(--primary); }
+        .metric-card .label { font-size: .85rem; color: var(--text-muted); margin-top: 4px; }
+        pre {
+            background: #1e293b; color: #e2e8f0; padding: 16px;
+            border-radius: 8px; overflow-x: auto; font-size: .85rem;
+            margin-bottom: 16px;
+        }
+        code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+        .in-scope li { color: var(--success); }
+        .in-scope li span { color: var(--text); }
+        .out-scope li { color: var(--danger); }
+        .out-scope li span { color: var(--text-muted); }
+        .req-card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .req-card .req-id {
+            display: inline-block; background: var(--primary-light); color: var(--primary);
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .req-card h3 { margin-top: 4px; margin-bottom: 8px; }
+        .con-card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--warning);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .con-card .con-id {
+            display: inline-block; background: var(--accent-light); color: #d97706;
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .con-card h3 { margin-top: 4px; margin-bottom: 8px; }
+        .rec-card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--success);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .rec-card .rec-id {
+            display: inline-block; background: var(--success-light); color: var(--success);
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .rec-card h3 { margin-top: 4px; margin-bottom: 8px; }
+        .example-block {
+            background: #f1f5f9; border-radius: 8px; padding: 16px;
+            margin: 12px 0; border: 1px solid var(--border);
+        }
+        .example-block .example-label {
+            font-size: 12px; font-weight: 700; color: var(--text-muted);
+            text-transform: uppercase; margin-bottom: 8px;
+        }
+        .scenario-card {
+            background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 16px;
+            border: 1px solid var(--border);
+        }
+        .scenario-card h4 { margin-top: 0; }
+        .ac-given { color: var(--primary); font-weight: 600; }
+        .ac-when { color: #7c3aed; font-weight: 600; }
+        .ac-then { color: var(--success); font-weight: 600; }
+        .yaml-comment { color: #6b7280; }
+        .yaml-key { color: #60a5fa; }
+        .yaml-string { color: #34d399; }
+        .yaml-value { color: #fbbf24; }
+        .status-flow {
+            display: flex; align-items: center; gap: 12px; margin: 16px 0;
+            flex-wrap: wrap;
+        }
+        .status-box {
+            background: var(--primary-light); color: var(--primary);
+            padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: .9rem;
+        }
+        .status-arrow { color: var(--text-muted); font-size: 1.2rem; }
+        .status-box.terminal { background: var(--success-light); color: var(--success); }
+        @media (max-width: 768px) {
+            .feature-grid { grid-template-columns: 1fr; }
+            .metric-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <span class="brand">Marshall SDD</span>
+    <a href="master_brief.html">Мастер-бриф</a>
+    <a href="product_brief.html">Продукт</a>
+    <a href="sdd_orchestration.html">Оркестрация</a>
+    <a href="spec-tool-chat-listener.html">Listener</a>
+    <a href="spec-tool-ai-parser.html">Parser</a>
+    <a href="spec-tool-alert-engine.html" class="active">Alerts</a>
+    <a href="spec-data-schema.html">Schema</a>
+    <a href="spec-tool-dashboard-api.html">API</a>
+    <a href="spec-design-dashboard.html">Dashboard</a>
+    <a href="spec-architecture-overview.html">Архитектура</a>
+    <a href="spec-process-sprint0-plan.html">План</a>
+</nav>
+
+<div class="container">
+
+<h1>Спецификация Alert Engine (S0-F03)</h1>
+<p class="subtitle">Marshall AI Listener -- v1.0 | 2026-03-06 | Модуль S0-F03</p>
+
+<!-- Vision -->
+<div class="vision">
+    Alert Engine -- модуль анализа структурированных данных от AI Parser для детекции критических событий в логистических операциях. Нулевой latency между детекцией проблемы и появлением алерта в дашборде.
+</div>
+
+<!-- ===== 1. Цель и скоуп ===== -->
+<h2>1. Цель и скоуп</h2>
+
+<h3>1.1 Назначение</h3>
+<p>Alert Engine -- модуль анализа структурированных данных, полученных от AI Parser, для детекции критических событий в логистических операциях. На основе парсированных данных (trip_id, маршрут, статус, заказчик, urgency, проблемы) и конфигурируемых бизнес-правил система выставляет алерты в базе данных. Алерты отображаются менеджерам через REST API в дашборде для принятия оперативных мер.</p>
+<div class="card card-accent">
+    <strong>Ключевой принцип:</strong> Нулевой latency между детекцией проблемы и появлением алерта в дашборде. Алерты -- это структурированное представление проблем, которые диспетчер уже видит в мессенджерах, но Alert Engine находит их автоматически и приводит к единому формату.
+</div>
+
+<h3>1.2 Входные и выходные интерфейсы</h3>
+<div class="feature-grid">
+    <div class="feature-card">
+        <span class="tag">ВХОДЫ</span>
+        <ul style="margin-top:12px">
+            <li>Parsed message data от AI Parser (JSON-структура: trip_id, route_from, route_to, slot_time, status, customer, urgency, issue, confidence)</li>
+            <li>Конфигурация правил (YAML-файл с правилами для каждого заказчика)</li>
+            <li>Справочник заказчиков (customer_id &rarr; customer_name, правила, требования)</li>
+        </ul>
+    </div>
+    <div class="feature-card">
+        <span class="tag">ВЫХОДЫ</span>
+        <ul style="margin-top:12px">
+            <li>Alert record в таблице PostgreSQL <code>alerts</code> (alert_id, trip_id, alert_type, severity, message, customer, parsed_data, created_at, status, reviewed_by, resolved_at)</li>
+            <li>Запись доступна через REST API для дашборда (<code>/api/alerts</code>, <code>/api/alerts/{alert_id}</code>)</li>
+        </ul>
+    </div>
+</div>
+
+<h3>1.3 Скоуп и ограничения</h3>
+<div class="feature-grid">
+    <div class="feature-card">
+        <h4>Входит в скоуп:</h4>
+        <ul class="in-scope">
+            <li><span>Анализ парсированных данных в реальном времени (&lt;100 мс)</span></li>
+            <li><span>5 типов алертов: delay, equipment_failure, downtime, safety_violation, docs_missing</span></li>
+            <li><span>3 уровня severity: HIGH, MEDIUM, LOW</span></li>
+            <li><span>Правила для 6 заказчиков: Тандер, WB, X5, Магнит, Сельта, Сибур</span></li>
+            <li><span>Конфигурируемые правила в YAML-формате</span></li>
+            <li><span>Дедупликация алертов (не создавать дубли на одном рейсе за 5 минут)</span></li>
+            <li><span>Статусы алерта: created, reviewed, resolved</span></li>
+            <li><span>Структурированное JSON-логирование всех решений</span></li>
+        </ul>
+    </div>
+    <div class="feature-card">
+        <h4>Выходит из скоупа:</h4>
+        <ul class="out-scope">
+            <li><span>Отправка алертов в Telegram/email/SMS (Sprint 1)</span></li>
+            <li><span>Автоматическая эскалация (Sprint 1)</span></li>
+            <li><span>Push-уведомления браузер</span></li>
+            <li><span>Интеграция с МОВИЗОР/GPS для верификации локации</span></li>
+            <li><span>AI-переработка алертов (clustering, anomaly detection)</span></li>
+            <li><span>Прогнозирование задержек на основе исторических данных</span></li>
+        </ul>
+    </div>
+</div>
+
+<!-- ===== 2. Определения ===== -->
+<h2>2. Определения</h2>
+
+<h3>2.1 Ключевые сущности</h3>
+<table>
+    <thead>
+        <tr><th>Термин</th><th>Определение</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><strong>Alert</strong></td><td>Запись о детектированном критическом событии, связанная с рейсом (trip_id) или без (информационный)</td></tr>
+        <tr><td><strong>Severity</strong></td><td>Степень критичности алерта: HIGH (вызывает штраф/срыв рейса), MEDIUM (требует внимания), LOW (информационный)</td></tr>
+        <tr><td><strong>Alert Type</strong></td><td>Категория проблемы: delay, equipment_failure, downtime, safety_violation, docs_missing</td></tr>
+        <tr><td><strong>Trigger</strong></td><td>Условие, при котором создаётся алерт (например, urgency=high в парсированных данных)</td></tr>
+        <tr><td><strong>Rule</strong></td><td>Бизнес-правило для заказчика, определяющее какие события должны быть алертированы</td></tr>
+        <tr><td><strong>Reviewed</strong></td><td>Статус: менеджер видел алерт и подтвердил факт в дашборде</td></tr>
+        <tr><td><strong>Resolved</strong></td><td>Статус: проблема закрыта (рейс завершился, проблема исправлена)</td></tr>
+        <tr><td><strong>Customer</strong></td><td>Заказчик логистической услуги (Тандер, WB, X5, Магнит, Сельта, Сибур)</td></tr>
+        <tr><td><strong>Trip</strong></td><td>Рейс/доставка с уникальным trip_id, маршрутом, заказчиком</td></tr>
+        <tr><td><strong>Deduplication Window</strong></td><td>Временное окно (5 мин) в течение которого дубли одного типа алерта на один рейс не создаются</td></tr>
+        <tr><td><strong>Confidence</strong></td><td>Уверенность парсера (0--1), используется для фильтрации (не алертировать &lt;0.6)</td></tr>
+    </tbody>
+</table>
+
+<h3>2.2 Типы алертов (Alert Types)</h3>
+<table>
+    <thead>
+        <tr><th>Type</th><th>Описание</th><th>Примеры</th><th>Severity</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>delay</strong></td>
+            <td>Опоздание водителя на слот или в пути</td>
+            <td>"Стою в пробке, опаздываю на 40 мин"</td>
+            <td><span class="badge badge-medium">MEDIUM</span> / <span class="badge badge-high">HIGH</span></td>
+        </tr>
+        <tr>
+            <td><strong>equipment_failure</strong></td>
+            <td>Поломка ТС или оборудования</td>
+            <td>"Реф не выходит на температуру +8"</td>
+            <td><span class="badge badge-high">HIGH</span></td>
+        </tr>
+        <tr>
+            <td><strong>downtime</strong></td>
+            <td>Неоправданный простой на месте</td>
+            <td>"Жду разгрузки 3 часа"</td>
+            <td><span class="badge badge-medium">MEDIUM</span> / <span class="badge badge-high">HIGH</span></td>
+        </tr>
+        <tr>
+            <td><strong>safety_violation</strong></td>
+            <td>Нарушение техники безопасности</td>
+            <td>"Водитель без каски"</td>
+            <td><span class="badge badge-medium">MEDIUM</span></td>
+        </tr>
+        <tr>
+            <td><strong>docs_missing</strong></td>
+            <td>Отсутствие документов (информационный)</td>
+            <td>"Нет фото ТСД"</td>
+            <td><span class="badge badge-low">LOW</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>2.3 Уровни severity</h3>
+<table>
+    <thead>
+        <tr><th>Severity</th><th>Условие активации</th><th>Штраф</th><th>Действие</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><span class="badge badge-high">HIGH</span></td>
+            <td>Опоздание &gt;4ч, оборудование сломано, простой &gt;6ч на X5</td>
+            <td>15--100% рейса</td>
+            <td>Срочно связать диспетчера</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-medium">MEDIUM</span></td>
+            <td>Опоздание 1--4ч, простой 2--6ч на X5, неполная техника ТБ</td>
+            <td>5--15% рейса</td>
+            <td>Требует внимания</td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-low">LOW</span></td>
+            <td>Информационные (документы отсутствуют)</td>
+            <td>0%</td>
+            <td>Фоновое уведомление</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>2.4 Статусы алерта</h3>
+<div class="status-flow">
+    <div class="status-box">created</div>
+    <span class="status-arrow">&rarr;</span>
+    <div class="status-box">reviewed</div>
+    <span class="status-arrow">&rarr;</span>
+    <div class="status-box terminal">resolved</div>
+</div>
+<table>
+    <thead>
+        <tr><th>Статус</th><th>Значение</th><th>Переход</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><strong>created</strong></td><td>Алерт создан автоматически системой</td><td>&rarr; reviewed, resolved</td></tr>
+        <tr><td><strong>reviewed</strong></td><td>Менеджер видел алерт и подтвердил (клик на дашборде)</td><td>&rarr; resolved</td></tr>
+        <tr><td><strong>resolved</strong></td><td>Проблема закрыта (рейс завершился, проблема исправлена)</td><td>terminal</td></tr>
+    </tbody>
+</table>
+
+<!-- ===== 3. Требования, ограничения и рекомендации ===== -->
+<h2>3. Требования, ограничения и рекомендации</h2>
+
+<h3>3.1 Функциональные требования (REQ)</h3>
+
+<!-- REQ-AE-001 -->
+<div class="req-card">
+    <span class="req-id">REQ-AE-001</span>
+    <h3>Анализ парсированных данных</h3>
+    <p><strong>Требование:</strong> Alert Engine должен получать парсированные данные от AI Parser (JSON с полями trip_id, route, status, customer, urgency, issue, confidence) и на основе них принимать решение о создании алерта.</p>
+    <p><strong>Обоснование:</strong> Парсер выходит, данные структурированы. Alert Engine использует эти данные как триггеры.</p>
+    <div class="example-block">
+        <div class="example-label">Пример</div>
+        <p><strong>Вход от Parser:</strong></p>
+<pre><code>{
+  "trip_id": "4521",
+  "customer": "WB",
+  "urgency": "medium",
+  "issue": "Опоздание на слот на 40 мин",
+  "confidence": 0.85
+}</code></pre>
+        <p><strong>Вывод Alert Engine:</strong></p>
+<pre><code>{
+  "alert_type": "delay",
+  "severity": "MEDIUM",
+  "message": "Возможная задержка на 40 мин по рейсу WB-4521",
+  "trip_id": "4521",
+  "customer": "WB"
+}</code></pre>
+    </div>
+</div>
+
+<!-- REQ-AE-002 -->
+<div class="req-card">
+    <span class="req-id">REQ-AE-002</span>
+    <h3>Конфигурируемые правила заказчиков (YAML)</h3>
+    <p><strong>Требование:</strong> Правила для каждого заказчика хранятся в YAML-файле конфигурации. Правила определяют:</p>
+    <ol style="padding-left:20px; margin-bottom:12px;">
+        <li>Какие события триггируют алерт (условия)</li>
+        <li>Какой type и severity присваивается</li>
+        <li>Какой текст сообщения алерта</li>
+    </ol>
+    <p><strong>Обоснование:</strong> Разные заказчики имеют разные требования (Тандер требует +2..+4, WB требует слотов, X5 не разрешает стоять). Конфиг должен быть менялся без перекомпиляции кода.</p>
+    <div class="example-block">
+        <div class="example-label">Пример структуры</div>
+<pre><code><span class="yaml-key">customers</span>:
+  <span class="yaml-key">WB</span>:
+    <span class="yaml-key">rules</span>:
+      - <span class="yaml-key">condition</span>: <span class="yaml-string">"urgency = 'medium' AND trip_status != 'completed'"</span>
+        <span class="yaml-key">alert_type</span>: <span class="yaml-string">"delay"</span>
+        <span class="yaml-key">severity</span>: <span class="yaml-string">"MEDIUM"</span>
+        <span class="yaml-key">message_template</span>: <span class="yaml-string">"Возможная задержка рейса {{trip_id}}"</span>
+      - <span class="yaml-key">condition</span>: <span class="yaml-string">"issue.contains('slot')"</span>
+        <span class="yaml-key">alert_type</span>: <span class="yaml-string">"delay"</span>
+        <span class="yaml-key">severity</span>: <span class="yaml-string">"HIGH"</span>
+        <span class="yaml-key">message_template</span>: <span class="yaml-string">"Критическое опоздание на слот {{slot_time}}"</span></code></pre>
+    </div>
+</div>
+
+<!-- REQ-AE-003 -->
+<div class="req-card">
+    <span class="req-id">REQ-AE-003</span>
+    <h3>Пять типов алертов</h3>
+    <p><strong>Требование:</strong> Alert Engine должен создавать алерты пяти типов: delay, equipment_failure, downtime, safety_violation, docs_missing.</p>
+    <p><strong>Обоснование:</strong> Каждый тип соответствует категории проблемы в логистике. Дашборд фильтрует по типам.</p>
+    <table>
+        <thead>
+            <tr><th>Type</th><th>Триггер</th><th>Severity по умолчанию</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>delay</strong></td><td>urgency &ge; medium + issue содержит "опоздан", "пробка", "слот"</td><td><span class="badge badge-medium">MEDIUM</span> / <span class="badge badge-high">HIGH</span></td></tr>
+            <tr><td><strong>equipment_failure</strong></td><td>issue содержит "реф", "температура", "поломка", "сломана"</td><td><span class="badge badge-high">HIGH</span></td></tr>
+            <tr><td><strong>downtime</strong></td><td>issue содержит "простой", "жду", "стою" + duration &gt; 2h</td><td><span class="badge badge-medium">MEDIUM</span></td></tr>
+            <tr><td><strong>safety_violation</strong></td><td>issue содержит "каска", "жилет", "ботинки", "техника ТБ"</td><td><span class="badge badge-medium">MEDIUM</span></td></tr>
+            <tr><td><strong>docs_missing</strong></td><td>issue содержит "документ", "фото", "ТСД", "чек"</td><td><span class="badge badge-low">LOW</span></td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- REQ-AE-004 -->
+<div class="req-card">
+    <span class="req-id">REQ-AE-004</span>
+    <h3>Три уровня severity</h3>
+    <p><strong>Требование:</strong> Каждый алерт должен иметь severity: HIGH, MEDIUM или LOW.</p>
+    <p><strong>Обоснование:</strong> Severity определяет порядок в дашборде (HIGH вверху), цвет в UI (красный, жёлтый, синий), потенциальный размер штрафа.</p>
+    <ul>
+        <li><span class="badge badge-high">HIGH</span> -- Опоздание &gt;4ч, оборудование сломано, простой на X5 &gt;6ч, документ критичен &rarr; потеря 15--100% рейса</li>
+        <li><span class="badge badge-medium">MEDIUM</span> -- Опоздание 1--4ч, простой на X5 2--6ч, нарушение ТБ &rarr; потеря 5--15% рейса</li>
+        <li><span class="badge badge-low">LOW</span> -- Документы отсутствуют (справочные) &rarr; потеря 0% рейса, но требует ревью</li>
+    </ul>
+</div>
+
+<!-- REQ-AE-005 -->
+<div class="req-card">
+    <span class="req-id">REQ-AE-005</span>
+    <h3>Дедупликация алертов (5-минутное окно)</h3>
+    <p><strong>Требование:</strong> На один рейс (trip_id) + тип алерта (alert_type) система не должна создавать дубли в течение 5 минут.</p>
+    <p><strong>Обоснование:</strong> Если парсер сделает 3 попытки одного сообщения (retry), Alert Engine создаст 3 дубля. Дедупликация спасает от шума.</p>
+    <div class="example-block">
+        <div class="example-label">Алгоритм</div>
+<pre><code>ЕСЛИ существует alert.trip_id=X AND alert.alert_type=Y
+    AND alert.created_at > NOW() - 5 мин
+ТО не создавать новый алерт
+ИНАЧЕ создать новый</code></pre>
+    </div>
+    <p><strong>Исключение:</strong> Если это другой тип алерта или другой рейс &rarr; создать.</p>
+</div>
+
+<!-- REQ-AE-006 -->
+<div class="req-card">
+    <span class="req-id">REQ-AE-006</span>
+    <h3>Фильтрация по confidence парсера</h3>
+    <p><strong>Требование:</strong> Алерты создаются только если confidence (уверенность парсера) &ge; 0.60.</p>
+    <p><strong>Обоснование:</strong> Если парсер не уверен (confidence &lt; 0.60), алерт может быть ложным, лучше пропустить.</p>
+    <div class="example-block">
+        <div class="example-label">Пример</div>
+<pre><code>Парсер: confidence=0.55, issue="может быть пробка"
+Alert Engine: НЕ создавать алерт (0.55 &lt; 0.60)
+
+Парсер: confidence=0.92, issue="Реф не выходит на температуру"
+Alert Engine: СОЗДАТЬ алерт (0.92 &gt;= 0.60)</code></pre>
+    </div>
+</div>
+
+<!-- REQ-AE-007 -->
+<div class="req-card">
+    <span class="req-id">REQ-AE-007</span>
+    <h3>Определение severity на основе правил</h3>
+    <p><strong>Требование:</strong> Severity каждого алерта определяется на основе бизнес-правил заказчика и типа проблемы.</p>
+    <p><strong>Логика:</strong></p>
+    <ol style="padding-left:20px; margin-bottom:12px;">
+        <li>Парсер выдал urgency (low, medium, high)</li>
+        <li>Правило заказчика присваивает severity (HIGH, MEDIUM, LOW)</li>
+        <li>Если парсер urgency=high &rarr; severity &ge; MEDIUM</li>
+        <li>Если urgency=medium И duration &gt; порога &rarr; severity=HIGH</li>
+    </ol>
+    <div class="example-block">
+        <div class="example-label">Примеры</div>
+        <ul>
+            <li>Тандер + urgency=high + issue="температура +8" &rarr; severity=<span class="badge badge-high">HIGH</span></li>
+            <li>WB + urgency=medium + опоздание 40 мин &rarr; severity=<span class="badge badge-medium">MEDIUM</span></li>
+            <li>X5 + простой 7 часов &rarr; severity=<span class="badge badge-high">HIGH</span> (X5 не разрешает стоять)</li>
+            <li>Магнит + простой 7 часов &rarr; severity=<span class="badge badge-low">LOW</span> (Магнит разрешает стоять)</li>
+        </ul>
+    </div>
+</div>
+
+<!-- REQ-AE-008 -->
+<div class="req-card">
+    <span class="req-id">REQ-AE-008</span>
+    <h3>Сохранение в таблицу alerts</h3>
+    <p><strong>Требование:</strong> Каждый созданный алерт должен сохраняться в PostgreSQL-таблицу <code>alerts</code> с полями:</p>
+    <table>
+        <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+        <tbody>
+            <tr><td>alert_id</td><td>UUID, PK</td><td>Уникальный идентификатор</td></tr>
+            <tr><td>trip_id</td><td>VARCHAR, NULL</td><td>Рейс (может быть NULL для информационных)</td></tr>
+            <tr><td>alert_type</td><td>ENUM</td><td>delay, equipment_failure, downtime, safety_violation, docs_missing</td></tr>
+            <tr><td>severity</td><td>ENUM</td><td>HIGH, MEDIUM, LOW</td></tr>
+            <tr><td>message</td><td>TEXT</td><td>Текст алерта</td></tr>
+            <tr><td>customer</td><td>VARCHAR, NULL</td><td>Заказчик</td></tr>
+            <tr><td>parsed_data</td><td>JSONB</td><td>Полные данные от парсера</td></tr>
+            <tr><td>created_at</td><td>TIMESTAMP</td><td>Время создания</td></tr>
+            <tr><td>status</td><td>ENUM</td><td>created, reviewed, resolved</td></tr>
+            <tr><td>reviewed_by</td><td>VARCHAR, NULL</td><td>Имя менеджера</td></tr>
+            <tr><td>reviewed_at</td><td>TIMESTAMP, NULL</td><td>Время ревью</td></tr>
+            <tr><td>resolved_at</td><td>TIMESTAMP, NULL</td><td>Время разрешения</td></tr>
+        </tbody>
+    </table>
+    <p><strong>Обоснование:</strong> Таблица служит источником для REST API дашборда.</p>
+</div>
+
+<!-- REQ-AE-009 -->
+<div class="req-card">
+    <span class="req-id">REQ-AE-009</span>
+    <h3>Обработка алертов без trip_id</h3>
+    <p><strong>Требование:</strong> Некоторые события критичны, но не связаны с конкретным рейсом (например, ДТП на трассе, проблема с цистерной). Alert Engine должен создавать алерты и без trip_id.</p>
+    <div class="example-block">
+        <div class="example-label">Пример</div>
+<pre><code>Парсер: urgency=high, issue="ДТП на М4, пробка"
+
+Alert Engine создаёт:
+{
+  "trip_id": null,
+  "alert_type": "downtime",
+  "severity": "MEDIUM",
+  "message": "Инцидент на трассе М4, пробка может повлиять на рейсы",
+  "customer": null
+}</code></pre>
+    </div>
+</div>
+
+<!-- REQ-AE-010 -->
+<div class="req-card">
+    <span class="req-id">REQ-AE-010</span>
+    <h3>Структурированное логирование</h3>
+    <p><strong>Требование:</strong> Все решения Alert Engine (создание алерта, дедупликация, фильтрация по confidence) должны логироваться в JSON-формате с полями: timestamp, alert_id (если создан), trip_id, decision (created, deduplicated, skipped_low_confidence, skipped_no_rules), reason, parsed_data.</p>
+    <p><strong>Обоснование:</strong> Для отладки, аудита и улучшения правил.</p>
+    <div class="example-block">
+        <div class="example-label">Пример лога</div>
+<pre><code>{
+  "timestamp": "2026-03-06T14:30:15.123Z",
+  "decision": "created",
+  "alert_id": "ae-550e8400-e29b-41d4-a716-446655440000",
+  "trip_id": "4521",
+  "customer": "WB",
+  "alert_type": "delay",
+  "severity": "MEDIUM",
+  "parsed_data": {
+    "urgency": "medium",
+    "issue": "Стою в пробке, опаздываю на 40 мин",
+    "confidence": 0.85
+  }
+}</code></pre>
+    </div>
+</div>
+
+<!-- REQ-AE-011 -->
+<div class="req-card">
+    <span class="req-id">REQ-AE-011</span>
+    <h3>API-интерфейс для статусов</h3>
+    <p><strong>Требование:</strong> Alert Engine должен поддерживать REST API методы для изменения статуса алерта:</p>
+    <ul>
+        <li><code>POST /api/alerts/{alert_id}/review</code> -- отметить как reviewed</li>
+        <li><code>POST /api/alerts/{alert_id}/resolve</code> -- отметить как resolved</li>
+    </ul>
+    <p><strong>Обоснование:</strong> Менеджер видит алерт в дашборде, кликает на него &rarr; статус меняется с created на reviewed.</p>
+    <div class="example-block">
+        <div class="example-label">Контракт</div>
+<pre><code>POST /api/alerts/{alert_id}/review
+Body: { "reviewed_by": "Виктория Фимина" }
+Response: { "alert_id": "...", "status": "reviewed", "reviewed_at": "2026-03-06T14:35:00Z" }
+
+POST /api/alerts/{alert_id}/resolve
+Body: { }
+Response: { "alert_id": "...", "status": "resolved", "resolved_at": "2026-03-06T18:00:00Z" }</code></pre>
+    </div>
+</div>
+
+<!-- REQ-AE-012 -->
+<div class="req-card">
+    <span class="req-id">REQ-AE-012</span>
+    <h3>Метрики для мониторинга</h3>
+    <p><strong>Требование:</strong> Alert Engine должен выставлять метрики для Prometheus/мониторинга:</p>
+    <ul>
+        <li><code>alerts_created_total</code> (счётчик)</li>
+        <li><code>alerts_deduplicated_total</code> (счётчик пропущенных дубликатов)</li>
+        <li><code>alerts_by_type</code> (распределение по типам)</li>
+        <li><code>alerts_by_severity</code> (распределение по severity)</li>
+        <li><code>alert_processing_latency_ms</code> (latency парсированные данные &rarr; алерт создан)</li>
+    </ul>
+    <p><strong>Обоснование:</strong> Для наблюдения и отладки системы.</p>
+</div>
+
+<!-- 3.2 Ограничения -->
+<h3>3.2 Ограничения (CON)</h3>
+
+<div class="con-card">
+    <span class="con-id">CON-AE-001</span>
+    <h3>Нет отправки в Telegram/email/SMS в Sprint 0</h3>
+    <p><strong>Ограничение:</strong> Alert Engine создаёт алерты в БД. Отправку в Telegram, email, SMS отложено на Sprint 1.</p>
+    <p><strong>Причина:</strong> Простота MVP, фокус на дашборде.</p>
+</div>
+
+<div class="con-card">
+    <span class="con-id">CON-AE-002</span>
+    <h3>Нет автоматической эскалации</h3>
+    <p><strong>Ограничение:</strong> HIGH-алерт не автоматически переводит диспетчера на смену. Только дашборд.</p>
+    <p><strong>Причина:</strong> Нужна информация о расписании смен диспетчеров, которой нет.</p>
+</div>
+
+<div class="con-card">
+    <span class="con-id">CON-AE-003</span>
+    <h3>Нет интеграции с МОВИЗОР/GPS</h3>
+    <p><strong>Ограничение:</strong> Alert Engine не проверяет реальную геолокацию из МОВИЗОР. Использует только текст от водителя.</p>
+    <p><strong>Причина:</strong> МОВИЗОР подключает только диспетчер вручную, нет API.</p>
+</div>
+
+<div class="con-card">
+    <span class="con-id">CON-AE-004</span>
+    <h3>Confidence порог = 0.60</h3>
+    <p><strong>Ограничение:</strong> Алерты не создаются для данных с confidence &lt; 0.60.</p>
+    <p><strong>Причина:</strong> Ниже уверенность = выше риск ложных алертов.</p>
+</div>
+
+<div class="con-card">
+    <span class="con-id">CON-AE-005</span>
+    <h3>Дедупликация на 5 минут</h3>
+    <p><strong>Ограничение:</strong> Дубли на один рейс/тип создаются не чаще одного раза в 5 минут.</p>
+    <p><strong>Причина:</strong> Баланс между точностью и шумом. Если проблема не устранена, она появится в дашборде через 5 мин.</p>
+</div>
+
+<div class="con-card">
+    <span class="con-id">CON-AE-006</span>
+    <h3>Конфиг только YAML (не база)</h3>
+    <p><strong>Ограничение:</strong> Правила хранятся в YAML-файле, а не в БД.</p>
+    <p><strong>Причина:</strong> Простота для MVP. На платные спринты &rarr; миграция в админ-интерфейс.</p>
+</div>
+
+<!-- 3.3 Рекомендации -->
+<h3>3.3 Рекомендации (REC)</h3>
+
+<div class="rec-card">
+    <span class="rec-id">REC-AE-001</span>
+    <h3>Кеширование правил</h3>
+    <p><strong>Рекомендация:</strong> При запуске Alert Engine загрузить правила из YAML в памяти (in-memory cache). При изменении YAML перезагружать кеш.</p>
+    <p><strong>Обоснование:</strong> Быстрее чем читать файл для каждого алерта.</p>
+</div>
+
+<div class="rec-card">
+    <span class="rec-id">REC-AE-002</span>
+    <h3>Асинхронная обработка</h3>
+    <p><strong>Рекомендация:</strong> Alert Engine должен быть асинхронным (asyncio), чтобы не блокировать входящие сообщения от парсера.</p>
+    <p><strong>Обоснование:</strong> Если БД медленно пишет, очередь не должна застревать.</p>
+</div>
+
+<div class="rec-card">
+    <span class="rec-id">REC-AE-003</span>
+    <h3>Fallback на базовые триггеры</h3>
+    <p><strong>Рекомендация:</strong> Если правила не покрывают сценарий, Alert Engine должен использовать базовые триггеры (urgency=high &rarr; создать MEDIUM-алерт).</p>
+    <p><strong>Обоснование:</strong> Лучше слабый алерт, чем пропустить проблему.</p>
+</div>
+
+<!-- ===== 4. Интерфейсы и контракты данных ===== -->
+<h2>4. Интерфейсы и контракты данных</h2>
+
+<h3>4.1 Входной интерфейс (от AI Parser)</h3>
+<p>Alert Engine получает JSON-сообщение от парсера через очередь (RabbitMQ/Kafka) или синхронный вызов.</p>
+<div class="example-block">
+    <div class="example-label">Формат входа</div>
+<pre><code>{
+  "msg_id": "msg-123456",
+  "chat_id": "12345678",
+  "sender": "Диспетчер Мария",
+  "text": "Рейс 4521, опаздываю на 40 мин из-за пробки",
+  "timestamp": "2026-03-06T14:30:00Z",
+  "parsed_data": {
+    "trip_id": "4521",
+    "route_from": "Москва",
+    "route_to": "Краснодар",
+    "slot_time": "14:00",
+    "status": "in_progress",
+    "customer": "WB",
+    "urgency": "medium",
+    "issue": "Опоздание на 40 мин из-за пробки",
+    "confidence": 0.87
+  }
+}</code></pre>
+</div>
+<p><strong>Валидация:</strong></p>
+<ul>
+    <li><code>parsed_data</code> должен быть присутствовать</li>
+    <li><code>confidence</code> &ge; 0.60 (иначе skip)</li>
+    <li><code>timestamp</code> в ISO 8601 формате</li>
+</ul>
+
+<h3>4.2 Выходной интерфейс (в БД)</h3>
+<p>Alert Engine пишет в таблицу PostgreSQL <code>alerts</code>.</p>
+<div class="example-block">
+    <div class="example-label">Структура таблицы (SQL)</div>
+<pre><code>CREATE TABLE alerts (
+  alert_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  trip_id VARCHAR(50) NULL,
+  alert_type VARCHAR(50) NOT NULL
+    CHECK (alert_type IN ('delay', 'equipment_failure',
+           'downtime', 'safety_violation', 'docs_missing')),
+  severity VARCHAR(10) NOT NULL
+    CHECK (severity IN ('HIGH', 'MEDIUM', 'LOW')),
+  message TEXT NOT NULL,
+  customer VARCHAR(100) NULL,
+  parsed_data JSONB NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  status VARCHAR(20) NOT NULL DEFAULT 'created'
+    CHECK (status IN ('created', 'reviewed', 'resolved')),
+  reviewed_by VARCHAR(255) NULL,
+  reviewed_at TIMESTAMP NULL,
+  resolved_at TIMESTAMP NULL,
+  INDEX idx_trip_id (trip_id),
+  INDEX idx_customer (customer),
+  INDEX idx_created_at (created_at),
+  INDEX idx_severity (severity),
+  INDEX idx_status (status)
+);</code></pre>
+</div>
+
+<h3>4.3 Правила (YAML-конфигурация)</h3>
+<p><strong>Расположение:</strong> <code>/opt/marshall-listener/config/alert_rules.yaml</code></p>
+<div class="example-block">
+    <div class="example-label">Полная структура правил для 6 заказчиков + глобальные</div>
+<pre><code><span class="yaml-key">version</span>: <span class="yaml-string">"1.0"</span>
+<span class="yaml-key">customers</span>:
+  <span class="yaml-comment"># Тандер: Предохлаждение +2..+4, термописец обязателен</span>
+  <span class="yaml-key">Тандер</span>:
+    <span class="yaml-key">enabled</span>: <span class="yaml-value">true</span>
+    <span class="yaml-key">rules</span>:
+      - <span class="yaml-key">id</span>: <span class="yaml-string">"thander_temp_violation"</span>
+        <span class="yaml-key">condition</span>: |
+          issue.contains_any(['температура', 'реф', '+8', '+6'])
+          AND (urgency = 'high' OR confidence &gt; 0.85)
+        <span class="yaml-key">alert_type</span>: <span class="yaml-string">"equipment_failure"</span>
+        <span class="yaml-key">severity</span>: <span class="yaml-string">"HIGH"</span>
+        <span class="yaml-key">message_template</span>: <span class="yaml-string">"КРИТИЧНО: Нарушение температуры у Тандер {{trip_id}}: {{issue}}"</span>
+        <span class="yaml-key">dedup_window_min</span>: <span class="yaml-value">5</span>
+
+      - <span class="yaml-key">id</span>: <span class="yaml-string">"thander_delay_4h"</span>
+        <span class="yaml-key">condition</span>: |
+          urgency IN ('medium', 'high')
+          AND (issue.contains('опоздание') OR issue.contains('пробка'))
+          AND estimated_delay_min &gt; 240
+        <span class="yaml-key">alert_type</span>: <span class="yaml-string">"delay"</span>
+        <span class="yaml-key">severity</span>: <span class="yaml-string">"HIGH"</span>
+        <span class="yaml-key">message_template</span>: <span class="yaml-string">"ШТРАФ 15%: Опоздание &gt;4ч на рейс {{trip_id}} Тандер"</span>
+        <span class="yaml-key">dedup_window_min</span>: <span class="yaml-value">5</span>
+
+      - <span class="yaml-key">id</span>: <span class="yaml-string">"thander_delay_1h"</span>
+        <span class="yaml-key">condition</span>: |
+          urgency IN ('low', 'medium')
+          AND (issue.contains('опоздание') OR issue.contains('пробка'))
+          AND estimated_delay_min &gt; 60 AND estimated_delay_min &lt; 240
+        <span class="yaml-key">alert_type</span>: <span class="yaml-string">"delay"</span>
+        <span class="yaml-key">severity</span>: <span class="yaml-string">"MEDIUM"</span>
+        <span class="yaml-key">message_template</span>: <span class="yaml-string">"Опоздание {{estimated_delay_min}} мин на рейс {{trip_id}} Тандер"</span>
+        <span class="yaml-key">dedup_window_min</span>: <span class="yaml-value">5</span>
+
+  <span class="yaml-comment"># WB (Wildberries): Регистрация WB Drive, строгие слоты</span>
+  <span class="yaml-key">WB</span>:
+    <span class="yaml-key">enabled</span>: <span class="yaml-value">true</span>
+    <span class="yaml-key">rules</span>:
+      - <span class="yaml-key">id</span>: <span class="yaml-string">"wb_slot_miss_critical"</span>
+        <span class="yaml-key">condition</span>: |
+          urgency = 'high'
+          AND (issue.contains('слот') OR issue.contains('опаздываю'))
+          AND customer = 'WB'
+        <span class="yaml-key">alert_type</span>: <span class="yaml-string">"delay"</span>
+        <span class="yaml-key">severity</span>: <span class="yaml-string">"HIGH"</span>
+        <span class="yaml-key">message_template</span>: <span class="yaml-string">"СРЫВ СЛОТА: Рейс {{trip_id}} WB критически опаздывает на слот {{slot_time}}"</span>
+        <span class="yaml-key">dedup_window_min</span>: <span class="yaml-value">5</span>
+
+      - <span class="yaml-key">id</span>: <span class="yaml-string">"wb_delay_1h"</span>
+        <span class="yaml-key">condition</span>: |
+          urgency = 'medium'
+          AND (issue.contains('пробка') OR issue.contains('опаздываю'))
+          AND customer = 'WB'
+          AND estimated_delay_min &gt;= 40
+        <span class="yaml-key">alert_type</span>: <span class="yaml-string">"delay"</span>
+        <span class="yaml-key">severity</span>: <span class="yaml-string">"MEDIUM"</span>
+        <span class="yaml-key">message_template</span>: <span class="yaml-string">"Возможное опоздание {{estimated_delay_min}} мин на слот WB {{slot_time}} рейс {{trip_id}}"</span>
+        <span class="yaml-key">dedup_window_min</span>: <span class="yaml-value">5</span>
+
+      - <span class="yaml-key">id</span>: <span class="yaml-string">"wb_docs_missing"</span>
+        <span class="yaml-key">condition</span>: |
+          urgency IN ('low', 'medium')
+          AND issue.contains_any(['документ', 'чек', 'ТСД', 'фото'])
+          AND customer = 'WB'
+        <span class="yaml-key">alert_type</span>: <span class="yaml-string">"docs_missing"</span>
+        <span class="yaml-key">severity</span>: <span class="yaml-string">"LOW"</span>
+        <span class="yaml-key">message_template</span>: <span class="yaml-string">"WB {{trip_id}}: Отсутствуют документы -- {{issue}}"</span>
+        <span class="yaml-key">dedup_window_min</span>: <span class="yaml-value">10</span>
+
+  <span class="yaml-comment"># X5 Retail Group: НЕЛЬЗЯ стоять на территории</span>
+  <span class="yaml-key">X5</span>:
+    <span class="yaml-key">enabled</span>: <span class="yaml-value">true</span>
+    <span class="yaml-key">rules</span>:
+      - <span class="yaml-key">id</span>: <span class="yaml-string">"x5_downtime_critical"</span>
+        <span class="yaml-key">condition</span>: |
+          urgency IN ('medium', 'high')
+          AND issue.contains_any(['стою', 'простой', 'жду разгрузки'])
+          AND customer = 'X5'
+          AND downtime_hours &gt; 2
+        <span class="yaml-key">alert_type</span>: <span class="yaml-string">"downtime"</span>
+        <span class="yaml-key">severity</span>: <span class="yaml-string">"HIGH"</span>
+        <span class="yaml-key">message_template</span>: <span class="yaml-string">"НАРУШЕНИЕ: X5 запрещает стоять, уже {{downtime_hours}}ч простоя на {{trip_id}}"</span>
+        <span class="yaml-key">dedup_window_min</span>: <span class="yaml-value">5</span>
+
+      - <span class="yaml-key">id</span>: <span class="yaml-string">"x5_downtime_warning"</span>
+        <span class="yaml-key">condition</span>: |
+          urgency = 'medium'
+          AND issue.contains_any(['стою', 'простой', 'жду'])
+          AND customer = 'X5'
+          AND downtime_hours &gt; 1 AND downtime_hours &lt;= 2
+        <span class="yaml-key">alert_type</span>: <span class="yaml-string">"downtime"</span>
+        <span class="yaml-key">severity</span>: <span class="yaml-string">"MEDIUM"</span>
+        <span class="yaml-key">message_template</span>: <span class="yaml-string">"Осторожно: X5 {{trip_id}} в простое {{downtime_hours}}ч"</span>
+        <span class="yaml-key">dedup_window_min</span>: <span class="yaml-value">5</span>
+
+  <span class="yaml-comment"># Магнит: МОЖНО стоять на территории (отличается от X5!)</span>
+  <span class="yaml-key">Магнит</span>:
+    <span class="yaml-key">enabled</span>: <span class="yaml-value">true</span>
+    <span class="yaml-key">rules</span>:
+      - <span class="yaml-key">id</span>: <span class="yaml-string">"magnet_delay_only"</span>
+        <span class="yaml-key">condition</span>: |
+          urgency IN ('medium', 'high')
+          AND (issue.contains('опоздание') OR issue.contains('пробка'))
+          AND customer = 'Магнит'
+        <span class="yaml-key">alert_type</span>: <span class="yaml-string">"delay"</span>
+        <span class="yaml-key">severity</span>: <span class="yaml-string">"MEDIUM"</span>
+        <span class="yaml-key">message_template</span>: <span class="yaml-string">"Магнит {{trip_id}}: {{issue}}"</span>
+        <span class="yaml-key">dedup_window_min</span>: <span class="yaml-value">5</span>
+
+      - <span class="yaml-key">id</span>: <span class="yaml-string">"magnet_equipment"</span>
+        <span class="yaml-key">condition</span>: |
+          urgency = 'high'
+          AND issue.contains_any(['реф', 'температура', 'поломка'])
+          AND customer = 'Магнит'
+        <span class="yaml-key">alert_type</span>: <span class="yaml-string">"equipment_failure"</span>
+        <span class="yaml-key">severity</span>: <span class="yaml-string">"HIGH"</span>
+        <span class="yaml-key">message_template</span>: <span class="yaml-string">"КРИТИЧНО Магнит: {{issue}} на {{trip_id}}"</span>
+        <span class="yaml-key">dedup_window_min</span>: <span class="yaml-value">5</span>
+
+  <span class="yaml-comment"># Сельта: Каска + жилет + ботинки с железным носом</span>
+  <span class="yaml-key">Сельта</span>:
+    <span class="yaml-key">enabled</span>: <span class="yaml-value">true</span>
+    <span class="yaml-key">rules</span>:
+      - <span class="yaml-key">id</span>: <span class="yaml-string">"selta_safety_violation"</span>
+        <span class="yaml-key">condition</span>: |
+          urgency = 'high'
+          AND issue.contains_any(['каска', 'жилет', 'ботинки', 'техника ТБ', 'техника безопасности'])
+          AND customer = 'Сельта'
+        <span class="yaml-key">alert_type</span>: <span class="yaml-string">"safety_violation"</span>
+        <span class="yaml-key">severity</span>: <span class="yaml-string">"MEDIUM"</span>
+        <span class="yaml-key">message_template</span>: <span class="yaml-string">"Сельта {{trip_id}}: Нарушение ТБ -- {{issue}}"</span>
+        <span class="yaml-key">dedup_window_min</span>: <span class="yaml-value">5</span>
+
+  <span class="yaml-comment"># Сибур: Особые требования безопасности</span>
+  <span class="yaml-key">Сибур</span>:
+    <span class="yaml-key">enabled</span>: <span class="yaml-value">true</span>
+    <span class="yaml-key">rules</span>:
+      - <span class="yaml-key">id</span>: <span class="yaml-string">"sibur_safety_violation"</span>
+        <span class="yaml-key">condition</span>: |
+          urgency = 'high'
+          AND issue.contains_any(['безопасность', 'требование', 'договор'])
+          AND customer = 'Сибур'
+        <span class="yaml-key">alert_type</span>: <span class="yaml-string">"safety_violation"</span>
+        <span class="yaml-key">severity</span>: <span class="yaml-string">"HIGH"</span>
+        <span class="yaml-key">message_template</span>: <span class="yaml-string">"Сибур {{trip_id}}: Критическое требование безопасности не соблюдено"</span>
+        <span class="yaml-key">dedup_window_min</span>: <span class="yaml-value">5</span>
+
+<span class="yaml-comment"># Глобальные правила (для всех заказчиков)</span>
+<span class="yaml-key">global</span>:
+  <span class="yaml-comment"># ДТП и инциденты на трассе</span>
+  - <span class="yaml-key">id</span>: <span class="yaml-string">"global_traffic_incident"</span>
+    <span class="yaml-key">condition</span>: |
+      urgency = 'high'
+      AND issue.contains_any(['ДТП', 'авария', 'инцидент', 'пробка M4', 'пробка М4'])
+    <span class="yaml-key">alert_type</span>: <span class="yaml-string">"downtime"</span>
+    <span class="yaml-key">severity</span>: <span class="yaml-string">"MEDIUM"</span>
+    <span class="yaml-key">message_template</span>: <span class="yaml-string">"Инцидент на трассе: {{issue}} -- возможны задержки"</span>
+    <span class="yaml-key">dedup_window_min</span>: <span class="yaml-value">10</span>
+
+  <span class="yaml-comment"># Критическое оборудование</span>
+  - <span class="yaml-key">id</span>: <span class="yaml-string">"global_critical_equipment"</span>
+    <span class="yaml-key">condition</span>: |
+      urgency = 'high'
+      AND issue.contains_any(['реф сломана', 'компрессор', 'температура не держит'])
+    <span class="yaml-key">alert_type</span>: <span class="yaml-string">"equipment_failure"</span>
+    <span class="yaml-key">severity</span>: <span class="yaml-string">"HIGH"</span>
+    <span class="yaml-key">message_template</span>: <span class="yaml-string">"КРИТИЧНО: Поломка оборудования {{trip_id}} -- {{issue}}"</span>
+    <span class="yaml-key">dedup_window_min</span>: <span class="yaml-value">5</span></code></pre>
+</div>
+
+<h3>4.4 REST API методы</h3>
+
+<h4>GET /api/alerts</h4>
+<p>Получить список алертов с фильтрацией.</p>
+<div class="example-block">
+    <div class="example-label">Запрос</div>
+<pre><code>GET /api/alerts?
+  customer=WB&amp;
+  severity=HIGH&amp;
+  status=created&amp;
+  limit=20&amp;
+  offset=0&amp;
+  sort=created_at:desc
+
+Authorization: Bearer {token}</code></pre>
+</div>
+<div class="example-block">
+    <div class="example-label">Ответ (200 OK)</div>
+<pre><code>{
+  "data": [
+    {
+      "alert_id": "ae-550e8400-e29b-41d4-a716-446655440000",
+      "trip_id": "4521",
+      "alert_type": "delay",
+      "severity": "MEDIUM",
+      "message": "Возможное опоздание на 40 мин на слот WB 14:00 рейс 4521",
+      "customer": "WB",
+      "created_at": "2026-03-06T14:30:15Z",
+      "status": "created",
+      "reviewed_by": null
+    }
+  ],
+  "total": 45,
+  "limit": 20,
+  "offset": 0
+}</code></pre>
+</div>
+
+<h4>GET /api/alerts/{alert_id}</h4>
+<p>Получить деталь одного алерта.</p>
+<div class="example-block">
+    <div class="example-label">Запрос</div>
+<pre><code>GET /api/alerts/ae-550e8400-e29b-41d4-a716-446655440000
+Authorization: Bearer {token}</code></pre>
+</div>
+<div class="example-block">
+    <div class="example-label">Ответ (200 OK)</div>
+<pre><code>{
+  "alert_id": "ae-550e8400-e29b-41d4-a716-446655440000",
+  "trip_id": "4521",
+  "alert_type": "delay",
+  "severity": "MEDIUM",
+  "message": "Возможное опоздание на 40 мин на слот WB 14:00 рейс 4521",
+  "customer": "WB",
+  "parsed_data": {
+    "trip_id": "4521",
+    "route_from": "Москва",
+    "route_to": "Краснодар",
+    "slot_time": "14:00",
+    "status": "in_progress",
+    "customer": "WB",
+    "urgency": "medium",
+    "issue": "Стою в пробке, опаздываю на 40 мин",
+    "confidence": 0.87
+  },
+  "created_at": "2026-03-06T14:30:15Z",
+  "status": "created",
+  "reviewed_by": null,
+  "reviewed_at": null,
+  "resolved_at": null
+}</code></pre>
+</div>
+
+<h4>POST /api/alerts/{alert_id}/review</h4>
+<p>Отметить алерт как просмотренный.</p>
+<div class="example-block">
+    <div class="example-label">Запрос</div>
+<pre><code>POST /api/alerts/ae-550e8400-e29b-41d4-a716-446655440000/review
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "reviewed_by": "Виктория Фимина"
+}</code></pre>
+</div>
+<div class="example-block">
+    <div class="example-label">Ответ (200 OK)</div>
+<pre><code>{
+  "alert_id": "ae-550e8400-e29b-41d4-a716-446655440000",
+  "status": "reviewed",
+  "reviewed_by": "Виктория Фимина",
+  "reviewed_at": "2026-03-06T14:35:20Z"
+}</code></pre>
+</div>
+
+<h4>POST /api/alerts/{alert_id}/resolve</h4>
+<p>Отметить алерт как разрешённый.</p>
+<div class="example-block">
+    <div class="example-label">Запрос</div>
+<pre><code>POST /api/alerts/ae-550e8400-e29b-41d4-a716-446655440000/resolve
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{}</code></pre>
+</div>
+<div class="example-block">
+    <div class="example-label">Ответ (200 OK)</div>
+<pre><code>{
+  "alert_id": "ae-550e8400-e29b-41d4-a716-446655440000",
+  "status": "resolved",
+  "resolved_at": "2026-03-06T18:00:00Z"
+}</code></pre>
+</div>
+
+<!-- ===== 5. Критерии приёмки ===== -->
+<h2>5. Критерии приёмки</h2>
+
+<table>
+    <thead>
+        <tr><th>ID</th><th>Название</th><th>Given / When / Then</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>AC-AE-001</strong></td>
+            <td>Алерт создаётся при urgency &ge; medium</td>
+            <td>
+                <span class="ac-given">Given</span> парсер вернул parsed_data с urgency='medium' и confidence &ge; 0.60<br>
+                <span class="ac-when">When</span> Alert Engine обрабатывает это сообщение<br>
+                <span class="ac-then">Then</span> алерт создаётся в таблице alerts с severity MEDIUM или выше<br><br>
+                <em>Пример:</em> Парсер -- "Стою в пробке, опаздываю на 40 мин", confidence=0.87, urgency='medium', customer='WB'<br>
+                <em>Expected:</em> Алерт (trip_id=4521, alert_type=delay, severity=MEDIUM)
+            </td>
+        </tr>
+        <tr>
+            <td><strong>AC-AE-002</strong></td>
+            <td>Алерт НЕ создаётся при confidence &lt; 0.60</td>
+            <td>
+                <span class="ac-given">Given</span> парсер вернул parsed_data с confidence=0.55<br>
+                <span class="ac-when">When</span> Alert Engine обрабатывает это сообщение<br>
+                <span class="ac-then">Then</span> алерт НЕ создаётся, логируется decision='skipped_low_confidence'
+            </td>
+        </tr>
+        <tr>
+            <td><strong>AC-AE-003</strong></td>
+            <td>Дедупликация за 5 минут</td>
+            <td>
+                <span class="ac-given">Given</span> алерт с trip_id=4521, alert_type=delay создан в 14:30:00<br>
+                <span class="ac-when">When</span> в 14:32:00 приходит ещё одно сообщение с тем же trip_id и типом<br>
+                <span class="ac-then">Then</span> новый алерт НЕ создаётся, логируется decision='deduplicated'<br>
+                <span class="ac-then">And</span> через 5 минут (14:35:00) дубль может быть создан
+            </td>
+        </tr>
+        <tr>
+            <td><strong>AC-AE-004</strong></td>
+            <td>Severity HIGH для опоздания &gt;4 часов</td>
+            <td>
+                <span class="ac-given">Given</span> issue содержит "опоздание на 5 часов" и customer=WB<br>
+                <span class="ac-when">When</span> Alert Engine обрабатывает parsed_data<br>
+                <span class="ac-then">Then</span> severity = 'HIGH' (потому что 5ч &gt; 4ч = 15% штраф)
+            </td>
+        </tr>
+        <tr>
+            <td><strong>AC-AE-005</strong></td>
+            <td>Severity MEDIUM для опоздания 1--4 часа</td>
+            <td>
+                <span class="ac-given">Given</span> issue содержит "опоздание на 2 часа" и customer=WB<br>
+                <span class="ac-when">When</span> Alert Engine обрабатывает parsed_data<br>
+                <span class="ac-then">Then</span> severity = 'MEDIUM'
+            </td>
+        </tr>
+        <tr>
+            <td><strong>AC-AE-006</strong></td>
+            <td>Магнит разрешает простой, X5 нет</td>
+            <td>
+                <span class="ac-given">Given</span> issue содержит "стою в простое 7 часов"<br>
+                <span class="ac-when">When</span> Alert Engine обрабатывает для customer='X5'<br>
+                <span class="ac-then">Then</span> severity = 'HIGH' (X5 не разрешает)<br><br>
+                <span class="ac-when">And When</span> customer='Магнит'<br>
+                <span class="ac-then">Then</span> severity = 'LOW' или вообще не создаётся (Магнит разрешает)
+            </td>
+        </tr>
+        <tr>
+            <td><strong>AC-AE-007</strong></td>
+            <td>API /api/alerts возвращает отфильтрованный список</td>
+            <td>
+                <span class="ac-given">Given</span> в БД 45 алертов (20 HIGH, 15 MEDIUM, 10 LOW)<br>
+                <span class="ac-when">When</span> запрос GET /api/alerts?severity=HIGH&amp;limit=10<br>
+                <span class="ac-then">Then</span> возвращает первые 10 HIGH-алертов с total=20
+            </td>
+        </tr>
+        <tr>
+            <td><strong>AC-AE-008</strong></td>
+            <td>API /api/alerts/{alert_id}/review обновляет статус</td>
+            <td>
+                <span class="ac-given">Given</span> алерт со статусом 'created'<br>
+                <span class="ac-when">When</span> POST /api/alerts/{alert_id}/review с reviewed_by="Виктория"<br>
+                <span class="ac-then">Then</span> status обновляется на 'reviewed', reviewed_by="Виктория", reviewed_at=NOW()
+            </td>
+        </tr>
+        <tr>
+            <td><strong>AC-AE-009</strong></td>
+            <td>Алерт с trip_id=NULL допустим (информационный)</td>
+            <td>
+                <span class="ac-given">Given</span> ДТП на М4 не связано с конкретным рейсом<br>
+                <span class="ac-when">When</span> Alert Engine создаёт алерт без trip_id<br>
+                <span class="ac-then">Then</span> запись создана с trip_id=NULL, severity=MEDIUM, alert_type=downtime, customer=NULL
+            </td>
+        </tr>
+        <tr>
+            <td><strong>AC-AE-010</strong></td>
+            <td>Логирование в JSON-формате</td>
+            <td>
+                <span class="ac-given">Given</span> Alert Engine создал алерт<br>
+                <span class="ac-when">When</span> событие логируется<br>
+                <span class="ac-then">Then</span> лог содержит JSON с полями: timestamp, decision, alert_id, trip_id, customer, alert_type, severity, reason
+            </td>
+        </tr>
+        <tr>
+            <td><strong>AC-AE-011</strong></td>
+            <td>Правила загружаются из YAML</td>
+            <td>
+                <span class="ac-given">Given</span> файл <code>/opt/marshall-listener/config/alert_rules.yaml</code> содержит правила для 6 заказчиков<br>
+                <span class="ac-when">When</span> Alert Engine запускается<br>
+                <span class="ac-then">Then</span> правила загружаются в кеш, 6 заказчиков готовы к обработке
+            </td>
+        </tr>
+        <tr>
+            <td><strong>AC-AE-012</strong></td>
+            <td>Equipment_failure алерт для поломки рефа</td>
+            <td>
+                <span class="ac-given">Given</span> issue содержит "реф не выходит на температуру +8" и urgency=high<br>
+                <span class="ac-when">When</span> Alert Engine обрабатывает данные<br>
+                <span class="ac-then">Then</span> alert_type='equipment_failure', severity='HIGH'
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- ===== 6. Стратегия тестирования ===== -->
+<h2>6. Стратегия тестирования</h2>
+
+<h3>6.1 Юнит-тесты</h3>
+<p><strong>Модуль:</strong> <code>alert_engine/rules_matcher.py</code></p>
+<pre><code>def test_urgency_low_not_triggered():
+    """urgency &lt; medium должен пропускаться"""
+    alert = process_parsed_data({
+        "urgency": "low",
+        "issue": "небольшой вопрос",
+        "confidence": 0.95
+    })
+    assert alert is None  # Не создаётся
+
+def test_confidence_threshold():
+    """confidence &lt; 0.60 должен пропускаться"""
+    alert = process_parsed_data({
+        "urgency": "high",
+        "issue": "может быть проблема",
+        "confidence": 0.55
+    })
+    assert alert is None
+
+def test_deduplication_window():
+    """Алерт в окне 5 мин не дублируется"""
+    alert1 = process_parsed_data({"trip_id": "4521", ...}, time=0)
+    alert2 = process_parsed_data({"trip_id": "4521", ...}, time=120)  # 2 мин позже
+    assert alert1.id != alert2.id  # Это один алерт
+    assert count_alerts(trip_id="4521") == 1
+
+def test_severity_mapping_thander_temp():
+    """Тандер + температура +8 &rarr; severity=HIGH"""
+    alert = process_parsed_data({
+        "customer": "Тандер",
+        "urgency": "high",
+        "issue": "температура +8 вместо +2",
+        "confidence": 0.92
+    })
+    assert alert.severity == "HIGH"
+
+def test_severity_mapping_x5_vs_magnet():
+    """X5 простой 7ч &rarr; HIGH, Магнит 7ч &rarr; LOW"""
+    alert_x5 = process_parsed_data({
+        "customer": "X5",
+        "issue": "стою 7 часов",
+        "urgency": "medium",
+        "confidence": 0.85
+    })
+    assert alert_x5.severity == "HIGH"
+
+    alert_magnet = process_parsed_data({
+        "customer": "Магнит",
+        "issue": "стою 7 часов",
+        "urgency": "medium",
+        "confidence": 0.85
+    })
+    assert alert_magnet.severity == "LOW"</code></pre>
+
+<h3>6.2 Интеграционные тесты</h3>
+<p><strong>Модуль:</strong> <code>alert_engine/integration_test.py</code></p>
+<pre><code>def test_alert_created_in_db():
+    """Алерт создаётся в PostgreSQL"""
+    parsed_data = {
+        "trip_id": "4521",
+        "customer": "WB",
+        "urgency": "medium",
+        "issue": "опаздываю 40 мин",
+        "confidence": 0.87
+    }
+
+    engine = AlertEngine(config_path="config/alert_rules.yaml", db_url="postgres://...")
+    alert_id = engine.process(parsed_data)
+
+    # Проверить в БД
+    row = db.query("SELECT * FROM alerts WHERE alert_id = %s", (alert_id,))
+    assert row.trip_id == "4521"
+    assert row.alert_type == "delay"
+    assert row.severity == "MEDIUM"
+
+def test_api_review_endpoint():
+    """API endpoint /review обновляет статус"""
+    alert_id = "ae-550e8400..."
+
+    response = requests.post(
+        f"http://localhost:8000/api/alerts/{alert_id}/review",
+        json={"reviewed_by": "Виктория Фимина"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "reviewed"
+
+def test_filtering_by_severity():
+    """Фильтр по severity работает"""
+    response = requests.get(
+        "http://localhost:8000/api/alerts?severity=HIGH"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert all(a["severity"] == "HIGH" for a in data["data"])</code></pre>
+
+<h3>6.3 Сценарные тесты (E2E)</h3>
+<table>
+    <thead>
+        <tr><th>Сценарий</th><th>Входные данные</th><th>Ожидаемый выход</th><th>Проверка</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Опоздание WB</strong></td>
+            <td>urgency=medium, issue="пробка", customer=WB, trip_id=4521</td>
+            <td>alert_type=delay, severity=<span class="badge badge-medium">MEDIUM</span></td>
+            <td>Дашборд показывает алерт</td>
+        </tr>
+        <tr>
+            <td><strong>Поломка рефа</strong></td>
+            <td>urgency=high, issue="реф +8", customer=Тандер</td>
+            <td>alert_type=equipment_failure, severity=<span class="badge badge-high">HIGH</span></td>
+            <td>HIGH красный в дашборде</td>
+        </tr>
+        <tr>
+            <td><strong>Простой X5</strong></td>
+            <td>issue="стою 3ч", customer=X5</td>
+            <td>alert_type=downtime, severity=<span class="badge badge-high">HIGH</span></td>
+            <td>HIGH для X5</td>
+        </tr>
+        <tr>
+            <td><strong>Простой Магнит</strong></td>
+            <td>issue="стою 3ч", customer=Магнит</td>
+            <td>alert_type=downtime, severity=<span class="badge badge-low">LOW</span></td>
+            <td>LOW в дашборде</td>
+        </tr>
+        <tr>
+            <td><strong>Low confidence</strong></td>
+            <td>confidence=0.55, urgency=high</td>
+            <td>Нет алерта</td>
+            <td>Лог: skipped_low_confidence</td>
+        </tr>
+        <tr>
+            <td><strong>Дедупликация</strong></td>
+            <td>Два одинаковых trip_id за 3 мин</td>
+            <td>Один алерт</td>
+            <td>Счётчик deduplicated_total +1</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- ===== 7. Зависимости ===== -->
+<h2>7. Зависимости</h2>
+
+<h3>7.1 Зависимости от других модулей</h3>
+<table>
+    <thead>
+        <tr><th>Модуль</th><th>Интерфейс</th><th>Причина</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><strong>AI Parser (S0-F02)</strong></td><td>Parsed message data (JSON)</td><td>Alert Engine работает с выходом парсера</td></tr>
+        <tr><td><strong>Chat Listener (S0-F01)</strong></td><td>Raw message &rarr; Parser</td><td>Цепочка: Listener &rarr; Parser &rarr; Alert Engine</td></tr>
+        <tr><td><strong>PostgreSQL</strong></td><td>alerts table</td><td>Хранилище алертов</td></tr>
+        <tr><td><strong>FastAPI (Dashboard)</strong></td><td>REST API endpoints</td><td>Дашборд читает через API</td></tr>
+    </tbody>
+</table>
+
+<h3>7.2 Внешние зависимости</h3>
+<ul>
+    <li>PostgreSQL 15+ (таблица alerts)</li>
+    <li>Python 3.11+ (asyncio, pydantic)</li>
+    <li>PyYAML (загрузка конфига)</li>
+    <li>python-json-logger (логирование)</li>
+    <li>Prometheus client (метрики)</li>
+</ul>
+
+<!-- ===== 8. Примеры и граничные случаи ===== -->
+<h2>8. Примеры и граничные случаи</h2>
+
+<!-- Пример 1 -->
+<div class="scenario-card">
+    <h4>8.1 Пример 1: Опоздание на слот WB</h4>
+    <p><strong>Сценарий:</strong> Водитель сообщает об опоздании на слот WB.</p>
+    <div class="example-block">
+        <div class="example-label">Входные данные</div>
+<pre><code>{
+  "trip_id": "4521",
+  "customer": "WB",
+  "urgency": "medium",
+  "issue": "Стою в пробке на МКАД, опаздываю на 40 минут",
+  "confidence": 0.87,
+  "slot_time": "14:00"
+}</code></pre>
+    </div>
+    <p><strong>Обработка Alert Engine:</strong></p>
+    <ol style="padding-left:20px; margin-bottom:12px;">
+        <li>Уверенность 0.87 &ge; 0.60 -- OK</li>
+        <li>urgency='medium' &ge; 'low' -- OK</li>
+        <li>Правило WB: condition содержит "опоздание" + urgency="medium" -- OK</li>
+        <li>Severity: 40 мин &lt; 4 часов &rarr; MEDIUM</li>
+        <li>Создать алерт</li>
+    </ol>
+    <div class="example-block">
+        <div class="example-label">Выход</div>
+<pre><code>{
+  "alert_id": "ae-550e8400-e29b-41d4-a716-446655440000",
+  "trip_id": "4521",
+  "alert_type": "delay",
+  "severity": "MEDIUM",
+  "message": "Возможное опоздание на 40 мин на слот WB 14:00 рейс 4521",
+  "customer": "WB",
+  "created_at": "2026-03-06T14:30:15Z",
+  "status": "created"
+}</code></pre>
+    </div>
+    <p><strong>В дашборде:</strong> Жёлтая строка в таблице алертов (<span class="badge badge-medium">MEDIUM</span>).</p>
+</div>
+
+<!-- Пример 2 -->
+<div class="scenario-card">
+    <h4>8.2 Пример 2: Поломка рефрижератора (Тандер)</h4>
+    <p><strong>Сценарий:</strong> Компрессор отказал, температура поднялась до +8 (нужно +2..+4).</p>
+    <div class="example-block">
+        <div class="example-label">Входные данные</div>
+<pre><code>{
+  "trip_id": "7803",
+  "customer": "Тандер",
+  "urgency": "high",
+  "issue": "Реф не выходит на температуру, показывает +8. Мастер смотрит, компрессор.",
+  "confidence": 0.92
+}</code></pre>
+    </div>
+    <p><strong>Обработка Alert Engine:</strong></p>
+    <ol style="padding-left:20px; margin-bottom:12px;">
+        <li>Уверенность 0.92 &ge; 0.60 -- OK</li>
+        <li>urgency='high' -- OK</li>
+        <li>Правило Тандер (id: thander_temp_violation): issue содержит ['температура', 'реф', '+8'] -- OK</li>
+        <li>Severity: HIGH (потеря груза)</li>
+        <li>Создать алерт</li>
+    </ol>
+    <div class="example-block">
+        <div class="example-label">Выход</div>
+<pre><code>{
+  "alert_id": "ae-550e8401-e29b-41d4-a716-446655440001",
+  "trip_id": "7803",
+  "alert_type": "equipment_failure",
+  "severity": "HIGH",
+  "message": "КРИТИЧНО: Нарушение температуры у Тандер 7803: Реф не выходит на температуру, показывает +8",
+  "customer": "Тандер",
+  "created_at": "2026-03-06T07:45:00Z",
+  "status": "created"
+}</code></pre>
+    </div>
+    <p><strong>В дашборде:</strong> Красная строка (<span class="badge badge-high">HIGH</span>). Диспетчер должен немедленно найти замену машины.</p>
+</div>
+
+<!-- Пример 3 -->
+<div class="scenario-card">
+    <h4>8.3 Пример 3: Простой на X5 vs Магнит</h4>
+
+    <p><strong>Сценарий A: X5</strong></p>
+    <div class="example-block">
+        <div class="example-label">Входные данные</div>
+<pre><code>{
+  "trip_id": "4590",
+  "customer": "X5",
+  "urgency": "medium",
+  "issue": "Жду разгрузки 6 часов на территории X5, они не разгружают",
+  "confidence": 0.85
+}</code></pre>
+    </div>
+    <p><strong>Обработка:</strong> Правило X5 (id: x5_downtime_critical): downtime &gt; 2h AND customer=X5 &rarr; severity=<span class="badge badge-high">HIGH</span> (X5 не разрешает стоять)</p>
+    <div class="example-block">
+        <div class="example-label">Выход</div>
+<pre><code>{
+  "severity": "HIGH",
+  "message": "НАРУШЕНИЕ: X5 запрещает стоять, уже 6ч простоя на 4590"
+}</code></pre>
+    </div>
+
+    <p style="margin-top:24px"><strong>Сценарий B: Магнит (тот же простой)</strong></p>
+    <div class="example-block">
+        <div class="example-label">Входные данные</div>
+<pre><code>{
+  "trip_id": "4591",
+  "customer": "Магнит",
+  "urgency": "medium",
+  "issue": "Жду разгрузки 6 часов на территории Магнит, они разгружают медленно",
+  "confidence": 0.85
+}</code></pre>
+    </div>
+    <p><strong>Обработка:</strong> Правило Магнит НЕ срабатывает (простой на территории разрешен). Может быть только LOW-алерт для информации.</p>
+    <div class="example-block">
+        <div class="example-label">Выход</div>
+<pre><code>{
+  "severity": "LOW",
+  "message": "Магнит 4591: Простой 6 часов (в норме для Магнит)"
+}</code></pre>
+    </div>
+    <div class="card card-warning" style="margin-top:12px">
+        <strong>Ключевой момент:</strong> Один и тот же сценарий (6 часов простоя) интерпретируется по-разному в зависимости от заказчика.
+    </div>
+</div>
+
+<!-- Пример 4 -->
+<div class="scenario-card">
+    <h4>8.4 Пример 4: ДТП на трассе (информационный алерт)</h4>
+    <p><strong>Сценарий:</strong> Глобальное событие -- ДТП на М4, не связано с конкретным рейсом.</p>
+    <div class="example-block">
+        <div class="example-label">Входные данные</div>
+<pre><code>{
+  "trip_id": null,
+  "customer": null,
+  "urgency": "high",
+  "issue": "ДТП на М4 Дон км 680. Наш водитель НЕ участвует, но пробка может повлиять на рейсы",
+  "confidence": 0.88
+}</code></pre>
+    </div>
+    <p><strong>Обработка:</strong> Глобальное правило (id: global_traffic_incident): issue содержит 'ДТП' AND urgency=high &rarr; severity=MEDIUM</p>
+    <div class="example-block">
+        <div class="example-label">Выход</div>
+<pre><code>{
+  "alert_id": "ae-550e8402-e29b-41d4-a716-446655440002",
+  "trip_id": null,
+  "alert_type": "downtime",
+  "severity": "MEDIUM",
+  "message": "Инцидент на трассе: ДТП на М4 Дон км 680 -- возможны задержки",
+  "customer": null,
+  "created_at": "2026-03-06T10:30:00Z",
+  "status": "created"
+}</code></pre>
+    </div>
+    <p><strong>В дашборде:</strong> Информационный алерт для менеджера (без trip_id, может затронуть несколько рейсов).</p>
+</div>
+
+<!-- Граничный 1 -->
+<div class="scenario-card">
+    <h4>8.5 Граничный случай 1: Низкая уверенность парсера</h4>
+    <div class="example-block">
+        <div class="example-label">Входные данные</div>
+<pre><code>{
+  "urgency": "high",
+  "issue": "может быть какая-то проблема?",
+  "confidence": 0.45
+}</code></pre>
+    </div>
+    <p><strong>Обработка:</strong> confidence=0.45 &lt; 0.60 &rarr; SKIP</p>
+    <div class="example-block">
+        <div class="example-label">Лог</div>
+<pre><code>{
+  "decision": "skipped_low_confidence",
+  "confidence": 0.45,
+  "reason": "Below threshold 0.60"
+}</code></pre>
+    </div>
+</div>
+
+<!-- Граничный 2 -->
+<div class="scenario-card">
+    <h4>8.6 Граничный случай 2: Дедупликация</h4>
+    <p><strong>Время 14:30:00 -- Первое сообщение:</strong></p>
+    <div class="example-block">
+<pre><code>{
+  "trip_id": "4521",
+  "issue": "Стою в пробке, опаздываю",
+  "confidence": 0.87
+}</code></pre>
+    </div>
+    <p>&rarr; Алерт создан (alert_id=<code>ae-001</code>)</p>
+
+    <p><strong>Время 14:32:00 -- Повторное сообщение (парсер retry):</strong></p>
+    <div class="example-block">
+<pre><code>{
+  "trip_id": "4521",
+  "issue": "Стою в пробке, опаздываю",
+  "confidence": 0.87
+}</code></pre>
+    </div>
+    <p>&rarr; В БД есть алерт с trip_id=4521, alert_type=delay, created_at &gt; 14:27:00 (5 мин назад) &rarr; SKIP</p>
+
+    <div class="example-block">
+        <div class="example-label">Лог</div>
+<pre><code>{
+  "decision": "deduplicated",
+  "trip_id": "4521",
+  "existing_alert_id": "ae-001",
+  "reason": "Alert already exists for this trip and type within 5 min window"
+}</code></pre>
+    </div>
+    <p><strong>Счётчик:</strong> <code>alerts_deduplicated_total</code> +1</p>
+</div>
+
+<!-- Граничный 3 -->
+<div class="scenario-card">
+    <h4>8.7 Граничный случай 3: Неизвестный заказчик</h4>
+    <div class="example-block">
+        <div class="example-label">Входные данные</div>
+<pre><code>{
+  "trip_id": "9999",
+  "customer": "UnknownCarrier",
+  "urgency": "high",
+  "issue": "Критическая проблема",
+  "confidence": 0.90
+}</code></pre>
+    </div>
+    <p><strong>Обработка:</strong> Правила для UnknownCarrier не найдены &rarr; fallback на базовые триггеры: urgency=high &rarr; severity &ge; MEDIUM, issue содержит "критическая" &rarr; alert_type=delay (базовый).</p>
+    <div class="example-block">
+        <div class="example-label">Выход</div>
+<pre><code>{
+  "alert_type": "delay",
+  "severity": "MEDIUM",
+  "message": "Неизвестный заказчик UnknownCarrier: Критическая проблема",
+  "customer": "UnknownCarrier"
+}</code></pre>
+    </div>
+    <div class="example-block">
+        <div class="example-label">Лог</div>
+<pre><code>{
+  "decision": "created",
+  "reason": "No specific rules found, using fallback",
+  "customer": "UnknownCarrier"
+}</code></pre>
+    </div>
+</div>
+
+<!-- ===== 9. Метрики и мониторинг ===== -->
+<h2>9. Метрики и мониторинг</h2>
+
+<h3>9.1 Ключевые метрики</h3>
+<table>
+    <thead>
+        <tr><th>Метрика</th><th>Тип</th><th>Примечание</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><code>alerts_created_total</code></td><td>Counter</td><td>Количество созданных алертов</td></tr>
+        <tr><td><code>alerts_deduplicated_total</code></td><td>Counter</td><td>Дубли, не созданные</td></tr>
+        <tr><td><code>alerts_skipped_low_confidence_total</code></td><td>Counter</td><td>Пропущены из-за низкой уверенности</td></tr>
+        <tr><td><code>alerts_by_type</code></td><td>Gauge</td><td>Распределение по типам (delay, equipment, downtime, safety, docs)</td></tr>
+        <tr><td><code>alerts_by_severity</code></td><td>Gauge</td><td>Распределение по severity (HIGH, MEDIUM, LOW)</td></tr>
+        <tr><td><code>alerts_by_customer</code></td><td>Gauge</td><td>Распределение по заказчикам</td></tr>
+        <tr><td><code>alert_processing_latency_ms</code></td><td>Histogram</td><td>Время парсированные данные &rarr; алерт создан</td></tr>
+        <tr><td><code>db_write_latency_ms</code></td><td>Histogram</td><td>Время записи в PostgreSQL</td></tr>
+    </tbody>
+</table>
+
+<h3>9.2 SLA и целевые показатели</h3>
+<div class="metric-grid">
+    <div class="metric-card">
+        <div class="value">&le;100 мс</div>
+        <div class="label">Alert latency (parsed data &rarr; created)</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">0 ошибок</div>
+        <div class="label">Дедупликация работает</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">При рестарте</div>
+        <div class="label">Правила загружаются</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">100% JSON</div>
+        <div class="label">Логирование структурировано</div>
+    </div>
+</div>
+
+<!-- ===== 10. Заключение ===== -->
+<h2>10. Заключение</h2>
+<div class="card card-success">
+    <p>Alert Engine -- критическое звено в цепочке Marshall AI Listener. Он преобразует неструктурированный текст диспетчеров в структурированные алерты, позволяя менеджерам оперативно действовать и избегать штрафов. Конфигурируемые правила, асинхронная обработка и строгие критерии приёмки гарантируют надёжность в production.</p>
+    <br>
+    <table style="width:auto;">
+        <tbody>
+            <tr><td><strong>Дата создания спеки:</strong></td><td>2026-03-06</td></tr>
+            <tr><td><strong>Версия:</strong></td><td>1.0</td></tr>
+            <tr><td><strong>Статус:</strong></td><td><span class="badge badge-low" style="background:#d1fae5;color:#10b981;font-size:13px;">ГОТОВО К РЕАЛИЗАЦИИ</span></td></tr>
+        </tbody>
+    </table>
+</div>
+
+</div>
+</body>
+</html>

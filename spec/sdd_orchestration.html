@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SDD Оркестрация — Marshall AI Listener</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #fdf6ed; --cream-2: #f9efe0; --cream-3: #f3e6d2;
+    --peach: #f5c9a0; --peach-2: #efb87a;
+    --orange: #e07b3a; --orange-2: #c96320; --orange-soft: #fce8d4;
+    --green: #3d8c5f; --green-soft: #d6efe3;
+    --red: #c0392b; --red-soft: #fde8e6;
+    --blue: #2c6fbb; --blue-soft: #dce8f7;
+    --purple: #7c3aed; --purple-soft: #ede9fe;
+    --text: #2c1f0e; --text-2: #5c4a30; --text-3: #8a7055;
+    --border: #e8d8c0; --border-2: #d4c0a0;
+    --shadow: 0 2px 12px rgba(80,40,0,0.08);
+    --mono: 'JetBrains Mono', monospace; --sans: 'Inter', system-ui, sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--cream); color: var(--text); line-height: 1.6; font-size: 14px; }
+
+  nav { position: sticky; top: 0; z-index: 100; background: rgba(253,246,237,0.97); backdrop-filter: blur(6px); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 0; overflow-x: auto; white-space: nowrap; box-shadow: var(--shadow); }
+  nav .brand { font-weight: 700; font-size: 13px; color: var(--purple); padding: 10px 16px 10px 0; border-right: 1px solid var(--border); margin-right: 8px; flex-shrink: 0; }
+  nav a { text-decoration: none; color: var(--text-2); font-size: 12px; font-weight: 500; padding: 10px 10px; border-radius: 4px; transition: all 0.15s; flex-shrink: 0; }
+  nav a:hover { color: var(--purple); background: var(--purple-soft); }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  .header { background: linear-gradient(135deg, var(--purple-soft) 0%, #f0e6ff 100%); border: 1px solid #c4b5fd; border-radius: 12px; padding: 32px 36px; margin-bottom: 28px; box-shadow: 0 6px 32px rgba(80,40,80,0.10); }
+  .header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .header .sub { font-size: 14px; color: var(--text-2); margin-top: 6px; }
+  .header .meta { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .b-purple { background: var(--purple); color: #fff; }
+  .b-green { background: var(--green); color: #fff; }
+  .b-cream { background: var(--cream-3); color: var(--text-2); border: 1px solid var(--border-2); }
+
+  section { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 24px 28px; margin-bottom: 18px; box-shadow: var(--shadow); }
+  section:target { outline: 2px solid var(--purple); outline-offset: 2px; }
+  .stitle { font-size: 14px; font-weight: 700; color: var(--purple); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--purple-soft); display: flex; align-items: center; gap: 8px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0; }
+  th { background: var(--cream-2); text-align: left; padding: 8px 12px; font-weight: 600; font-size: 12px; color: var(--text-2); border-bottom: 2px solid var(--border); }
+  td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: var(--cream); }
+
+  ul, ol { margin: 8px 0 8px 20px; }
+  li { margin: 4px 0; font-size: 13px; }
+  p { font-size: 13px; color: var(--text-2); margin-bottom: 10px; }
+
+  code { font-family: var(--mono); font-size: 12px; background: var(--cream-3); padding: 1px 5px; border-radius: 3px; }
+  pre { background: var(--cream-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; font-family: var(--mono); font-size: 12px; overflow-x: auto; margin: 10px 0; line-height: 1.5; white-space: pre-wrap; }
+
+  .sprint-card { border: 2px solid var(--border); border-radius: 12px; padding: 20px 24px; margin: 14px 0; position: relative; }
+  .sprint-card.done { border-color: var(--green); }
+  .sprint-card.next { border-color: var(--purple); border-style: dashed; }
+  .sprint-num { position: absolute; top: -12px; left: 20px; background: var(--purple); color: #fff; padding: 2px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; }
+  .sprint-card.done .sprint-num { background: var(--green); }
+  .sprint-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .sprint-meta { font-size: 12px; color: var(--text-3); margin-bottom: 10px; }
+
+  .arch-diagram { background: var(--cream-2); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center; }
+  .arch-box { display: inline-block; background: #fff; border: 2px solid var(--purple); border-radius: 10px; padding: 14px 20px; margin: 6px; font-size: 13px; font-weight: 600; }
+  .arch-box.main { background: var(--purple-soft); border-color: var(--purple); font-size: 15px; }
+  .arch-arrow { color: var(--text-3); font-size: 20px; margin: 0 4px; }
+
+  .note { background: var(--purple-soft); border: 1px solid #c4b5fd; border-radius: 8px; padding: 12px 16px; font-size: 13px; margin: 12px 0; }
+  .note-green { background: var(--green-soft); border-color: #a8d9be; }
+
+  .file-tree { background: var(--cream-2); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; font-family: var(--mono); font-size: 12px; line-height: 1.8; }
+  .file-done { color: var(--green); font-weight: 600; }
+  .file-pending { color: var(--text-3); }
+
+  .grid-agents { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin: 14px 0; }
+  .agent-card { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; text-align: center; }
+  .agent-card .name { font-weight: 700; font-size: 13px; color: var(--purple); }
+  .agent-card .role { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div style="position:sticky;top:0;z-index:200;background:linear-gradient(135deg,#2563eb,#1d4ed8);padding:10px 24px;display:flex;align-items:center;gap:14px;overflow-x:auto;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.15);">
+  <a href="index.html" style="font-weight:700;font-size:14px;color:#fff;text-decoration:none;margin-right:6px;">Marshall SDD</a>
+  <a href="index.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Обзор</a>
+  <a href="master_brief.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Контекст</a>
+  <a href="product_brief.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Продукт</a>
+  <a href="spec-tool-chat-listener.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Chat Listener</a>
+  <a href="spec-tool-ai-parser.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">AI Parser</a>
+  <a href="spec-tool-alert-engine.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Alert Engine</a>
+  <a href="spec-data-schema.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Схема БД</a>
+  <a href="spec-tool-dashboard-api.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Dashboard API</a>
+  <a href="spec-design-dashboard.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Дизайн</a>
+  <a href="spec-architecture-overview.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Архитектура</a>
+  <a href="spec-process-sprint0-plan.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">План</a>
+  <a href="sdd_orchestration.html" style="color:#fff;text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.2);">SDD</a>
+</div>
+<nav>
+  <span class="brand">SDD ОРКЕСТРАЦИЯ</span>
+  <a href="#arch">Архитектура</a>
+  <a href="#agents">Агенты</a>
+  <a href="#pipeline">Пайплайн</a>
+  <a href="#brief">Шаблон брифа</a>
+  <a href="#quality">Качество</a>
+  <a href="#files">Файлы</a>
+</nav>
+
+<div class="container">
+
+  <div class="header">
+    <h1>План оркестрации SDD</h1>
+    <div class="sub">Marshall AI Listener — как мы пишем спецификацию</div>
+    <div class="meta">
+      <span class="badge b-purple">SDD</span>
+      <span class="badge b-green">7 спринтов</span>
+      <span class="badge b-cream">2026-03-06</span>
+    </div>
+  </div>
+
+  <!-- Architecture -->
+  <section id="arch">
+    <div class="stitle">Архитектура оркестрации</div>
+    <div class="arch-diagram">
+      <div class="arch-box main">ОРКЕСТРАТОР<br><span style="font-size:11px;font-weight:400;color:var(--text-2);">Claude Opus, основная сессия</span></div>
+      <br>
+      <div style="color:var(--text-3);font-size:12px;margin:10px 0;">готовит брифы &rarr; запускает агентов &rarr; ревьюит &rarr; интегрирует</div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:10px;">
+        <div class="arch-box">product-manager</div>
+        <div class="arch-box">specification (x5)</div>
+        <div class="arch-box">database-architect</div>
+        <div class="arch-box">api-designer</div>
+        <div class="arch-box">se-ux-ui-designer</div>
+        <div class="arch-box">ascii-ui-mockup</div>
+        <div class="arch-box">ui-designer</div>
+      </div>
+    </div>
+    <p>Оркестратор видит полную картину. Агенты — специалисты в песочнице, работают с тем контекстом, который получили от оркестратора.</p>
+  </section>
+
+  <!-- Agents -->
+  <section id="agents">
+    <div class="stitle">Агенты и их роли</div>
+    <div class="grid-agents">
+      <div class="agent-card"><div class="name">product-manager</div><div class="role">Скоуп, метрики, JTBD, приоритеты</div></div>
+      <div class="agent-card"><div class="name">specification</div><div class="role">Пишет spec-файлы по шаблону (x5 вызовов)</div></div>
+      <div class="agent-card"><div class="name">database-architect</div><div class="role">Схема PostgreSQL, индексы, миграции</div></div>
+      <div class="agent-card"><div class="name">api-designer</div><div class="role">REST API контракты, OpenAPI</div></div>
+      <div class="agent-card"><div class="name">se-ux-ui-designer</div><div class="role">UX-флоу, JTBD экранов</div></div>
+      <div class="agent-card"><div class="name">ascii-ui-mockup</div><div class="role">Текстовые вайрфреймы</div></div>
+      <div class="agent-card"><div class="name">ui-designer</div><div class="role">Визуальный дизайн</div></div>
+    </div>
+  </section>
+
+  <!-- Pipeline -->
+  <section id="pipeline">
+    <div class="stitle">Пайплайн спринтов</div>
+
+    <div class="sprint-card done">
+      <div class="sprint-num">Спринт 1</div>
+      <div class="sprint-title">Сборка контекста</div>
+      <div class="sprint-meta">Оркестратор | Статус: ГОТОВО</div>
+      <p><strong>Вход:</strong> spec-v1.yaml, architecture.html, база знаний, презентация</p>
+      <p><strong>Выход:</strong> <code>spec/master_brief.md</code> + <code>spec/sdd_orchestration.md</code></p>
+    </div>
+
+    <div class="sprint-card next">
+      <div class="sprint-num">Спринт 2</div>
+      <div class="sprint-title">Скоуп продукта</div>
+      <div class="sprint-meta">product-manager | Зависимости: Спринт 1</div>
+      <p><strong>Вход:</strong> master_brief.md</p>
+      <p><strong>Выход:</strong> <code>spec/product_brief.md</code></p>
+      <p><strong>Задача:</strong> MVP-скоуп Sprint 0, 5-7 метрик дашборда, JTBD для каждой роли, приоритеты.</p>
+    </div>
+
+    <div class="sprint-card">
+      <div class="sprint-num">Спринт 3</div>
+      <div class="sprint-title">Параллельные спеки</div>
+      <div class="sprint-meta">4 агента одновременно | Зависимости: Спринт 2</div>
+      <table>
+        <tr><th>Агент</th><th>Контекст</th><th>Выход</th></tr>
+        <tr><td>specification</td><td>Авто-респондер + варианты подключения</td><td>spec-tool-chat-listener.md</td></tr>
+        <tr><td>specification</td><td>LLM-пайплайн + промпт</td><td>spec-tool-ai-parser.md</td></tr>
+        <tr><td>specification</td><td>Правила алертов + эскалация</td><td>spec-tool-alert-engine.md</td></tr>
+        <tr><td>database-architect</td><td>Все модели данных</td><td>spec-data-schema.md</td></tr>
+      </table>
+    </div>
+
+    <div class="sprint-card">
+      <div class="sprint-num">Спринт 4</div>
+      <div class="sprint-title">API-контракт</div>
+      <div class="sprint-meta">api-designer | Зависимости: Спринт 3</div>
+      <p><strong>Вход:</strong> master_brief + схема БД + интерфейсы модулей</p>
+      <p><strong>Выход:</strong> <code>spec-tool-dashboard-api.md</code></p>
+      <p><strong>Задача:</strong> REST API: /api/trips, /api/alerts, /api/stats, /api/chats. Авторизация, пагинация, фильтрация.</p>
+    </div>
+
+    <div class="sprint-card">
+      <div class="sprint-num">Спринт 5</div>
+      <div class="sprint-title">Фронтенд</div>
+      <div class="sprint-meta">3 агента последовательно | Зависимости: Спринт 2 + 4</div>
+      <table>
+        <tr><th>Шаг</th><th>Агент</th><th>Задача</th></tr>
+        <tr><td>5а</td><td>se-ux-ui-designer</td><td>JTBD для каждого экрана, пользовательские флоу</td></tr>
+        <tr><td>5б</td><td>ascii-ui-mockup-generator</td><td>Текстовые вайрфреймы дашборда</td></tr>
+        <tr><td>5в</td><td>specification</td><td>Формальная спека с REQ/AC</td></tr>
+      </table>
+      <p><strong>Выход:</strong> <code>spec-design-dashboard.md</code></p>
+    </div>
+
+    <div class="sprint-card">
+      <div class="sprint-num">Спринт 6</div>
+      <div class="sprint-title">Интеграционный ревью</div>
+      <div class="sprint-meta">Оркестратор | Зависимости: Спринты 3, 4, 5</div>
+      <p><strong>Задача:</strong> Сверить интерфейсы. Проверить контракты данных. Устранить противоречия. Mermaid-диаграмма.</p>
+      <p><strong>Выход:</strong> <code>spec-architecture-overview.md</code></p>
+    </div>
+
+    <div class="sprint-card">
+      <div class="sprint-num">Спринт 7</div>
+      <div class="sprint-title">План реализации</div>
+      <div class="sprint-meta">Оркестратор + product-manager | Зависимости: Спринт 6</div>
+      <p><strong>Задача:</strong> Декомпозиция на задачи, часы по модулям, зависимости, порядок выполнения.</p>
+      <p><strong>Выход:</strong> <code>spec-process-sprint0-plan.md</code></p>
+    </div>
+  </section>
+
+  <!-- Brief template -->
+  <section id="brief">
+    <div class="stitle">Шаблон брифа для агента</div>
+    <p>Каждый агент получает от оркестратора:</p>
+    <ol>
+      <li><strong>master_brief.md</strong> — полностью, без изменений</li>
+      <li><strong>Модульный бриф:</strong>
+        <ul>
+          <li>ЧТО: что делает модуль, его границы</li>
+          <li>ВХОДЫ: какие данные/события получает</li>
+          <li>ВЫХОДЫ: какие данные/события производит</li>
+          <li>ИНТЕРФЕЙСЫ: связь с другими модулями</li>
+          <li>СУЩЕСТВУЮЩИЙ КОД: фрагменты из авто-респондера или spec-v1</li>
+          <li>ОГРАНИЧЕНИЯ: что НЕ включать</li>
+        </ul>
+      </li>
+      <li><strong>Шаблон спецификации</strong> (от агента specification)</li>
+      <li><strong>Инструкция:</strong> "Напиши полную спецификацию. Фокус на требованиях и критериях приёмки. НЕ пиши код."</li>
+    </ol>
+  </section>
+
+  <!-- Quality gates -->
+  <section id="quality">
+    <div class="stitle">Критерии качества</div>
+    <p>Каждая спека проходит проверку перед следующим спринтом:</p>
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 14px;margin:12px 0;">
+      <div style="font-size:20px;">1</div><div><strong>REQ &harr; AC</strong> — каждое требование имеет критерий приёмки</div>
+      <div style="font-size:20px;">2</div><div><strong>Интерфейсы</strong> — типы входов/выходов документированы</div>
+      <div style="font-size:20px;">3</div><div><strong>Нет расползания</strong> — ничего за пределами MVP Sprint 0</div>
+      <div style="font-size:20px;">4</div><div><strong>Согласованность</strong> — совпадает с master_brief</div>
+      <div style="font-size:20px;">5</div><div><strong>Самодостаточность</strong> — другой разработчик реализует только по этой спеке</div>
+    </div>
+  </section>
+
+  <!-- File map -->
+  <section id="files">
+    <div class="stitle">Карта файлов</div>
+    <div class="file-tree">
+marshall/spec/
+<span class="file-done">+-- master_brief.md                   # Спринт 1 [ГОТОВО]</span>
+<span class="file-done">+-- sdd_orchestration.md              # Спринт 1 [ГОТОВО]</span>
+<span class="file-pending">+-- product_brief.md                  # Спринт 2</span>
+<span class="file-pending">+-- spec-tool-chat-listener.md        # Спринт 3</span>
+<span class="file-pending">+-- spec-tool-ai-parser.md            # Спринт 3</span>
+<span class="file-pending">+-- spec-tool-alert-engine.md         # Спринт 3</span>
+<span class="file-pending">+-- spec-data-schema.md               # Спринт 3</span>
+<span class="file-pending">+-- spec-tool-dashboard-api.md        # Спринт 4</span>
+<span class="file-pending">+-- spec-design-dashboard.md          # Спринт 5</span>
+<span class="file-pending">+-- spec-architecture-overview.md     # Спринт 6</span>
+<span class="file-pending">+-- spec-process-sprint0-plan.md      # Спринт 7</span>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

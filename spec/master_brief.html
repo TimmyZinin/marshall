@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marshall AI Listener — Мастер-бриф</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #fdf6ed; --cream-2: #f9efe0; --cream-3: #f3e6d2;
+    --peach: #f5c9a0; --peach-2: #efb87a;
+    --orange: #e07b3a; --orange-2: #c96320; --orange-soft: #fce8d4;
+    --green: #3d8c5f; --green-soft: #d6efe3;
+    --red: #c0392b; --red-soft: #fde8e6;
+    --blue: #2c6fbb; --blue-soft: #dce8f7;
+    --text: #2c1f0e; --text-2: #5c4a30; --text-3: #8a7055;
+    --border: #e8d8c0; --border-2: #d4c0a0;
+    --shadow: 0 2px 12px rgba(80,40,0,0.08);
+    --mono: 'JetBrains Mono', monospace; --sans: 'Inter', system-ui, sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--cream); color: var(--text); line-height: 1.6; font-size: 14px; }
+
+  nav { position: sticky; top: 0; z-index: 100; background: rgba(253,246,237,0.97); backdrop-filter: blur(6px); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 0; overflow-x: auto; white-space: nowrap; box-shadow: var(--shadow); }
+  nav .brand { font-weight: 700; font-size: 13px; color: var(--orange); padding: 10px 16px 10px 0; border-right: 1px solid var(--border); margin-right: 8px; flex-shrink: 0; }
+  nav a { text-decoration: none; color: var(--text-2); font-size: 12px; font-weight: 500; padding: 10px 10px; border-radius: 4px; transition: all 0.15s; flex-shrink: 0; }
+  nav a:hover { color: var(--orange); background: var(--orange-soft); }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  .header { background: linear-gradient(135deg, var(--peach) 0%, var(--orange-soft) 100%); border: 1px solid var(--peach-2); border-radius: 12px; padding: 32px 36px; margin-bottom: 28px; box-shadow: 0 6px 32px rgba(80,40,0,0.12); }
+  .header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .header .sub { font-size: 14px; color: var(--text-2); margin-top: 6px; }
+  .header .meta { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .b-orange { background: var(--orange); color: #fff; }
+  .b-green { background: var(--green); color: #fff; }
+  .b-cream { background: var(--cream-3); color: var(--text-2); border: 1px solid var(--border-2); }
+
+  section { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 24px 28px; margin-bottom: 18px; box-shadow: var(--shadow); }
+  section:target { outline: 2px solid var(--orange); outline-offset: 2px; }
+  .stitle { font-size: 14px; font-weight: 700; color: var(--orange-2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--orange-soft); display: flex; align-items: center; gap: 8px; }
+  .snum { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: var(--orange); color: #fff; border-radius: 50%; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0; }
+  th { background: var(--cream-2); text-align: left; padding: 8px 12px; font-weight: 600; font-size: 12px; color: var(--text-2); border-bottom: 2px solid var(--border); }
+  td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: var(--cream); }
+
+  .note { background: var(--orange-soft); border: 1px solid var(--peach); border-radius: 8px; padding: 12px 16px; font-size: 13px; margin: 12px 0; }
+  .note-green { background: var(--green-soft); border-color: #a8d9be; }
+  .note-red { background: var(--red-soft); border-color: #f0c0b8; }
+  .note-blue { background: var(--blue-soft); border-color: #a8c4e0; }
+
+  ul { margin: 8px 0 8px 20px; }
+  li { margin: 4px 0; font-size: 13px; }
+  p { font-size: 13px; color: var(--text-2); margin-bottom: 10px; }
+  strong { color: var(--text); }
+
+  code { font-family: var(--mono); font-size: 12px; background: var(--cream-3); padding: 1px 5px; border-radius: 3px; }
+  pre { background: var(--cream-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; font-family: var(--mono); font-size: 12px; overflow-x: auto; margin: 10px 0; line-height: 1.5; white-space: pre-wrap; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .card { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .card h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+
+  .q-block { background: var(--cream); border-left: 3px solid var(--orange); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 10px 0; }
+  .q-block strong { color: var(--orange-2); font-size: 12px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<div style="position:sticky;top:0;z-index:200;background:linear-gradient(135deg,#2563eb,#1d4ed8);padding:10px 24px;display:flex;align-items:center;gap:14px;overflow-x:auto;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.15);">
+  <a href="index.html" style="font-weight:700;font-size:14px;color:#fff;text-decoration:none;margin-right:6px;">Marshall SDD</a>
+  <a href="index.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Обзор</a>
+  <a href="master_brief.html" style="color:#fff;text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.2);">Контекст</a>
+  <a href="product_brief.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Продукт</a>
+  <a href="spec-tool-chat-listener.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Chat Listener</a>
+  <a href="spec-tool-ai-parser.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">AI Parser</a>
+  <a href="spec-tool-alert-engine.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Alert Engine</a>
+  <a href="spec-data-schema.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Схема БД</a>
+  <a href="spec-tool-dashboard-api.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Dashboard API</a>
+  <a href="spec-design-dashboard.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Дизайн</a>
+  <a href="spec-architecture-overview.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">Архитектура</a>
+  <a href="spec-process-sprint0-plan.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">План</a>
+  <a href="sdd_orchestration.html" style="color:rgba(255,255,255,.85);text-decoration:none;font-size:12px;padding:4px 10px;border-radius:6px;">SDD</a>
+</div>
+<nav>
+  <span class="brand">MASTER BRIEF</span>
+  <a href="#s1">Клиент</a>
+  <a href="#s2">Проблема</a>
+  <a href="#s3">Решение</a>
+  <a href="#s4">Ассеты</a>
+  <a href="#s5">Стек</a>
+  <a href="#s6">Подключение</a>
+  <a href="#s8">Заказчики</a>
+  <a href="#s12">Вопросы</a>
+  <a href="#s13">Решения</a>
+  <a href="#s14">Тестовые данные</a>
+</nav>
+
+<div class="container">
+
+  <div class="header">
+    <h1>Marshall AI Listener — Мастер-бриф</h1>
+    <div class="sub">Контекстный документ для всех агентов SDD-спецификации</div>
+    <div class="meta">
+      <span class="badge b-orange">v1.0</span>
+      <span class="badge b-green">Sprint 0</span>
+      <span class="badge b-cream">2026-03-06</span>
+      <span class="badge b-cream">Тим Зинин / Zinin Corp</span>
+    </div>
+  </div>
+
+  <div class="note">Этот документ предоставляет контекст для <strong>ВСЕХ</strong> агентов спецификации. Каждый агент получает этот бриф + модульный бриф по своей задаче.</div>
+
+  <!-- S1 -->
+  <section id="s1">
+    <div class="stitle"><span class="snum">1</span> Клиент</div>
+    <ul>
+      <li><strong>Компания:</strong> Marshall AI Tech (marshal.tech)</li>
+      <li><strong>Домен:</strong> Распределённые логистические операции — 500+ партнёров-перевозчиков, парк 50+ рефрижераторов</li>
+      <li><strong>Основатель:</strong> Михаил Белоусов (блогер #1 в логистике РФ, 450K аудитория)</li>
+    </ul>
+    <table>
+      <tr><th>Контакт</th><th>Роль</th><th>Telegram</th></tr>
+      <tr><td>Николя Бобров</td><td>CEO / контакт основателя</td><td>@Nicolas_Bobroff</td></tr>
+      <tr><td>Валерия (Лерия)</td><td>Руководитель цифровизации</td><td>@Leria_Sav</td></tr>
+      <tr><td>Виктория Фимина</td><td>Руководитель бизнес-процессов</td><td>@vf_marshal</td></tr>
+      <tr><td>Яков</td><td>Партнёр / акционер</td><td>@YakovGl</td></tr>
+    </table>
+  </section>
+
+  <!-- S2 -->
+  <section id="s2">
+    <div class="stitle"><span class="snum">2</span> Описание проблемы</div>
+    <p>Диспетчеры координируют рейсы через 4+ мессенджера одновременно (WhatsApp, Telegram, Viber, Max).</p>
+    <div class="grid-2">
+      <div class="card" style="border-left:3px solid var(--red);">
+        <h4 style="color:var(--red);">Хаос в каналах связи</h4>
+        <p>Сообщения теряются между платформами, водитель не знает кто на смене</p>
+      </div>
+      <div class="card" style="border-left:3px solid var(--red);">
+        <h4 style="color:var(--red);">Нет контроля статусов</h4>
+        <p>Прибытие, транзитное время, простой — всё на словах, нет записей</p>
+      </div>
+      <div class="card" style="border-left:3px solid var(--red);">
+        <h4 style="color:var(--red);">Документы теряются</h4>
+        <p>Термограммы, фотоотчёты, ТСД забываются или задерживаются</p>
+      </div>
+      <div class="card" style="border-left:3px solid var(--red);">
+        <h4 style="color:var(--red);">Штрафы до 100%</h4>
+        <p>Опоздание >4ч = 15%, >6ч = 30% (срыв), >24ч = 100%. Средний рейс 80 000 руб, штраф 30% = 24 000 руб</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- S3 -->
+  <section id="s3">
+    <div class="stitle"><span class="snum">3</span> Решение: AI Listener (Sprint 0)</div>
+    <p><strong>Пассивная AI-система</strong>, подключается к существующим чатам диспетчеров:</p>
+    <ul>
+      <li>Слушает ВСЕ текстовые сообщения (нулевые изменения для людей)</li>
+      <li>Парсит структурированные данные через LLM (trip_id, маршрут, статус, заказчик, urgency)</li>
+      <li>Отображает алерты в дашборде</li>
+      <li>Аналитический дашборд с ключевыми метриками</li>
+    </ul>
+    <div class="note-green note" style="margin-top:14px;">
+      <strong>Ключевой принцип:</strong> Ноль изменений для пользователей. Люди работают как раньше. AI просто наблюдает и структурирует.
+    </div>
+    <div class="note-red note">
+      <strong>НЕ входит в Sprint 0:</strong> Голос в текст (STT), интерактивный бот, чек-листы, кнопки статусов, контроль документов, мультиплатформа (Max, WhatsApp) — всё на платные спринты.
+    </div>
+  </section>
+
+  <!-- S4 -->
+  <section id="s4">
+    <div class="stitle"><span class="snum">4</span> Существующие ассеты</div>
+    <div class="grid-2">
+      <div class="card">
+        <h4>TG Авто-респондер (собственная разработка)</h4>
+        <p>Продакшн на Contabo VPS с февраля 2026. Python + Telethon + MiniMax M2.5. 176 строк, 54 теста, 5 слоёв классификации.</p>
+        <p><strong>Переиспользуем:</strong> Telethon, LLM-пайплайн, алерты, rate limiting, .env конфиг, shutdown, логирование.</p>
+      </div>
+      <div class="card">
+        <h4>Спецификация spec-v1.yaml</h4>
+        <p>Черновик SDD: Sprint 0 (4 фичи) + Sprint 1 (9 фич). Модели данных, MessengerTransport, acceptance criteria.</p>
+      </div>
+      <div class="card">
+        <h4>Архитектура architecture.html</h4>
+        <p>11 секций + продуктовые вкладки. Mermaid-диаграмма, Reuse vs New, варианты подключения, data flow, схема БД.</p>
+      </div>
+      <div class="card">
+        <h4>База знаний MARSHAL_KNOWLEDGE_BASE.md</h4>
+        <p>Компания, стек (Vue/Nuxt, Directus, NeuroLogist), 5 ролей, 4 категории проблем, штрафы, 12 модулей, 6 заказчиков.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- S5 -->
+  <section id="s5">
+    <div class="stitle"><span class="snum">5</span> Технологический стек</div>
+    <table>
+      <tr><th>Компонент</th><th>Технология</th><th>Примечания</th></tr>
+      <tr><td>Язык</td><td>Python 3.11+</td><td>Как в авто-респондере</td></tr>
+      <tr><td>Подключение к чатам</td><td>Telethon (MTProto) ИЛИ Bot API</td><td>Pluggable-адаптер</td></tr>
+      <tr><td>LLM основной</td><td>MiniMax M2.5</td><td>Уже интегрирован</td></tr>
+      <tr><td>LLM резервный</td><td>Groq (Llama 3.3 70B)</td><td>Бесплатно 100K токенов/день</td></tr>
+      <tr><td>База данных</td><td>PostgreSQL 15+</td><td>Масштаб для 500+ партнёров</td></tr>
+      <tr><td>Бэкенд дашборда</td><td>FastAPI</td><td>Лёгкий, асинхронный</td></tr>
+      <tr><td>Фронтенд дашборда</td><td>HTML + Chart.js</td><td>Без фреймворка</td></tr>
+      <tr><td>Деплой</td><td>Docker Compose</td><td>app + postgres</td></tr>
+      <tr><td>Хостинг</td><td>RUVDS Тима</td><td>88.218.248.114</td></tr>
+    </table>
+  </section>
+
+  <!-- S6 -->
+  <section id="s6">
+    <div class="stitle"><span class="snum">6</span> Варианты подключения к чатам</div>
+    <table>
+      <tr><th>Вариант</th><th>Подход</th><th>Лучше для</th><th>Риск</th></tr>
+      <tr><td style="font-weight:700;color:var(--green);">A: MTProto</td><td>Telethon user account (StringSession)</td><td>Быстрый пилот, чтение истории</td><td>Бан аккаунта</td></tr>
+      <tr><td style="font-weight:700;color:var(--orange);">B: Bot API</td><td>Бот добавляется в чаты</td><td>Продакшн, Marshall контролирует</td><td>Добавить в каждый чат, нет истории</td></tr>
+      <tr><td style="font-weight:700;color:var(--text-3);">C: Пересылка</td><td>Автопересылка в канал-коллектор</td><td>Резерв</td><td>Теряется контекст</td></tr>
+    </table>
+    <div class="note-green note"><strong>Рекомендация:</strong> Bot API (B) для продакшна + MTProto (A) для пилота. Переключатель: <code>LISTENER_MODE=bot|mtproto</code></div>
+  </section>
+
+  <!-- S7 - Roles -->
+  <section id="s7">
+    <div class="stitle"><span class="snum">7</span> Пользователи и роли</div>
+    <table>
+      <tr><th>Роль</th><th>Взаимодействие с AI Listener</th><th>Как</th></tr>
+      <tr><td>Водитель / Перевозчик</td><td>Косвенно — сообщения парсятся</td><td>Нулевые изменения</td></tr>
+      <tr><td>Диспетчер</td><td>Косвенно — сообщения парсятся</td><td>Нулевые изменения</td></tr>
+      <tr><td>Менеджер</td><td>Смотрит дашборд</td><td>Веб-дашборд</td></tr>
+      <tr><td>Руководство Marshall</td><td>Смотрит дашборд</td><td>Веб-дашборд</td></tr>
+    </table>
+  </section>
+
+  <!-- S8 - Customers -->
+  <section id="s8">
+    <div class="stitle"><span class="snum">8</span> Заказчики с конкретными правилами</div>
+    <table>
+      <tr><th>Заказчик</th><th>Ключевые правила</th><th>Триггеры штрафов</th></tr>
+      <tr><td>Тандер</td><td>Предохлаждение +2..+4, термописец, медкнижка</td><td>Температура, опоздание</td></tr>
+      <tr><td>WB (Wildberries)</td><td>WB Drive обязателен, строгие слоты</td><td>Опоздание на слот</td></tr>
+      <tr><td>X5 Retail</td><td>НЕЛЬЗЯ стоять на территории</td><td>Несанкционированный простой</td></tr>
+      <tr><td>Магнит</td><td>МОЖНО стоять на территории</td><td>Отличается от X5!</td></tr>
+      <tr><td>Сельта</td><td>Каска + жилет + ботинки</td><td>Нарушение ТБ</td></tr>
+      <tr><td>Сибур</td><td>Особые требования безопасности</td><td>По договору</td></tr>
+    </table>
+  </section>
+
+  <!-- S9 - Constraints -->
+  <section id="s9">
+    <div class="stitle"><span class="snum">9</span> Ограничения</div>
+    <ul>
+      <li><strong style="color:var(--red);">Telegram блокируется с 1 апреля 2026</strong> — Max (VK) становится основной платформой</li>
+      <li>Нет интеграции с УЛ (учётная логистическая система)</li>
+      <li>МОВИЗОР — только диспетчер подключает вручную</li>
+      <li><strong>Sprint 0 БЕСПЛАТНЫЙ</strong> — минимальный скоуп</li>
+      <li><strong>$250/час</strong> для будущих спринтов</li>
+      <li>STT/голосовые НЕ в Sprint 0</li>
+    </ul>
+  </section>
+
+  <!-- S10 - Sprint numbering -->
+  <section id="s10">
+    <div class="stitle"><span class="snum">10</span> Спринты SDD-процесса</div>
+    <table>
+      <tr><th>Спринт</th><th>Название</th><th>Скоуп</th></tr>
+      <tr><td>1</td><td>Сборка контекста</td><td>Этот документ (master_brief) — <strong style="color:var(--green);">ГОТОВО</strong></td></tr>
+      <tr><td>2</td><td>Скоуп продукта</td><td>product-manager: метрики, MVP, JTBD</td></tr>
+      <tr><td>3</td><td>Параллельные спеки</td><td>4 агента: listener, parser, alerts, БД</td></tr>
+      <tr><td>4</td><td>API-контракт</td><td>REST API для дашборда</td></tr>
+      <tr><td>5</td><td>Фронтенд</td><td>UX-флоу, вайрфреймы, спека дашборда</td></tr>
+      <tr><td>6</td><td>Интеграционный ревью</td><td>Сверка спек, обзор архитектуры</td></tr>
+      <tr><td>7</td><td>План реализации</td><td>Задачи, зависимости, часы</td></tr>
+    </table>
+  </section>
+
+  <!-- S12 - Resolved questions -->
+  <section id="s12">
+    <div class="stitle"><span class="snum">12</span> Решённые вопросы</div>
+
+    <div class="q-block"><strong>В1: Чаты для мониторинга</strong><br>3 тестовых чата для разработки/демо. В продакшне — все чаты диспетчеров (~7 номеров).</div>
+    <table style="margin:10px 0 16px;">
+      <tr><th>Название чата</th><th>Назначение</th><th>Участники</th></tr>
+      <tr><td><code>Marshall Test — WB Рейсы</code></td><td>Рейсы Wildberries</td><td>Диспетчер Алексей, Водитель Иван, Водитель Пётр</td></tr>
+      <tr><td><code>Marshall Test — Тандер Логистика</code></td><td>Доставки Тандер</td><td>Диспетчер Мария, Водитель Сергей, Водитель Олег</td></tr>
+      <tr><td><code>Marshall Test — Общий Диспетчерская</code></td><td>Общая координация</td><td>Все диспетчеры + менеджеры</td></tr>
+    </table>
+
+    <div class="q-block"><strong>В2: Аккаунт Telegram</strong><br>~7 номеров диспетчеров. Listener на их аккаунтах или выделенном сервисном аккаунте.</div>
+    <div class="q-block"><strong>В3: Доставка алертов</strong><br>Никакой отправки. Алерты ТОЛЬКО в дашборде (лента/список). Без бота.</div>
+    <div class="q-block"><strong>В4: Расписание смен</strong><br>Не готово. Sprint 0 без учёта смен.</div>
+    <div class="q-block"><strong>В5: Деплой</strong><br>RUVDS Тима (88.218.248.114). Marshall НЕ получает доступ.</div>
+    <div class="q-block"><strong>В6: АРМ/ТМС</strong><br>Рано. Откладываем на платные спринты.</div>
+    <div class="q-block"><strong>В7: Примеры сообщений</strong><br>Синтетические. См. секцию тестовых данных.</div>
+    <div class="q-block"><strong>В8: Активные заказчики</strong><br>Тандер, WB, X5, Магнит (основные). Сельта, Сибур (вторичные).</div>
+  </section>
+
+  <!-- S13 - Decisions -->
+  <section id="s13">
+    <div class="stitle"><span class="snum">13</span> Ключевые решения</div>
+    <ol style="font-size:13px; margin-left:20px;">
+      <li><strong>Только пассивное прослушивание</strong> — никаких ответов бота</li>
+      <li><strong>PostgreSQL</strong> вместо SQLite — масштаб 500+ партнёров</li>
+      <li><strong>MiniMax M2.5</strong> как основной LLM</li>
+      <li><strong>Нет голоса/STT</strong> — отложено</li>
+      <li><strong>Pluggable-адаптер</strong> для подключения (MTProto vs Bot API)</li>
+      <li><strong>FastAPI + Chart.js</strong> — лёгкий дашборд</li>
+      <li><strong>Docker Compose</strong> для деплоя</li>
+      <li><strong>Нет алерт-бота</strong> — алерты только в дашборде</li>
+      <li><strong>Деплой на RUVDS Тима</strong> — Marshall без доступа</li>
+      <li><strong>Нет интеграции АРМ/ТМС</strong> — Sprint 0 автономен</li>
+      <li><strong>DM включены</strong> — слушаем и директные сообщения</li>
+    </ol>
+  </section>
+
+  <!-- S14 - Test data -->
+  <section id="s14">
+    <div class="stitle"><span class="snum">14</span> Синтетические тестовые данные</div>
+
+    <h3 style="font-size:14px; font-weight:600; margin-bottom:10px;">14.1 Примеры сообщений</h3>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-weight:700; font-size:13px; color:var(--blue); margin-bottom:6px;">Marshall Test — WB Рейсы</div>
+      <pre>[09:15] Диспетчер Алексей: Рейс 4521, Москва-Краснодар, слот на погрузку WB 14:00, реф охладить до +2. Водитель Иванов подтверди.
+[09:18] Водитель Иван: Принял, выезжаю через 30 мин. Реф включил.
+[09:45] Водитель Иван: Выехал на погрузку. Навигатор показывает 2.5 часа.
+[11:30] Водитель Иван: Стою в пробке на МКАД, опаздываю минут на 40.
+[12:15] Диспетчер Алексей: Иванов, успеваешь на слот? WB штрафует за опоздание.
+[12:20] Водитель Иван: Пробка рассосалась, буду к 13:50, успею.
+[14:05] Водитель Иван: На месте WB, встал в очередь на погрузку.
+[14:30] Водитель Иван: Погрузка началась.
+[15:45] Водитель Иван: Погрузка завершена, 18 паллет, температура +3, выезжаю.
+[22:10] Водитель Иван: Прибыл Краснодар, выгрузка завтра с 6:00.</pre>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-weight:700; font-size:13px; color:var(--blue); margin-bottom:6px;">Marshall Test — Тандер Логистика</div>
+      <pre>[07:00] Диспетчер Мария: Доброе утро. Сергей, рейс 7803, Ростов-Воронеж, Тандер, слот 12:00. Охлаждение +2..+4 обязательно! Проверь термописец.
+[07:15] Водитель Сергей: Принял. Термописец работает, бумага есть. Санобработка свежая.
+[07:20] Диспетчер Мария: Олег, рейс 7804, Краснодар-Сочи, Тандер, слот 15:00.
+[07:25] Водитель Олег: Мария, у меня проблема — реф не выходит на температуру, показывает +8. Мастер смотрит.
+[07:30] Диспетчер Мария: Олег, сколько по времени ремонт? Если больше часа — ищу замену.
+[07:45] Водитель Олег: Мастер говорит компрессор, минимум 3-4 часа. Не успею.
+[07:50] Диспетчер Мария: Понятно, снимаю тебя с рейса. Ищу замену. @Алексей нужен реф на Краснодар-Сочи, слот 15:00, срочно.
+[08:10] Водитель Сергей: Выехал на Ростов. ETA 11:30.
+[11:25] Водитель Сергей: Прибыл Тандер Ростов. Температура +3, норма.
+[11:30] Водитель Сергей: Жду слот, очередь 2 машины передо мной.
+[12:40] Водитель Сергей: Погрузка началась, опоздание 40 мин из-за очереди на складе.</pre>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-weight:700; font-size:13px; color:var(--blue); margin-bottom:6px;">Marshall Test — Общий Диспетчерская</div>
+      <pre>[08:00] Диспетчер Мария: Смена началась. На сегодня: 12 рейсов активных, 3 на погрузке, 5 в пути, 4 назначены.
+[08:05] Менеджер Виктория: Мария, по X5 вчера был простой 6 часов, они прислали претензию. Нужны данные кто стоял и почему.
+[08:10] Диспетчер Мария: Это был Петров, рейс 7790. Стоял на территории X5 — они не разгружали. У нас фото и переписка есть.
+[10:30] Диспетчер Алексей: Внимание, ДТП на М4 Дон км 680. Наш водитель НЕ участвует, но пробка — рейсы 4521 и 4525 могут опоздать.
+[14:00] Менеджер Виктория: Итого за первую половину дня: 2 опоздания, 1 срыв (реф Олега). Нормально?
+[14:05] Диспетчер Мария: Срыв закрыли заменой, опоздания в пределах 1 часа, штрафов не будет.</pre>
+    </div>
+
+    <h3 style="font-size:14px; font-weight:600; margin:18px 0 10px;">14.2 Активные заказчики</h3>
+    <table>
+      <tr><th>Заказчик</th><th>Объём</th><th>Маршруты</th><th>Правила</th></tr>
+      <tr><td>Тандер</td><td>Высокий</td><td>Москва-Ростов, Ростов-Воронеж</td><td>Предохлаждение, термописец, медкнижка</td></tr>
+      <tr><td>WB</td><td>Высокий</td><td>Москва-Краснодар, Москва-Казань</td><td>WB Drive, строгие слоты</td></tr>
+      <tr><td>X5 Retail</td><td>Средний</td><td>Москва-Н.Новгород, СПб-Москва</td><td>Нельзя стоять на территории</td></tr>
+      <tr><td>Магнит</td><td>Средний</td><td>Краснодар-Ростов, Воронеж-Москва</td><td>Можно стоять на территории</td></tr>
+      <tr><td>Сельта</td><td>Низкий</td><td>Москва-СПб</td><td>Каска + жилет + ботинки</td></tr>
+      <tr><td>Сибур</td><td>Низкий</td><td>Тобольск-Москва</td><td>Особые требования ТБ</td></tr>
+    </table>
+
+    <h3 style="font-size:14px; font-weight:600; margin:18px 0 10px;">14.3 Ожидаемый вывод парсера</h3>
+    <div class="grid-2">
+      <div class="card">
+        <p style="font-size:12px;color:var(--text-3);">Сообщение:</p>
+        <p style="font-style:italic;">"Рейс 4521, Москва-Краснодар, слот WB 14:00, реф до +2"</p>
+        <pre style="font-size:11px;">{"trip_id":"4521", "route_from":"Москва",
+ "route_to":"Краснодар", "status":"assigned",
+ "customer":"WB", "urgency":"low",
+ "confidence":0.95}</pre>
+      </div>
+      <div class="card">
+        <p style="font-size:12px;color:var(--text-3);">Сообщение:</p>
+        <p style="font-style:italic;">"Стою в пробке на МКАД, опаздываю минут на 40"</p>
+        <pre style="font-size:11px;">{"trip_id":null, "status":"problem",
+ "urgency":"medium",
+ "issue":"Пробка, опоздание ~40 мин",
+ "confidence":0.85}</pre>
+      </div>
+      <div class="card">
+        <p style="font-size:12px;color:var(--text-3);">Сообщение:</p>
+        <p style="font-style:italic;">"реф не выходит на температуру, показывает +8"</p>
+        <pre style="font-size:11px;">{"trip_id":null, "status":"problem",
+ "urgency":"high",
+ "issue":"Поломка рефрижератора, +8",
+ "confidence":0.92}</pre>
+      </div>
+      <div class="card">
+        <p style="font-size:12px;color:var(--text-3);">Сообщение:</p>
+        <p style="font-style:italic;">"ДТП на М4 Дон км 680, наш НЕ участвует, но пробка"</p>
+        <pre style="font-size:11px;">{"trip_id":null, "status":"problem",
+ "urgency":"high",
+ "issue":"ДТП, пробка, задержки рейсов",
+ "confidence":0.88}</pre>
+      </div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marshall AI Listener — Обзор архитектуры</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --accent: #f59e0b;
+            --accent-light: #fef3c7;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --purple: #7c3aed;
+            --purple-light: #ede9fe;
+            --teal: #0d9488;
+            --teal-light: #ccfbf1;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+        .nav {
+            position: sticky; top: 0; z-index: 100;
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            padding: 12px 24px;
+            display: flex; align-items: center; gap: 16px;
+            overflow-x: auto; white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        }
+        .nav a {
+            color: rgba(255,255,255,.85); text-decoration: none;
+            font-size: 13px; padding: 6px 12px; border-radius: 6px;
+            transition: all .2s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,.2); color: #fff; }
+        .nav .brand { font-weight: 700; font-size: 15px; color: #fff; margin-right: 8px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+        h1 { font-size: 2rem; margin-bottom: 8px; color: var(--primary); }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 32px; }
+        h2 {
+            font-size: 1.4rem; margin: 40px 0 16px;
+            padding-bottom: 8px; border-bottom: 2px solid var(--primary-light);
+            color: var(--primary);
+        }
+        h3 { font-size: 1.15rem; margin: 24px 0 12px; color: var(--text); }
+        h4 { font-size: 1rem; margin: 16px 0 8px; color: var(--text); }
+        p { margin-bottom: 12px; }
+        .card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .card-accent { border-left: 4px solid var(--primary); }
+        .card-success { border-left: 4px solid var(--success); }
+        .card-warning { border-left: 4px solid var(--warning); background: var(--accent-light); }
+        .card-danger { border-left: 4px solid var(--danger); background: var(--danger-light); }
+        .card-purple { border-left: 4px solid var(--purple); }
+        .card-teal { border-left: 4px solid var(--teal); }
+
+        /* ADR Cards */
+        .adr-card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .adr-card.adr-accepted { border-left: 5px solid var(--success); }
+        .adr-card.adr-proposed { border-left: 5px solid var(--accent); }
+        .adr-card.adr-deprecated { border-left: 5px solid var(--text-muted); }
+        .adr-header {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+        }
+        .adr-id {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            color: var(--text-muted); background: var(--bg);
+            padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        .adr-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+        .adr-status {
+            display: inline-block; padding: 2px 10px; border-radius: 8px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            margin-left: auto; white-space: nowrap;
+        }
+        .status-accepted { background: var(--success-light); color: var(--success); }
+        .status-proposed { background: var(--accent-light); color: #d97706; }
+        .status-deprecated { background: #f1f5f9; color: var(--text-muted); }
+        .adr-section { margin-bottom: 14px; }
+        .adr-section-label {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            color: var(--text-muted); letter-spacing: .05em; margin-bottom: 4px;
+        }
+        .adr-section p { margin-bottom: 4px; }
+
+        /* Vision block */
+        .vision {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white; border-radius: 16px; padding: 32px;
+            margin-bottom: 32px; font-size: 1.15rem; text-align: center;
+        }
+
+        /* Module grid */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px; margin-bottom: 24px;
+        }
+        .module-card {
+            background: var(--card); border-radius: 12px; padding: 20px;
+            border: 1px solid var(--border);
+        }
+        .module-card .module-tag {
+            display: inline-block; background: var(--primary-light); color: var(--primary);
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .module-card h3 { margin-top: 4px; margin-bottom: 8px; }
+        .module-card ul { padding-left: 18px; }
+        .module-card li { font-size: .9rem; margin-bottom: 4px; color: var(--text-muted); }
+
+        /* Interface flow */
+        .flow-row {
+            display: flex; align-items: flex-start; gap: 0;
+            margin-bottom: 8px; flex-wrap: wrap;
+        }
+        .flow-node {
+            background: var(--primary); color: white;
+            border-radius: 8px; padding: 10px 16px;
+            font-size: .9rem; font-weight: 600;
+            min-width: 130px; text-align: center;
+        }
+        .flow-node.node-db { background: var(--teal); }
+        .flow-node.node-external { background: var(--purple); }
+        .flow-node.node-ui { background: var(--accent); color: var(--text); }
+        .flow-arrow {
+            display: flex; align-items: center; padding: 0 8px;
+            color: var(--text-muted); font-size: 1.1rem; font-weight: 700;
+            align-self: center;
+        }
+        .flow-label {
+            font-size: .78rem; color: var(--text-muted);
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 4px; padding: 2px 6px;
+            align-self: center; max-width: 140px;
+        }
+
+        /* Interface table */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: .95rem; }
+        th { background: var(--primary); color: white; padding: 10px 14px; text-align: left; }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) { background: #f8fafc; }
+
+        /* Badges */
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 8px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+        }
+        .badge-must { background: var(--danger-light); color: var(--danger); }
+        .badge-high { background: #fee2e2; color: #dc2626; }
+        .badge-medium { background: var(--accent-light); color: #d97706; }
+        .badge-low { background: var(--success-light); color: var(--success); }
+        .badge-primary { background: var(--primary-light); color: var(--primary); }
+        .badge-purple { background: var(--purple-light); color: var(--purple); }
+
+        /* Code / pre */
+        pre {
+            background: #1e293b; color: #e2e8f0; padding: 16px;
+            border-radius: 8px; overflow-x: auto; font-size: .85rem;
+            margin-bottom: 16px; line-height: 1.6;
+        }
+        code {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+        p code, li code {
+            background: var(--primary-light); color: var(--primary);
+            padding: 1px 5px; border-radius: 4px; font-size: .88em;
+        }
+
+        /* Inline code block (light) */
+        .code-light {
+            background: #f1f5f9; color: var(--text);
+            border: 1px solid var(--border);
+            padding: 14px 16px; border-radius: 8px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: .85rem; line-height: 1.6;
+            overflow-x: auto; margin-bottom: 16px;
+            white-space: pre;
+        }
+
+        /* Lists */
+        ul, ol { padding-left: 22px; margin-bottom: 12px; }
+        li { margin-bottom: 6px; }
+        .in-scope li { color: var(--success); }
+        .in-scope li span { color: var(--text); }
+        .out-scope li { color: var(--danger); }
+        .out-scope li span { color: var(--text-muted); }
+
+        /* Mermaid container */
+        .mermaid-wrap {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; border: 1px solid var(--border);
+            margin-bottom: 24px; overflow-x: auto;
+        }
+
+        /* Metrics grid */
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .metric-card {
+            background: var(--card); border-radius: 12px; padding: 20px;
+            border: 1px solid var(--border); text-align: center;
+        }
+        .metric-card .value { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+        .metric-card .label { font-size: .85rem; color: var(--text-muted); margin-top: 4px; }
+
+        /* Two-column layout */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        /* Conflict resolution table */
+        .conflict-resolved { background: var(--success-light) !important; }
+        .conflict-open { background: #fff7ed !important; }
+
+        /* Section anchor */
+        .section-num {
+            display: inline-block;
+            background: var(--primary); color: white;
+            width: 28px; height: 28px; border-radius: 50%;
+            text-align: center; line-height: 28px; font-size: .85rem;
+            font-weight: 700; margin-right: 8px; flex-shrink: 0;
+        }
+
+        @media (max-width: 768px) {
+            .two-col { grid-template-columns: 1fr; }
+            .module-grid { grid-template-columns: 1fr; }
+            .flow-row { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <span class="brand">Marshall SDD</span>
+    <a href="index.html">Обзор</a>
+    <a href="master_brief.html">Контекст</a>
+    <a href="product_brief.html">Продукт</a>
+    <a href="spec-tool-chat-listener.html">Chat Listener</a>
+    <a href="spec-tool-ai-parser.html">AI Parser</a>
+    <a href="spec-tool-alert-engine.html">Alert Engine</a>
+    <a href="spec-data-schema.html">Схема БД</a>
+    <a href="spec-tool-dashboard-api.html">Dashboard API</a>
+    <a href="spec-design-dashboard.html">Дизайн</a>
+    <a href="spec-architecture-overview.html" class="active">Архитектура</a>
+    <a href="spec-process-sprint0-plan.html">План</a>
+    <a href="sdd_orchestration.html">SDD</a>
+</nav>
+
+<div class="container">
+
+<h1>Обзор архитектуры</h1>
+<p class="subtitle">Marshall AI Listener — Sprint 0 — Спринт 6: Интеграционный ревью</p>
+
+<!-- Vision -->
+<div class="vision">
+    Marshall AI Listener — это четыре автономных модуля в едином asyncio-процессе.<br>
+    Данные текут в одном направлении: Telegram → Listener → Parser → Alert Engine → Dashboard API.<br>
+    Ни один модуль не знает о деталях другого — только о контракте данных на границе.
+</div>
+
+<!-- 1. System Overview -->
+<h2>1. Системная диаграмма</h2>
+
+<div class="mermaid-wrap">
+<div class="mermaid">
+graph TD
+    TG["Telegram MTProto<br/>(Telethon)"]
+    CL["S0-F01<br/>Chat Listener"]
+    DB1[("raw_messages<br/>PostgreSQL")]
+    Q["asyncio.Queue<br/>ProcessingMessage"]
+    AP["S0-F02<br/>AI Parser"]
+    LLM1["MiniMax M2.5<br/>(основной LLM)"]
+    LLM2["Groq Llama 3.3<br/>(fallback LLM)"]
+    REGEX["Regex Parser<br/>(emergency fallback)"]
+    DB2[("parsed_messages<br/>PostgreSQL")]
+    AE["S0-F03<br/>Alert Engine"]
+    DB3[("alerts<br/>PostgreSQL")]
+    DB4[("trips<br/>PostgreSQL")]
+    API["S0-F04<br/>Dashboard API<br/>(FastAPI)"]
+    DASH["Браузер менеджера<br/>Dashboard UI"]
+    MGR["Менеджер / Руководство<br/>Marshall"]
+
+    TG -->|"NewMessage event"| CL
+    CL -->|"INSERT"| DB1
+    CL -->|"put()"| Q
+    Q -->|"get()"| AP
+    AP -->|"HTTP POST"| LLM1
+    LLM1 -->|"timeout / error"| LLM2
+    LLM2 -->|"timeout / error"| REGEX
+    AP -->|"INSERT"| DB2
+    AP -->|"parsed JSON"| AE
+    AE -->|"INSERT"| DB3
+    AE -->|"UPSERT"| DB4
+    DB2 -->|"SELECT"| API
+    DB3 -->|"SELECT"| API
+    DB4 -->|"SELECT"| API
+    API -->|"JSON REST (polling 3s)"| DASH
+    DASH -->|"просмотр"| MGR
+
+    style CL fill:#2563eb,color:#fff
+    style AP fill:#2563eb,color:#fff
+    style AE fill:#2563eb,color:#fff
+    style API fill:#2563eb,color:#fff
+    style DB1 fill:#0d9488,color:#fff
+    style DB2 fill:#0d9488,color:#fff
+    style DB3 fill:#0d9488,color:#fff
+    style DB4 fill:#0d9488,color:#fff
+    style LLM1 fill:#7c3aed,color:#fff
+    style LLM2 fill:#7c3aed,color:#fff
+    style REGEX fill:#64748b,color:#fff
+    style TG fill:#64748b,color:#fff
+    style DASH fill:#f59e0b,color:#1e293b
+    style Q fill:#1e293b,color:#e2e8f0
+</div>
+</div>
+
+<!-- 2. Modules -->
+<h2>2. Описание модулей</h2>
+
+<div class="module-grid">
+    <div class="module-card">
+        <span class="module-tag">S0-F01</span>
+        <h3>Chat Listener</h3>
+        <ul>
+            <li>Telethon MTProto, pluggable-адаптер</li>
+            <li>3 группы + DM, только текст</li>
+            <li>Rate limit: 30 msg/сек</li>
+            <li>SQLite-буфер при превышении</li>
+            <li>Graceful shutdown, авто-reconnect</li>
+            <li>JSON-логирование в stdout</li>
+        </ul>
+    </div>
+    <div class="module-card">
+        <span class="module-tag">S0-F02</span>
+        <h3>AI Parser</h3>
+        <ul>
+            <li>9 извлекаемых полей + confidence</li>
+            <li>MiniMax M2.5 → Groq → Regex</li>
+            <li>Дедупликация: 5-мин окно</li>
+            <li>Версионирование промпта</li>
+            <li>Rate limit: 100 запросов/мин LLM</li>
+            <li>Budget: ≤50K токенов/день</li>
+        </ul>
+    </div>
+    <div class="module-card">
+        <span class="module-tag">S0-F03</span>
+        <h3>Alert Engine</h3>
+        <ul>
+            <li>5 типов алертов</li>
+            <li>3 уровня severity: HIGH/MED/LOW</li>
+            <li>Правила для 6 заказчиков (YAML)</li>
+            <li>Дедупликация: 5 мин на рейс</li>
+            <li>Статусы: new, reviewed, resolved</li>
+            <li>Latency детекции: &lt;100 мс</li>
+        </ul>
+    </div>
+    <div class="module-card">
+        <span class="module-tag">S0-F04</span>
+        <h3>Dashboard API</h3>
+        <ul>
+            <li>FastAPI + asyncpg, только REST</li>
+            <li>JWT, роли: admin / manager / viewer</li>
+            <li>Polling каждые 3 секунды</li>
+            <li>9 групп эндпоинтов</li>
+            <li>Пагинация, фильтрация, сортировка</li>
+            <li>CORS для браузерного клиента</li>
+        </ul>
+    </div>
+</div>
+
+<!-- 3. Data Flow -->
+<h2>3. Карта потоков данных</h2>
+
+<p>Ниже показан путь одного сообщения от поступления из Telegram до появления алерта в дашборде.</p>
+
+<div class="mermaid-wrap">
+<div class="mermaid">
+sequenceDiagram
+    participant TG as Telegram<br/>(MTProto)
+    participant CL as Chat Listener
+    participant PG1 as raw_messages
+    participant Q as asyncio.Queue
+    participant AP as AI Parser
+    participant LLM as MiniMax / Groq
+    participant PG2 as parsed_messages
+    participant AE as Alert Engine
+    participant PG3 as alerts / trips
+    participant API as Dashboard API
+    participant UI as Browser UI
+
+    TG->>CL: NewMessage event (text)
+    CL->>PG1: INSERT raw_message (<200ms)
+    CL->>Q: put(ProcessingMessage) (<50ms)
+    Q->>AP: get() — async consumer
+    AP->>LLM: POST /chat (prompt + context)
+    LLM-->>AP: JSON {trip_id, status, urgency, confidence}
+    AP->>PG2: INSERT parsed_message
+    AP->>AE: emit parsed_data (in-process call)
+    AE->>AE: evaluate rules (YAML config)
+    AE->>PG3: INSERT alert (if triggered)
+    AE->>PG3: UPSERT trips (aggregate)
+    UI->>API: GET /api/alerts?severity=high (polling 3s)
+    API->>PG3: SELECT alerts WHERE status=new
+    API-->>UI: JSON [{alert_id, trip_id, severity, message}]
+</div>
+</div>
+
+<!-- 4. Interface Contracts -->
+<h2>4. Карта интерфейсов между модулями</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Граница</th>
+            <th>От</th>
+            <th>К</th>
+            <th>Механизм</th>
+            <th>Формат</th>
+            <th>Гарантия</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>IF-01</strong></td>
+            <td>Telegram</td>
+            <td>Chat Listener</td>
+            <td>MTProto (Telethon event)</td>
+            <td>TL объект Message</td>
+            <td>At-most-once (Telegram)</td>
+        </tr>
+        <tr>
+            <td><strong>IF-02</strong></td>
+            <td>Chat Listener</td>
+            <td>PostgreSQL</td>
+            <td>asyncpg INSERT</td>
+            <td>SQL строка <code>raw_messages</code></td>
+            <td>At-least-once (retry x3)</td>
+        </tr>
+        <tr>
+            <td><strong>IF-03</strong></td>
+            <td>Chat Listener</td>
+            <td>AI Parser</td>
+            <td><code>asyncio.Queue</code> (in-process)</td>
+            <td><code>ProcessingMessage</code> dataclass</td>
+            <td>At-least-once (SQLite buffer)</td>
+        </tr>
+        <tr>
+            <td><strong>IF-04</strong></td>
+            <td>AI Parser</td>
+            <td>MiniMax / Groq</td>
+            <td>HTTPS POST (httpx async)</td>
+            <td>JSON prompt → JSON response</td>
+            <td>Timeout 5s, fallback chain</td>
+        </tr>
+        <tr>
+            <td><strong>IF-05</strong></td>
+            <td>AI Parser</td>
+            <td>PostgreSQL</td>
+            <td>asyncpg INSERT</td>
+            <td>SQL строка <code>parsed_messages</code></td>
+            <td>At-least-once (retry x3)</td>
+        </tr>
+        <tr>
+            <td><strong>IF-06</strong></td>
+            <td>AI Parser</td>
+            <td>Alert Engine</td>
+            <td>In-process function call</td>
+            <td><code>ParsedData</code> dataclass / dict</td>
+            <td>Synchronous, no loss</td>
+        </tr>
+        <tr>
+            <td><strong>IF-07</strong></td>
+            <td>Alert Engine</td>
+            <td>PostgreSQL</td>
+            <td>asyncpg INSERT + UPSERT</td>
+            <td>SQL строки <code>alerts</code>, <code>trips</code></td>
+            <td>At-least-once (retry x3)</td>
+        </tr>
+        <tr>
+            <td><strong>IF-08</strong></td>
+            <td>Dashboard API</td>
+            <td>PostgreSQL</td>
+            <td>asyncpg SELECT</td>
+            <td>SQL <code>trips</code>, <code>alerts</code>, <code>parsed_messages</code></td>
+            <td>Read-only, connection pool</td>
+        </tr>
+        <tr>
+            <td><strong>IF-09</strong></td>
+            <td>Browser UI</td>
+            <td>Dashboard API</td>
+            <td>HTTP REST + JWT Bearer</td>
+            <td>JSON (Pydantic v2 схемы)</td>
+            <td>Polling каждые 3 сек</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- 5. Data contracts -->
+<h2>5. Контракты данных на границах</h2>
+
+<h3>IF-03: Chat Listener → AI Parser (ProcessingMessage)</h3>
+<div class="code-light">@dataclass
+class ProcessingMessage:
+    raw_message_id: int        # FK → raw_messages.raw_message_id
+    chat_id: int               # ID чата Telegram (-1001234567890)
+    text: str                  # Полный текст сообщения
+    sender_name: str           # Имя/никнейм отправителя
+    timestamp: datetime        # Время отправки (UTC)
+    is_direct_message: bool    # True = DM, False = группа</div>
+
+<h3>IF-06: AI Parser → Alert Engine (ParsedData)</h3>
+<div class="code-light"># Выходной JSON AI Parser, передаётся в Alert Engine синхронно
+{
+    "message_id": "msg_uuid_123",     # UUID исходного сообщения
+    "trip_id": "4521",                # Идентификатор рейса (str | null)
+    "route_from": "Москва",           # Город отправления (str | null)
+    "route_to": "Краснодар",          # Город назначения (str | null)
+    "slot_time": "14:00",             # Время слота HH:MM (str | null)
+    "status": "assigned",             # assigned|loading|in_transit|
+                                      # unloading|completed|problem
+    "customer": "WB",                 # Тандер|WB|X5|Магнит|Сельта|Сибур|other|null
+    "urgency": "low",                 # low|medium|high
+    "issue": null,                    # Описание проблемы ≤150 символов | null
+    "confidence": 0.95,               # 0.0–1.0
+    "llm_provider": "minimax",        # minimax|groq|regex
+    "prompt_version": "v1"            # версия промпта
+}</div>
+
+<h3>IF-09: Dashboard API → Browser UI (Alert Response)</h3>
+<div class="code-light"># GET /api/alerts — элемент массива
+{
+    "alert_id": 42,
+    "trip_id": "4521",
+    "alert_type": "delay",            # delay|equipment_failure|downtime|
+                                      # safety_violation|docs_missing
+    "severity": "high",               # high|medium|low
+    "message": "Опоздание на слот WB ~40 мин. Рейс 4521.",
+    "customer": "WB",
+    "status": "new",                  # new|reviewed|resolved
+    "created_at": "2026-03-06T14:32:10Z",
+    "reviewed_by": null,
+    "resolved_at": null
+}</div>
+
+<!-- 6. DB Schema Overview -->
+<h2>6. Схема базы данных: обзор связей</h2>
+
+<div class="mermaid-wrap">
+<div class="mermaid">
+erDiagram
+    raw_messages {
+        BIGSERIAL raw_message_id PK
+        BIGINT chat_id
+        BIGINT message_id
+        BIGINT sender_id
+        VARCHAR sender_name
+        TEXT text
+        TIMESTAMPTZ timestamp
+        TIMESTAMPTZ created_at
+        BOOLEAN is_direct_message
+        JSONB raw_data_json
+    }
+    parsed_messages {
+        BIGSERIAL id PK
+        UUID message_id UK
+        BIGINT chat_id FK
+        BIGINT raw_message_id FK
+        VARCHAR trip_id
+        VARCHAR route_from
+        VARCHAR route_to
+        TIME slot_time
+        VARCHAR status
+        VARCHAR customer
+        VARCHAR urgency
+        TEXT issue
+        DECIMAL confidence
+        VARCHAR llm_provider
+        VARCHAR prompt_version
+        BOOLEAN needs_review
+    }
+    alerts {
+        BIGSERIAL alert_id PK
+        VARCHAR trip_id FK
+        VARCHAR alert_type
+        VARCHAR severity
+        TEXT message
+        VARCHAR customer
+        VARCHAR status
+        TIMESTAMPTZ created_at
+        VARCHAR reviewed_by
+        TIMESTAMPTZ resolved_at
+    }
+    trips {
+        VARCHAR trip_id PK
+        VARCHAR route_from
+        VARCHAR route_to
+        VARCHAR customer
+        VARCHAR status
+        VARCHAR urgency
+        TEXT last_issue
+        TIMESTAMPTZ first_seen_at
+        TIMESTAMPTZ last_updated_at
+        INTEGER alert_count
+        INTEGER message_count
+    }
+    dashboard_users {
+        BIGSERIAL user_id PK
+        VARCHAR username UK
+        VARCHAR role
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ last_login_at
+    }
+
+    raw_messages ||--o{ parsed_messages : "raw_message_id"
+    parsed_messages ||--o{ alerts : "trip_id"
+    parsed_messages ||--o| trips : "trip_id (UPSERT)"
+</div>
+</div>
+
+<!-- 7. Tech Stack -->
+<h2>7. Технологический стек</h2>
+
+<div class="two-col">
+    <div class="card card-accent">
+        <h3>Backend (единый сервис)</h3>
+        <table style="margin-bottom:0">
+            <thead><tr><th>Компонент</th><th>Технология</th></tr></thead>
+            <tbody>
+                <tr><td>Язык</td><td><code>Python 3.11+</code></td></tr>
+                <tr><td>Асинхронность</td><td><code>asyncio</code> (нативный)</td></tr>
+                <tr><td>Telegram transport</td><td><code>Telethon 1.34</code> (MTProto)</td></tr>
+                <tr><td>LLM (основной)</td><td>MiniMax M2.5 API</td></tr>
+                <tr><td>LLM (fallback)</td><td>Groq Llama 3.3 70B</td></tr>
+                <tr><td>LLM (аварийный)</td><td>Regex-парсинг</td></tr>
+                <tr><td>HTTP клиент</td><td><code>httpx</code> async</td></tr>
+                <tr><td>Валидация</td><td><code>pydantic v2</code></td></tr>
+                <tr><td>Конфиг</td><td><code>python-dotenv</code></td></tr>
+                <tr><td>Логирование</td><td><code>python-json-logger</code></td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="card card-teal">
+        <h3>API + Инфраструктура</h3>
+        <table style="margin-bottom:0">
+            <thead><tr><th>Компонент</th><th>Технология</th></tr></thead>
+            <tbody>
+                <tr><td>API фреймворк</td><td><code>FastAPI</code></td></tr>
+                <tr><td>DB драйвер</td><td><code>asyncpg</code></td></tr>
+                <tr><td>База данных</td><td><code>PostgreSQL 15+</code></td></tr>
+                <tr><td>Rate limit буфер</td><td><code>aiosqlite</code> (SQLite)</td></tr>
+                <tr><td>Авторизация</td><td>JWT (HS256, 24h TTL)</td></tr>
+                <tr><td>Контейнеризация</td><td><code>Docker</code> + Compose</td></tr>
+                <tr><td>Хостинг</td><td>RUVDS VPS (88.218.248.114)</td></tr>
+                <tr><td>Фронтенд</td><td>HTML + vanilla JS + Chart.js</td></tr>
+                <tr><td>Правила алертов</td><td>YAML (конфиг-файл)</td></tr>
+                <tr><td>Тесты</td><td><code>pytest</code> + <code>pytest-asyncio</code></td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 8. ADRs -->
+<h2>8. Архитектурные решения (ADR)</h2>
+
+<!-- ADR-001 -->
+<div class="adr-card adr-accepted">
+    <div class="adr-header">
+        <span class="adr-id">ADR-001</span>
+        <span class="adr-title">Единый asyncio-процесс вместо микросервисов</span>
+        <span class="adr-status status-accepted">Принято</span>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Контекст</div>
+        <p>Sprint 0 — бесплатный пилот с жёстким ограничением по времени. Нужно максимально быстро доставить рабочую демонстрацию Николе Боброву (Marshall). Любой overhead на коммуникацию между сервисами замедляет разработку и увеличивает задержку.</p>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Решение</div>
+        <p>Все 4 модуля (Chat Listener, AI Parser, Alert Engine, Dashboard API) работают в одном Python-процессе под управлением <code>asyncio</code>. Взаимодействие — через <code>asyncio.Queue</code> и прямые function calls. Единый контейнер Docker.</p>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Последствия</div>
+        <ul>
+            <li><strong>+</strong> Нет сетевого overhead между модулями — latency минимальная</li>
+            <li><strong>+</strong> Один Dockerfile, простой деплой на RUVDS</li>
+            <li><strong>+</strong> Единый structured log stream в stdout</li>
+            <li><strong>+</strong> Отладка проще — один процесс, один трейс</li>
+            <li><strong>-</strong> При падении одного модуля падает весь процесс (митигируется graceful shutdown)</li>
+            <li><strong>-</strong> Масштабирование только вертикальное (Sprint 0 не требует горизонтального)</li>
+        </ul>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Альтернативы</div>
+        <p>RabbitMQ/Kafka + 4 отдельных сервиса — отклонено. Избыточная сложность для пилота. Kafka требует отдельного кластера, что противоречит ограничению "работает на одном VPS".</p>
+    </div>
+</div>
+
+<!-- ADR-002 -->
+<div class="adr-card adr-accepted">
+    <div class="adr-header">
+        <span class="adr-id">ADR-002</span>
+        <span class="adr-title">Telethon MTProto как единственный транспорт Sprint 0 (с Pluggable Adapter)</span>
+        <span class="adr-status status-accepted">Принято</span>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Контекст</div>
+        <p>Telegram планировал ограничения на работу в РФ с 1 апреля 2026. Кроме Telegram, Marshall использует Max, WhatsApp, Viber. Нужно решение, позволяющее быстро переключиться.</p>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Решение</div>
+        <p>В Sprint 0 — только Telethon MTProto (строка <code>LISTENER_MODE=mtproto</code> в .env). Архитектура Chat Listener строится вокруг абстракции <code>TransportAdapter</code> с методами <code>connect()</code>, <code>listen()</code>, <code>disconnect()</code>. Реализована только <code>TelethonAdapter</code>. <code>BotAPIAdapter</code>, <code>MaxAdapter</code> — заглушки для Sprint 1.</p>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Последствия</div>
+        <ul>
+            <li><strong>+</strong> Переключение на другой мессенджер за &lt;7 дней (только новый Adapter)</li>
+            <li><strong>+</strong> Основная бизнес-логика не зависит от транспорта</li>
+            <li><strong>-</strong> Риск бана сервисного Telegram-аккаунта (митигируется отдельным номером телефона)</li>
+        </ul>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Риск</div>
+        <p><span class="badge badge-high">HIGH</span> Блокировка Telegram в РФ. Митигация: <code>MaxAdapter</code> готов за &lt;7 дней после решения.</p>
+    </div>
+</div>
+
+<!-- ADR-003 -->
+<div class="adr-card adr-accepted">
+    <div class="adr-header">
+        <span class="adr-id">ADR-003</span>
+        <span class="adr-title">Fallback chain: MiniMax M2.5 → Groq Llama 3.3 → Regex</span>
+        <span class="adr-status status-accepted">Принято</span>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Контекст</div>
+        <p>Система должна работать 99%+ времени. Зависимость от одного LLM-провайдера создаёт единую точку отказа. MiniMax имеет дневной бюджет токенов, Groq — бесплатный tier с ограничением.</p>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Решение</div>
+        <ul>
+            <li>Попытка 1: MiniMax M2.5, timeout 5 сек</li>
+            <li>Попытка 2: Groq Llama 3.3 70B, timeout 5 сек (при ошибке/timeout MiniMax)</li>
+            <li>Попытка 3: Regex-парсинг (базовое распознавание trip_id, urgency)</li>
+            <li>Penalty confidence: -0.25 при fallback на Groq, результат regex — confidence &lt;0.50</li>
+        </ul>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Последствия</div>
+        <ul>
+            <li><strong>+</strong> Система продолжает работу при отказе любого одного LLM</li>
+            <li><strong>+</strong> Groq бесплатный — экономия при превышении дневного бюджета MiniMax</li>
+            <li><strong>-</strong> Результаты Groq и regex могут отличаться по качеству (отслеживается через <code>llm_provider</code> в логах)</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ADR-004 -->
+<div class="adr-card adr-accepted">
+    <div class="adr-header">
+        <span class="adr-id">ADR-004</span>
+        <span class="adr-title">PostgreSQL для всех хранилищ, без ORM</span>
+        <span class="adr-status status-accepted">Принято</span>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Контекст</div>
+        <p>Нужна надёжная БД, поддерживающая JSONB, параллельные INSERT от нескольких asyncio task, и быстрые SELECT для дашборда. SQLite не подходит для параллельных операций.</p>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Решение</div>
+        <p>Единая PostgreSQL 15+ инстанция. Все 5 таблиц (<code>raw_messages</code>, <code>parsed_messages</code>, <code>alerts</code>, <code>trips</code>, <code>dashboard_users</code>) в одной БД. Доступ через <code>asyncpg</code> напрямую (plain SQL), без SQLAlchemy/Alembic. Миграции — нумерованные plain SQL файлы (<code>001_init.sql</code>…). SQLite используется только как rate-limiting буфер Listener.</p>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Последствия</div>
+        <ul>
+            <li><strong>+</strong> JSONB для <code>raw_data_json</code>, высокая производительность SELECT с индексами</li>
+            <li><strong>+</strong> Нет overhead ORM — прямой контроль SQL</li>
+            <li><strong>+</strong> asyncpg — один из самых быстрых Python-драйверов PostgreSQL</li>
+            <li><strong>-</strong> Нет автомиграций (управляется вручную, достаточно для Sprint 0)</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ADR-005 -->
+<div class="adr-card adr-accepted">
+    <div class="adr-header">
+        <span class="adr-id">ADR-005</span>
+        <span class="adr-title">Правила Alert Engine в YAML (не в БД)</span>
+        <span class="adr-status status-accepted">Принято</span>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Контекст</div>
+        <p>Alert Engine должен детектировать 5 типов событий по правилам для 6 заказчиков. Правила могут меняться в процессе демонстрации (итерация с командой Marshall). Хранение правил в БД потребует UI для управления ими — это Sprint 1+.</p>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Решение</div>
+        <p>Правила хранятся в YAML-файле (<code>config/alert_rules.yaml</code>), загружаемом при старте. Изменение правил — редактирование файла + перезапуск контейнера. Структура: <code>customers[name].rules[type].conditions</code>.</p>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Последствия</div>
+        <ul>
+            <li><strong>+</strong> Быстрая итерация правил без кода и UI</li>
+            <li><strong>+</strong> Правила видны в git-истории (аудит изменений)</li>
+            <li><strong>-</strong> Требует перезапуска при изменении (приемлемо для Sprint 0)</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ADR-006 -->
+<div class="adr-card adr-accepted">
+    <div class="adr-header">
+        <span class="adr-id">ADR-006</span>
+        <span class="adr-title">REST polling вместо WebSocket для дашборда</span>
+        <span class="adr-status status-accepted">Принято</span>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Контекст</div>
+        <p>Дашборд должен показывать актуальные данные. WebSocket потребует дополнительной логики поддержания соединения, обработки разрывов и аутентификации WS. В Sprint 0 нет мобильного клиента и нет требования к push.</p>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Решение</div>
+        <p>Браузер делает polling GET-запросы каждые 3 секунды к <code>/api/alerts</code>, <code>/api/trips</code>, <code>/api/stats</code>. Аутентификация через JWT Bearer. WebSocket — Sprint 1+.</p>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Последствия</div>
+        <ul>
+            <li><strong>+</strong> Простая реализация — стандартный fetch() в браузере</li>
+            <li><strong>+</strong> Latency 0–3 сек (достаточно для задачи — не трейдинг)</li>
+            <li><strong>-</strong> Дополнительная нагрузка на PostgreSQL от polling (20 запросов/мин на пользователя, минимально)</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ADR-007 -->
+<div class="adr-card adr-accepted">
+    <div class="adr-header">
+        <span class="adr-id">ADR-007</span>
+        <span class="adr-title">JWT авторизация с тремя ролями (без OAuth/SSO)</span>
+        <span class="adr-status status-accepted">Принято</span>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Контекст</div>
+        <p>Дашборд нужно защитить паролем. В Sprint 0 нет требования к интеграции с корпоративной аутентификацией Marshall (1С, АРМ). OAuth/LDAP — Sprint 1+.</p>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Решение</div>
+        <p>JWT (HS256), срок жизни 24 часа, секрет в <code>.env</code>. Три роли: <code>admin</code> (полный доступ), <code>manager</code> (просмотр + управление алертами), <code>viewer</code> (только чтение). Пользователи в таблице <code>dashboard_users</code>. При старте — seed admin-пользователь из <code>.env</code>.</p>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Последствия</div>
+        <ul>
+            <li><strong>+</strong> Минимальная реализация — только <code>python-jose</code> + <code>passlib</code></li>
+            <li><strong>+</strong> Ролевой контроль из коробки через payload JWT</li>
+            <li><strong>-</strong> Нет SSO, каждый пользователь создаётся вручную admin'ом (достаточно для 3–5 человек в Sprint 0)</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ADR-008 -->
+<div class="adr-card adr-proposed">
+    <div class="adr-header">
+        <span class="adr-id">ADR-008</span>
+        <span class="adr-title">Дедупликация сообщений и алертов: 5-минутное окно</span>
+        <span class="adr-status status-proposed">Принято</span>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Контекст</div>
+        <p>Диспетчеры часто повторяют одно и то же сообщение (или Telegram доставляет его дважды при нестабильной сети). AI Parser не должен дважды вызывать LLM на одно сообщение. Alert Engine не должен создавать дубли алертов на один рейс.</p>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Решение</div>
+        <ul>
+            <li><strong>AI Parser:</strong> dedup по <code>hash(text + sender_id)</code> с TTL=5 мин. Хранится в памяти (dict) или Redis при наличии.</li>
+            <li><strong>Alert Engine:</strong> dedup по <code>(trip_id, alert_type)</code> с TTL=5 мин. Проверка через SELECT по <code>created_at &gt; now() - interval '5 min'</code>.</li>
+        </ul>
+    </div>
+    <div class="adr-section">
+        <div class="adr-section-label">Последствия</div>
+        <ul>
+            <li><strong>+</strong> Экономия LLM-токенов (до 30% при высоком trафике повторных сообщений)</li>
+            <li><strong>+</strong> Менеджер не захлёбывается дублирующимися алертами</li>
+            <li><strong>-</strong> При перезапуске in-memory dedup сбрасывается (edge case, в пилоте некритично)</li>
+        </ul>
+    </div>
+</div>
+
+<!-- 9. Conflict Resolution -->
+<h2>9. Разрешение противоречий между спецификациями</h2>
+
+<p>В ходе интеграционного ревью выявлены и разрешены следующие несоответствия между спецификациями модулей:</p>
+
+<table>
+    <thead>
+        <tr><th>ID</th><th>Конфликт</th><th>Между</th><th>Решение</th><th>Статус</th></tr>
+    </thead>
+    <tbody>
+        <tr class="conflict-resolved">
+            <td>CR-01</td>
+            <td>Тип очереди: Chat Listener использует <code>asyncio.Queue</code>, AI Parser spec упоминает Redis/RabbitMQ</td>
+            <td>S0-F01 ↔ S0-F02</td>
+            <td>Sprint 0: <code>asyncio.Queue</code> (единый процесс, ADR-001). Redis/RabbitMQ — опционально в Sprint 1 при горизонтальном масштабировании</td>
+            <td><span class="badge badge-low">Разрешено</span></td>
+        </tr>
+        <tr class="conflict-resolved">
+            <td>CR-02</td>
+            <td>Таблица <code>parsed_messages</code>: поле <code>raw_message_id</code> не описано в spec-data-schema, но требуется по spec AI Parser</td>
+            <td>S0-F02 ↔ data-schema</td>
+            <td>Добавить FK <code>raw_message_id BIGINT REFERENCES raw_messages(raw_message_id)</code> в <code>parsed_messages</code>. Схема данных — эталон</td>
+            <td><span class="badge badge-low">Разрешено</span></td>
+        </tr>
+        <tr class="conflict-resolved">
+            <td>CR-03</td>
+            <td>Alert Engine spec не указывает механизм получения данных от AI Parser (push vs pull)</td>
+            <td>S0-F02 ↔ S0-F03</td>
+            <td>In-process synchronous call (ADR-001): после INSERT в <code>parsed_messages</code> AI Parser вызывает <code>alert_engine.evaluate(parsed_data)</code> напрямую</td>
+            <td><span class="badge badge-low">Разрешено</span></td>
+        </tr>
+        <tr class="conflict-resolved">
+            <td>CR-04</td>
+            <td>Alert status в spec Dashboard API: <code>new/reviewed/resolved</code> vs в spec Alert Engine: <code>created/reviewed/resolved</code></td>
+            <td>S0-F03 ↔ S0-F04</td>
+            <td>Эталонные значения: <code>new</code>, <code>reviewed</code>, <code>resolved</code>. Обновить CHECK constraint в схеме БД и Alert Engine spec</td>
+            <td><span class="badge badge-low">Разрешено</span></td>
+        </tr>
+        <tr class="conflict-resolved">
+            <td>CR-05</td>
+            <td>Дедупликация в AI Parser: spec говорит hash по <code>(message_text, sender_id, timestamp)</code>, но timestamp меняется при ретрансляции</td>
+            <td>S0-F02</td>
+            <td>Hash по <code>(text, sender_id)</code> без timestamp. TTL=5 мин обеспечивает временное окно</td>
+            <td><span class="badge badge-low">Разрешено</span></td>
+        </tr>
+        <tr class="conflict-resolved">
+            <td>CR-06</td>
+            <td><code>confidence</code> фильтр Alert Engine: spec говорит &lt;0.60 не алертировать, spec AI Parser говорит &lt;0.50 = не логистика</td>
+            <td>S0-F02 ↔ S0-F03</td>
+            <td>Alert Engine проверяет <code>confidence &gt;= 0.60</code> перед созданием алерта. AI Parser помечает confidence=0 при полном сбое — оба правила консистентны</td>
+            <td><span class="badge badge-low">Разрешено</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- 10. Non-functional requirements -->
+<h2>10. Нефункциональные требования системы</h2>
+
+<div class="metric-grid">
+    <div class="metric-card">
+        <div class="value">&le;5 сек</div>
+        <div class="label">End-to-end latency<br/>(сообщение → алерт в UI)</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">&ge;99%</div>
+        <div class="label">Uptime за 7 дней пилота</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">&ge;85%</div>
+        <div class="label">Точность парсинга trip_id<br/>(на 100 сообщениях)</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">&le;50K</div>
+        <div class="label">LLM токенов в сутки</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">30 msg/сек</div>
+        <div class="label">Максимальный throughput<br/>(с буферизацией)</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">&lt;100 мс</div>
+        <div class="label">Latency Alert Engine<br/>(parsed → alert INSERT)</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">&lt;200 мс</div>
+        <div class="label">Latency Chat Listener<br/>(event → raw_messages INSERT)</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">6/6</div>
+        <div class="label">Покрытие заказчиков<br/>правилами Alert Engine</div>
+    </div>
+</div>
+
+<!-- 11. Security -->
+<h2>11. Безопасность</h2>
+
+<div class="two-col">
+    <div class="card card-danger">
+        <h3>Угрозы и митигации</h3>
+        <table style="margin-bottom:0; font-size:.9rem;">
+            <thead><tr><th>Угроза</th><th>Митигация</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td>Утечка TG StringSession</td>
+                    <td>Только в .env, не в git, не в логах</td>
+                </tr>
+                <tr>
+                    <td>SQL injection в Dashboard API</td>
+                    <td>Параметризованные запросы asyncpg ($1, $2)</td>
+                </tr>
+                <tr>
+                    <td>Несанкционированный доступ к API</td>
+                    <td>JWT Bearer на всех endpoint кроме /health и /login</td>
+                </tr>
+                <tr>
+                    <td>Бан Telegram аккаунта</td>
+                    <td>Сервисный аккаунт (не личный), логирование всех операций</td>
+                </tr>
+                <tr>
+                    <td>Превышение LLM бюджета</td>
+                    <td>Мониторинг токенов, fallback на Groq/Regex</td>
+                </tr>
+                <tr>
+                    <td>Утечка PD в логах (имена, номера)</td>
+                    <td>Логируются только message_hash, trip_id, customer — не текст</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="card card-success">
+        <h3>Чеклист перед деплоем (SEC)</h3>
+        <ul style="list-style:none; padding:0;">
+            <li>&#9744; Все API endpoints требуют JWT Bearer</li>
+            <li>&#9744; Все SQL-запросы параметризованы</li>
+            <li>&#9744; <code>.env</code> в <code>.gitignore</code></li>
+            <li>&#9744; Секреты не в логах (audit log)</li>
+            <li>&#9744; <code>pip-audit</code> без CRITICAL зависимостей</li>
+            <li>&#9744; TG StringSession — отдельный сервисный аккаунт</li>
+            <li>&#9744; CORS настроен на конкретный origin (не *)</li>
+            <li>&#9744; Rate limiting на /api/auth/login (5 попыток / мин)</li>
+        </ul>
+    </div>
+</div>
+
+<!-- 12. Deployment -->
+<h2>12. Схема деплоя</h2>
+
+<div class="mermaid-wrap">
+<div class="mermaid">
+graph LR
+    subgraph DEV ["Локальная разработка"]
+        GIT["GitHub repo<br/>(TimmyZinin)"]
+    end
+
+    subgraph RUVDS ["RUVDS VPS (88.218.248.114)"]
+        direction TB
+        DC["Docker Compose"]
+        subgraph CONTAINERS ["Контейнеры"]
+            C1["marshall-listener<br/>(Python asyncio<br/>S0-F01 + F02 + F03)"]
+            C2["marshall-api<br/>(FastAPI<br/>S0-F04)"]
+            C3["postgres<br/>(PostgreSQL 15)"]
+        end
+        ENV[".env файл<br/>(секреты)"]
+        NGINX["Nginx<br/>(reverse proxy)"]
+    end
+
+    subgraph EXTERNAL ["Внешние сервисы"]
+        TG_EXT["Telegram<br/>(MTProto)"]
+        MM["MiniMax API"]
+        GROQ["Groq API"]
+    end
+
+    subgraph CLIENT ["Клиент"]
+        MGR2["Браузер менеджера<br/>HTTPS"]
+    end
+
+    GIT -->|"scp + docker compose pull"| DC
+    DC --> C1
+    DC --> C2
+    DC --> C3
+    ENV --> DC
+    C1 <-->|"asyncio.Queue<br/>in-process"| C2
+    C1 --> C3
+    C2 --> C3
+    NGINX --> C2
+    C1 <--> TG_EXT
+    C1 --> MM
+    C1 --> GROQ
+    MGR2 <-->|"HTTPS REST"| NGINX
+</div>
+</div>
+
+<div class="card card-accent">
+    <h3>Команды деплоя</h3>
+    <pre><code># Деплой на RUVDS
+sshpass -p 'Ruvds2026' scp -o PubkeyAuthentication=no \
+    docker-compose.yml .env root@88.218.248.114:/opt/marshall-listener/
+
+sshpass -p 'Ruvds2026' ssh -o PubkeyAuthentication=no root@88.218.248.114 \
+    'cd /opt/marshall-listener && docker compose pull && docker compose up -d && docker compose ps'
+
+# Проверка логов после деплоя
+docker compose logs -f marshall-listener --tail=50</code></pre>
+</div>
+
+<!-- 13. File Map -->
+<h2>13. Карта файлов проекта</h2>
+
+<div class="code-light">marshall-listener/
+├── docker-compose.yml             # Compose: listener + api + postgres
+├── Dockerfile                     # Единый образ Python 3.11-slim
+├── requirements.txt               # telethon, asyncpg, fastapi, httpx, pydantic ...
+├── .env.example                   # Шаблон переменных окружения
+│
+├── config/
+│   └── alert_rules.yaml           # Правила Alert Engine для 6 заказчиков
+│
+├── migrations/
+│   ├── 001_init.sql               # Создание 5 таблиц + индексы
+│   └── 002_seed_data.sql          # Тестовые данные (3 чата, admin user)
+│
+├── src/
+│   ├── main.py                    # Точка входа: asyncio.gather(listener, api)
+│   ├── config.py                  # Загрузка .env через pydantic Settings
+│   │
+│   ├── listener/                  # S0-F01: Chat Listener
+│   │   ├── __init__.py
+│   │   ├── chat_listener.py       # ChatListener, основная логика
+│   │   ├── adapters/
+│   │   │   ├── base.py            # TransportAdapter ABC
+│   │   │   ├── telethon_adapter.py
+│   │   │   └── bot_api_adapter.py # Заглушка Sprint 1
+│   │   └── rate_limiter.py        # RateLimiter + SQLite буфер
+│   │
+│   ├── parser/                    # S0-F02: AI Parser
+│   │   ├── __init__.py
+│   │   ├── ai_parser.py           # AIParser, consumer loop
+│   │   ├── llm/
+│   │   │   ├── minimax_client.py  # MiniMax M2.5 клиент
+│   │   │   ├── groq_client.py     # Groq Llama 3.3 клиент
+│   │   │   └── regex_parser.py    # Аварийный regex fallback
+│   │   ├── prompts/
+│   │   │   └── v1.py              # Промпт v1 (полный шаблон)
+│   │   └── dedup.py               # Дедупликация по hash+TTL
+│   │
+│   ├── alert_engine/              # S0-F03: Alert Engine
+│   │   ├── __init__.py
+│   │   ├── alert_engine.py        # AlertEngine.evaluate()
+│   │   ├── rules_loader.py        # Загрузка YAML правил
+│   │   └── dedup.py               # Дедупликация алертов 5 мин
+│   │
+│   ├── api/                       # S0-F04: Dashboard REST API
+│   │   ├── __init__.py
+│   │   ├── app.py                 # FastAPI app, CORS, startup
+│   │   ├── auth.py                # JWT: login, verify, roles
+│   │   ├── routers/
+│   │   │   ├── trips.py           # /api/trips
+│   │   │   ├── alerts.py          # /api/alerts
+│   │   │   ├── stats.py           # /api/stats
+│   │   │   ├── chats.py           # /api/chats
+│   │   │   └── health.py          # /api/health
+│   │   └── schemas.py             # Pydantic v2 схемы ответов
+│   │
+│   └── db/
+│       ├── connection.py          # asyncpg pool, get_connection()
+│       └── queries/               # SQL queries по модулям
+│
+└── tests/
+    ├── conftest.py                # pytest fixtures
+    ├── test_listener/             # Unit + integration тесты Listener
+    ├── test_parser/               # Unit + integration тесты Parser
+    ├── test_alert_engine/         # Unit тесты Alert Engine
+    ├── test_api/                  # API endpoint тесты
+    └── fixtures/
+        └── sample_messages.json   # 100 тестовых сообщений</div>
+
+<!-- 14. Acceptance criteria -->
+<h2>14. Критерии приёмки системы (Sprint 0)</h2>
+
+<div class="card card-success">
+    <h3>Архитектурные критерии</h3>
+    <ol style="padding-left:20px;">
+        <li>Все 4 модуля запускаются одной командой <code>docker compose up</code> без ошибок</li>
+        <li>Сообщение из Telegram попадает в дашборд за &le;5 сек (P95)</li>
+        <li>При отключении MiniMax система автоматически переключается на Groq (fallback логируется)</li>
+        <li>При SIGTERM процесс завершается корректно за &le;5 сек (graceful shutdown всех модулей)</li>
+        <li>Смена транспорта с MTProto на другой требует только изменения <code>LISTENER_MODE</code> в .env</li>
+        <li>Все 6 конфликтов (CR-01…CR-06) реализованы согласно принятым решениям</li>
+        <li>Unit-тесты покрывают &ge;80% кода каждого модуля</li>
+    </ol>
+</div>
+
+<div class="card card-warning">
+    <h3>Открытые риски (не блокирующие Sprint 0)</h3>
+    <ul>
+        <li><strong>Блокировка Telegram в РФ</strong> — <code>MaxAdapter</code> не реализован. Митигация: готов за &lt;7 дней при наступлении риска</li>
+        <li><strong>Масштабирование &gt;30 чатов</strong> — SQLite-буфер не тестировался при &gt;300 сообщений/сек. Митигация: перейти на Redis в Sprint 1</li>
+        <li><strong>In-memory dedup сбрасывается при перезапуске</strong> — возможны дублирующиеся алерты в первые 5 мин после перезапуска. Митигация: Redis dedup в Sprint 1</li>
+    </ul>
+</div>
+
+<!-- 15. Glossary -->
+<h2>15. Глоссарий архитектурных терминов</h2>
+
+<table>
+    <thead>
+        <tr><th>Термин</th><th>Определение</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><strong>ADR</strong></td><td>Architecture Decision Record — документ, фиксирующий архитектурное решение, контекст, альтернативы и последствия</td></tr>
+        <tr><td><strong>asyncio</strong></td><td>Стандартная Python-библиотека для асинхронного программирования. Основа единого процесса</td></tr>
+        <tr><td><strong>asyncio.Queue</strong></td><td>Потокобезопасная FIFO-очередь для передачи данных между coroutine в одном процессе</td></tr>
+        <tr><td><strong>Pluggable Adapter</strong></td><td>Паттерн проектирования: абстракция TransportAdapter позволяет подменить Telethon на BotAPI или Max без изменения основной логики</td></tr>
+        <tr><td><strong>Fallback chain</strong></td><td>Цепочка провайдеров: при недоступности основного автоматически используется следующий</td></tr>
+        <tr><td><strong>Deduplication window</strong></td><td>Временной интервал (5 мин), в котором повторная обработка идентичного события блокируется</td></tr>
+        <tr><td><strong>Confidence score</strong></td><td>Число 0.0–1.0, отражающее уверенность LLM в качестве парсинга. Используется Alert Engine как фильтр (&lt;0.60 = не алертировать)</td></tr>
+        <tr><td><strong>Severity</strong></td><td>Критичность алерта: HIGH (штраф/срыв), MEDIUM (требует внимания), LOW (информационный)</td></tr>
+        <tr><td><strong>Graceful shutdown</strong></td><td>Корректное завершение процесса: дождаться окончания активных задач, закрыть соединения, освободить ресурсы</td></tr>
+        <tr><td><strong>Polling</strong></td><td>Периодический опрос API клиентом (каждые 3 сек). Альтернатива WebSocket для Sprint 0</td></tr>
+        <tr><td><strong>MTProto</strong></td><td>Собственный протокол Telegram для клиентских подключений. Используется Telethon</td></tr>
+        <tr><td><strong>asyncpg</strong></td><td>Высокопроизводительный асинхронный PostgreSQL-драйвер для Python</td></tr>
+    </tbody>
+</table>
+
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        flowchart: { curve: 'basis' },
+        sequence: { actorMargin: 80 }
+    });
+</script>
+
+</body>
+</html>

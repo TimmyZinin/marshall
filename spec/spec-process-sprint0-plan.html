@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marshall AI Listener — План реализации Sprint 0</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --accent: #f59e0b;
+            --accent-light: #fef3c7;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --phase1: #7c3aed;
+            --phase1-light: #ede9fe;
+            --phase2: #0891b2;
+            --phase2-light: #cffafe;
+            --phase3: #059669;
+            --phase3-light: #d1fae5;
+            --phase4: #d97706;
+            --phase4-light: #fef3c7;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+        .nav {
+            position: sticky; top: 0; z-index: 100;
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            padding: 12px 24px;
+            display: flex; align-items: center; gap: 16px;
+            overflow-x: auto; white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        }
+        .nav a {
+            color: rgba(255,255,255,.85); text-decoration: none;
+            font-size: 13px; padding: 6px 12px; border-radius: 6px;
+            transition: all .2s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,.2); color: #fff; }
+        .nav .brand { font-weight: 700; font-size: 15px; color: #fff; margin-right: 8px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+        h1 { font-size: 2rem; margin-bottom: 8px; color: var(--primary); }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 32px; }
+        h2 {
+            font-size: 1.4rem; margin: 40px 0 16px;
+            padding-bottom: 8px; border-bottom: 2px solid var(--primary-light);
+            color: var(--primary);
+        }
+        h3 { font-size: 1.15rem; margin: 24px 0 12px; color: var(--text); }
+        h4 { font-size: 1rem; margin: 16px 0 8px; color: var(--text); font-weight: 600; }
+        p { margin-bottom: 12px; }
+        .card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .card-accent  { border-left: 4px solid var(--primary); }
+        .card-success { border-left: 4px solid var(--success); background: var(--success-light); }
+        .card-warning { border-left: 4px solid var(--warning); background: var(--accent-light); }
+        .card-danger  { border-left: 4px solid var(--danger);  background: var(--danger-light); }
+        .vision {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white; border-radius: 16px; padding: 32px;
+            margin-bottom: 32px; font-size: 1.1rem; text-align: center;
+        }
+        .vision strong { font-size: 1.3rem; display: block; margin-bottom: 8px; }
+
+        /* Phase cards */
+        .phase-card {
+            border-radius: 12px; padding: 24px; margin-bottom: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .phase-card.p1 { border-left: 5px solid var(--phase1); background: var(--phase1-light); }
+        .phase-card.p2 { border-left: 5px solid var(--phase2); background: var(--phase2-light); }
+        .phase-card.p3 { border-left: 5px solid var(--phase3); background: var(--phase3-light); }
+        .phase-card.p4 { border-left: 5px solid var(--phase4); background: var(--phase4-light); }
+        .phase-label {
+            display: inline-block; padding: 3px 12px; border-radius: 20px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 10px;
+        }
+        .p1 .phase-label { background: var(--phase1); color: #fff; }
+        .p2 .phase-label { background: var(--phase2); color: #fff; }
+        .p3 .phase-label { background: var(--phase3); color: #fff; }
+        .p4 .phase-label { background: var(--phase4); color: #fff; }
+        .phase-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+        .p1 .phase-title { color: var(--phase1); }
+        .p2 .phase-title { color: var(--phase2); }
+        .p3 .phase-title { color: var(--phase3); }
+        .p4 .phase-title { color: var(--phase4); }
+        .phase-meta { color: var(--text-muted); font-size: .9rem; margin-bottom: 16px; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: .93rem; }
+        th { background: var(--primary); color: white; padding: 10px 14px; text-align: left; }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .table-compact td { padding: 7px 12px; }
+        .table-compact th { padding: 8px 12px; font-size: .85rem; }
+
+        /* Badges */
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 8px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+        }
+        .badge-must    { background: var(--danger-light);   color: var(--danger); }
+        .badge-high    { background: #fee2e2;                color: #dc2626; }
+        .badge-medium  { background: var(--accent-light);   color: #d97706; }
+        .badge-low     { background: var(--success-light);  color: var(--success); }
+        .badge-done    { background: var(--success-light);  color: var(--success); }
+        .badge-wip     { background: var(--primary-light);  color: var(--primary); }
+        .badge-block   { background: var(--danger-light);   color: var(--danger); }
+
+        /* Hours summary */
+        .hours-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .hours-card {
+            background: var(--card); border-radius: 12px; padding: 20px;
+            border: 1px solid var(--border); text-align: center;
+        }
+        .hours-card .value { font-size: 2.2rem; font-weight: 800; color: var(--primary); }
+        .hours-card .label { font-size: .85rem; color: var(--text-muted); margin-top: 4px; }
+        .hours-card.total .value { color: #7c3aed; }
+
+        /* Checklist */
+        .checklist { list-style: none; padding: 0; }
+        .checklist li {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 8px 0; border-bottom: 1px solid var(--border);
+        }
+        .checklist li:last-child { border-bottom: none; }
+        .checklist input[type="checkbox"] {
+            margin-top: 3px; width: 16px; height: 16px; flex-shrink: 0;
+            accent-color: var(--primary);
+        }
+
+        /* Code blocks */
+        pre {
+            background: #f1f5f9; color: var(--text);
+            padding: 16px; border-radius: 8px;
+            overflow-x: auto; font-size: .85rem;
+            margin-bottom: 16px; border: 1px solid var(--border);
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            line-height: 1.6;
+        }
+        code { font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace; }
+
+        /* Mermaid */
+        .mermaid { background: var(--card); border-radius: 12px; padding: 24px; margin-bottom: 20px; border: 1px solid var(--border); overflow-x: auto; }
+
+        /* Risk table */
+        .risk-high { color: var(--danger); font-weight: 600; }
+        .risk-medium { color: #d97706; font-weight: 600; }
+        .risk-low { color: var(--success); font-weight: 600; }
+
+        /* WBS numbering */
+        .wbs-id { font-family: 'JetBrains Mono', monospace; font-size: .82rem; color: var(--text-muted); }
+
+        /* Dependency arrows inline */
+        .dep-tag {
+            display: inline-block; background: var(--primary-light); color: var(--primary);
+            padding: 1px 7px; border-radius: 8px; font-size: 11px; font-weight: 600;
+        }
+
+        ul { padding-left: 20px; margin-bottom: 12px; }
+        li { margin-bottom: 6px; }
+
+        @media (max-width: 768px) {
+            .hours-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <span class="brand">Marshall SDD</span>
+    <a href="index.html">Обзор</a>
+    <a href="master_brief.html">Контекст</a>
+    <a href="product_brief.html">Продукт</a>
+    <a href="spec-tool-chat-listener.html">Chat Listener</a>
+    <a href="spec-tool-ai-parser.html">AI Parser</a>
+    <a href="spec-tool-alert-engine.html">Alert Engine</a>
+    <a href="spec-data-schema.html">Схема БД</a>
+    <a href="spec-tool-dashboard-api.html">Dashboard API</a>
+    <a href="spec-design-dashboard.html">Дизайн</a>
+    <a href="spec-architecture-overview.html">Архитектура</a>
+    <a href="spec-process-sprint0-plan.html" class="active">План</a>
+    <a href="sdd_orchestration.html">SDD</a>
+</nav>
+
+<div class="container">
+
+<h1>План реализации Sprint 0</h1>
+<p class="subtitle">Marshall AI Listener — WBS, оценки, зависимости, таймлайн и критерии сдачи</p>
+
+<div class="vision">
+    <strong>Sprint 0 — бесплатный пилот</strong>
+    Показать ценность AI Listener за 2 недели: пассивное прослушивание чатов, парсинг через LLM, алерты и дашборд с метриками. Нулевые изменения для пользователей. Цель — зацепить клиента для платных спринтов ($250/час).
+</div>
+
+<!-- SUMMARY METRICS -->
+<h2>Сводка плана</h2>
+<div class="hours-grid">
+    <div class="hours-card">
+        <div class="value">4</div>
+        <div class="label">Фазы реализации</div>
+    </div>
+    <div class="hours-card">
+        <div class="value">28</div>
+        <div class="label">Задач в WBS</div>
+    </div>
+    <div class="hours-card">
+        <div class="value">~68</div>
+        <div class="label">Часов суммарно</div>
+    </div>
+    <div class="hours-card total">
+        <div class="value">14</div>
+        <div class="label">Рабочих дней (5ч/день)</div>
+    </div>
+</div>
+
+<div class="card card-accent">
+    <h3>Ключевые решения, зафиксированные в плане</h3>
+    <ul>
+        <li>Язык: <strong>Python 3.11+</strong> — как в существующем авто-респондере</li>
+        <li>БД: <strong>PostgreSQL 15+</strong> в Docker — апгрейд с SQLite для масштаба</li>
+        <li>Listener: <strong>Telethon (MTProto)</strong> для Sprint 0 — pluggable-адаптер, Bot API — Sprint 1</li>
+        <li>LLM: <strong>MiniMax M2.5 + Groq fallback</strong> — 100K бесплатных токенов/день</li>
+        <li>API: <strong>FastAPI</strong> — async, лёгкий, OpenAPI из коробки</li>
+        <li>Dashboard: <strong>HTML + Chart.js</strong> — без фреймворка, единая страница</li>
+        <li>Деплой: <strong>Docker Compose</strong> на RUVDS 88.218.248.114</li>
+        <li>Алерты: <strong>только в дашборде</strong> — никаких ботов/пушей в Sprint 0</li>
+    </ul>
+</div>
+
+<!-- PHASE 1 -->
+<h2>Фаза 1 — Инфраструктура и Chat Listener (S0-F01)</h2>
+
+<div class="phase-card p1">
+    <span class="phase-label">Фаза 1</span>
+    <div class="phase-title">Инфраструктура + Подключение к чатам</div>
+    <div class="phase-meta">Задачи: P1-01 — P1-07 &nbsp;|&nbsp; Оценка: ~16 часов &nbsp;|&nbsp; Зависимости: нет (стартовая точка)</div>
+    <p>Настройка репозитория, Docker-окружения, PostgreSQL и подключения к Telegram через Telethon (MTProto). Реализация Chat Listener (S0-F01) из спецификации.</p>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Задача</th>
+            <th>Часы</th>
+            <th>Спека</th>
+            <th>Зависит от</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="wbs-id">P1-01</td>
+            <td>Инициализация репозитория: структура каталогов, .gitignore, .env.example, pre-commit hooks</td>
+            <td>1</td>
+            <td>—</td>
+            <td>—</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P1-02</td>
+            <td>Docker Compose: сервисы <code>app</code> + <code>postgres:15</code>, healthcheck, volumes, сети</td>
+            <td>2</td>
+            <td>—</td>
+            <td>P1-01</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P1-03</td>
+            <td>Схема PostgreSQL: миграции Alembic для таблиц <code>raw_messages</code>, <code>parsed_events</code>, <code>alerts</code>, <code>monitored_chats</code></td>
+            <td>3</td>
+            <td><a href="spec-data-schema.html">Схема БД</a></td>
+            <td>P1-02</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P1-04</td>
+            <td>Настройка структурированного JSON-логирования (python-json-logger), конфиг через Pydantic Settings</td>
+            <td>1</td>
+            <td>—</td>
+            <td>P1-01</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P1-05</td>
+            <td>Pluggable-адаптер транспорта: абстрактный класс <code>MessengerTransport</code> + реализация <code>TelethonTransport</code></td>
+            <td>3</td>
+            <td><a href="spec-tool-chat-listener.html">Chat Listener</a></td>
+            <td>P1-04</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P1-06</td>
+            <td>Chat Listener: asyncio event loop, NewMessage handler, подключение к 3 тестовым чатам + DM, rate limiting 30 msg/s</td>
+            <td>4</td>
+            <td><a href="spec-tool-chat-listener.html">Chat Listener</a></td>
+            <td>P1-03, P1-05</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P1-07</td>
+            <td>Сохранение raw-сообщений в <code>raw_messages</code>, graceful shutdown (SIGTERM/SIGINT), reconnect с backoff</td>
+            <td>2</td>
+            <td><a href="spec-tool-chat-listener.html">Chat Listener</a></td>
+            <td>P1-06</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="card card-warning">
+    <strong>Риск P1: StringSession</strong> — Telethon требует активной сессии пользовательского аккаунта Telegram. Необходимо сгенерировать StringSession для тестового аккаунта Marshall на этапе P1-05. Если аккаунт заблокируют — переключить на Bot API (P1-05 сделан как pluggable-адаптер).
+</div>
+
+<!-- PHASE 2 -->
+<h2>Фаза 2 — AI Parser и Alert Engine (S0-F02, S0-F03)</h2>
+
+<div class="phase-card p2">
+    <span class="phase-label">Фаза 2</span>
+    <div class="phase-title">LLM-парсинг + Алерты</div>
+    <div class="phase-meta">Задачи: P2-01 — P2-08 &nbsp;|&nbsp; Оценка: ~20 часов &nbsp;|&nbsp; Зависит от: Фаза 1 (P1-03, P1-07)</div>
+    <p>LLM-пайплайн для парсинга текстов диспетчеров. Извлечение структурированных полей. Генерация и сохранение алертов. Переиспользуем 5-слойный пайплайн из авто-респондера.</p>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Задача</th>
+            <th>Часы</th>
+            <th>Спека</th>
+            <th>Зависит от</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="wbs-id">P2-01</td>
+            <td>LLM-клиент: обёртка над MiniMax M2.5 API + Groq fallback (Llama 3.3 70B), retry с экспоненциальным backoff</td>
+            <td>3</td>
+            <td><a href="spec-tool-ai-parser.html">AI Parser</a></td>
+            <td>P1-04</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P2-02</td>
+            <td>Системный промпт для парсинга: извлечение trip_id, route_from, route_to, slot_time, status, customer, urgency, issue, confidence</td>
+            <td>2</td>
+            <td><a href="spec-tool-ai-parser.html">AI Parser</a></td>
+            <td>P2-01</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P2-03</td>
+            <td>Валидация и нормализация JSON-ответа LLM: Pydantic-модель <code>ParsedEvent</code>, обработка невалидного ответа, confidence=0 при ошибке</td>
+            <td>2</td>
+            <td><a href="spec-tool-ai-parser.html">AI Parser</a></td>
+            <td>P2-02</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P2-04</td>
+            <td>Кеш дедупликации: Redis или in-memory TTL 5 мин — не парсить одинаковые сообщения повторно</td>
+            <td>2</td>
+            <td><a href="spec-tool-ai-parser.html">AI Parser</a></td>
+            <td>P2-03</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P2-05</td>
+            <td>Сохранение <code>parsed_events</code> в PostgreSQL, привязка к <code>raw_message_id</code>, batch-запись</td>
+            <td>2</td>
+            <td><a href="spec-tool-ai-parser.html">AI Parser</a></td>
+            <td>P1-03, P2-03</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P2-06</td>
+            <td>Alert Engine: правила генерации алертов по urgency (high/critical), cooldown 30 мин, дедупликация по trip_id + issue_type</td>
+            <td>3</td>
+            <td><a href="spec-tool-alert-engine.html">Alert Engine</a></td>
+            <td>P2-05</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P2-07</td>
+            <td>Сохранение алертов в таблицу <code>alerts</code>: severity, status (new/acked/resolved), expires_at (TTL 24ч)</td>
+            <td>2</td>
+            <td><a href="spec-tool-alert-engine.html">Alert Engine</a></td>
+            <td>P2-06, P1-03</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P2-08</td>
+            <td>Интеграционный тест: синтетические сообщения из master_brief → проверка парсинга + алертов end-to-end</td>
+            <td>4</td>
+            <td>—</td>
+            <td>P2-07</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="card card-accent">
+    <h4>Синтетические тестовые сообщения (из мастер-брифа)</h4>
+    <p>Используем для тестирования парсера без реальных данных клиента:</p>
+    <ul>
+        <li>"Рейс 4521, Москва-Краснодар, слот WB 14:00, реф охладить до +2" → <strong>urgency: low</strong>, trip_id: 4521</li>
+        <li>"Стою в пробке на МКАД, опаздываю минут на 40" → <strong>urgency: medium</strong>, issue: Traffic 40min</li>
+        <li>"Реф не выходит на температуру, показывает +8. Мастер смотрит." → <strong>urgency: high</strong>, issue: Refrigerator malfunction</li>
+        <li>"ДТП на М4 Дон км 680. Наш водитель НЕ участвует, но пробка" → <strong>urgency: high</strong>, issue: Road incident</li>
+    </ul>
+</div>
+
+<!-- PHASE 3 -->
+<h2>Фаза 3 — Dashboard API и фронтенд (S0-F04)</h2>
+
+<div class="phase-card p3">
+    <span class="phase-label">Фаза 3</span>
+    <div class="phase-title">FastAPI + HTML Дашборд</div>
+    <div class="phase-meta">Задачи: P3-01 — P3-08 &nbsp;|&nbsp; Оценка: ~22 часа &nbsp;|&nbsp; Зависит от: Фаза 2 (P2-07)</div>
+    <p>REST API на FastAPI с эндпоинтами для дашборда. Одностраничный HTML-дашборд с Chart.js. Базовая JWT-авторизация. Реалтайм-обновление через polling (SSE опционально).</p>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Задача</th>
+            <th>Часы</th>
+            <th>Спека</th>
+            <th>Зависит от</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="wbs-id">P3-01</td>
+            <td>FastAPI приложение: структура модулей, SQLAlchemy async, зависимости, CORS</td>
+            <td>2</td>
+            <td><a href="spec-tool-dashboard-api.html">Dashboard API</a></td>
+            <td>P1-03</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P3-02</td>
+            <td>JWT-авторизация: <code>POST /api/auth/token</code>, middleware проверки токена, env-конфиг пользователей</td>
+            <td>2</td>
+            <td><a href="spec-tool-dashboard-api.html">Dashboard API</a></td>
+            <td>P3-01</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P3-03</td>
+            <td>Эндпоинт <code>GET /api/trips</code>: список рейсов с пагинацией, фильтрация по customer/status/urgency, сортировка</td>
+            <td>3</td>
+            <td><a href="spec-tool-dashboard-api.html">Dashboard API</a></td>
+            <td>P3-02, P2-05</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P3-04</td>
+            <td>Эндпоинт <code>GET /api/alerts</code>: список алертов (new/acked/resolved), <code>PATCH /api/alerts/{id}/ack</code></td>
+            <td>3</td>
+            <td><a href="spec-tool-dashboard-api.html">Dashboard API</a></td>
+            <td>P3-02, P2-07</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P3-05</td>
+            <td>Эндпоинт <code>GET /api/stats</code>: агрегаты за период — total_trips, active_alerts, by_urgency, by_customer, messages_today</td>
+            <td>2</td>
+            <td><a href="spec-tool-dashboard-api.html">Dashboard API</a></td>
+            <td>P3-03, P3-04</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P3-06</td>
+            <td>Эндпоинт <code>GET /api/chats</code>: список мониторируемых чатов, статус подключения, last_message_at</td>
+            <td>1</td>
+            <td><a href="spec-tool-dashboard-api.html">Dashboard API</a></td>
+            <td>P3-02</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P3-07</td>
+            <td>HTML-дашборд: лента алертов (real-time polling 10s), KPI-карточки (trips/alerts/messages), статус чатов</td>
+            <td>5</td>
+            <td><a href="spec-design-dashboard.html">Дизайн</a></td>
+            <td>P3-04, P3-05</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P3-08</td>
+            <td>Графики Chart.js: urgency distribution (pie), активность по часам (line), рейсы по заказчикам (bar)</td>
+            <td>4</td>
+            <td><a href="spec-design-dashboard.html">Дизайн</a></td>
+            <td>P3-07</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- PHASE 4 -->
+<h2>Фаза 4 — Деплой, тестирование и сдача</h2>
+
+<div class="phase-card p4">
+    <span class="phase-label">Фаза 4</span>
+    <div class="phase-title">Деплой + QA + Документация</div>
+    <div class="phase-meta">Задачи: P4-01 — P4-06 &nbsp;|&nbsp; Оценка: ~10 часов &nbsp;|&nbsp; Зависит от: Фаза 3 (P3-08)</div>
+    <p>Деплой Docker Compose на RUVDS, настройка nginx, unit и интеграционные тесты, документация для передачи Marshall.</p>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Задача</th>
+            <th>Часы</th>
+            <th>Зависит от</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="wbs-id">P4-01</td>
+            <td>Деплой Docker Compose на RUVDS (88.218.248.114): docker compose up -d, проверка healthcheck</td>
+            <td>2</td>
+            <td>P3-08</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P4-02</td>
+            <td>nginx reverse proxy: дашборд на внешнем порту, SSL/HTTPS (Let's Encrypt или self-signed), basic auth как второй слой</td>
+            <td>2</td>
+            <td>P4-01</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P4-03</td>
+            <td>Unit-тесты pytest: парсер (10 тест-кейсов с синтетическими данными), alert rules (5 кейсов), API endpoints (mock DB)</td>
+            <td>3</td>
+            <td>P2-08</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P4-04</td>
+            <td>E2E smoke-тест: chat listener запущен, 3 синтетических сообщения → parsed → alert → виден в дашборде</td>
+            <td>1</td>
+            <td>P4-01, P4-03</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P4-05</td>
+            <td>README.md: инструкция деплоя, .env переменные, как добавить новый чат, troubleshooting</td>
+            <td>1</td>
+            <td>P4-04</td>
+        </tr>
+        <tr>
+            <td class="wbs-id">P4-06</td>
+            <td>Демо Marshall: подготовка 10-минутной демонстрации с синтетическими данными, доступ к дашборду</td>
+            <td>1</td>
+            <td>P4-05</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- HOURS SUMMARY TABLE -->
+<h2>Сводка часов по фазам и модулям</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Фаза</th>
+            <th>Модуль / Задача</th>
+            <th>Задачи</th>
+            <th>Часов</th>
+            <th>Доля</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><span class="phase-label p1" style="background:var(--phase1);color:#fff;border-radius:20px;padding:2px 10px;">Фаза 1</span></td>
+            <td>Инфраструктура + Chat Listener (S0-F01)</td>
+            <td>P1-01 — P1-07</td>
+            <td><strong>16</strong></td>
+            <td>24%</td>
+        </tr>
+        <tr>
+            <td><span class="phase-label p2" style="background:var(--phase2);color:#fff;border-radius:20px;padding:2px 10px;">Фаза 2</span></td>
+            <td>AI Parser (S0-F02) + Alert Engine (S0-F03)</td>
+            <td>P2-01 — P2-08</td>
+            <td><strong>20</strong></td>
+            <td>29%</td>
+        </tr>
+        <tr>
+            <td><span class="phase-label p3" style="background:var(--phase3);color:#fff;border-radius:20px;padding:2px 10px;">Фаза 3</span></td>
+            <td>Dashboard API + Frontend (S0-F04)</td>
+            <td>P3-01 — P3-08</td>
+            <td><strong>22</strong></td>
+            <td>32%</td>
+        </tr>
+        <tr>
+            <td><span class="phase-label p4" style="background:var(--phase4);color:#fff;border-radius:20px;padding:2px 10px;">Фаза 4</span></td>
+            <td>Деплой + QA + Документация</td>
+            <td>P4-01 — P4-06</td>
+            <td><strong>10</strong></td>
+            <td>15%</td>
+        </tr>
+        <tr style="background: var(--primary-light); font-weight: 700;">
+            <td colspan="3">ИТОГО</td>
+            <td>~68</td>
+            <td>100%</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- GANTT DIAGRAM -->
+<h2>Диаграмма Гантта (2 недели)</h2>
+
+<div class="mermaid">
+gantt
+    title Marshall AI Listener — Sprint 0 (14 рабочих дней)
+    dateFormat YYYY-MM-DD
+    axisFormat %d.%m
+
+    section Фаза 1: Инфраструктура
+    P1-01 Репо и структура         :done,    p101, 2026-03-09, 1d
+    P1-02 Docker Compose            :done,    p102, after p101, 1d
+    P1-03 Схема БД (Alembic)        :active,  p103, after p102, 1d
+    P1-04 Логирование и конфиг      :         p104, 2026-03-09, 1d
+    P1-05 MessengerTransport адаптер:         p105, after p104, 1d
+    P1-06 Chat Listener asyncio     :         p106, after p105, 1d
+    P1-07 Сохранение + shutdown     :         p107, after p106, 1d
+
+    section Фаза 2: AI Parser + Alerts
+    P2-01 LLM-клиент (MiniMax+Groq) :         p201, after p104, 1d
+    P2-02 Промпт для парсинга       :         p202, after p201, 1d
+    P2-03 Pydantic ParsedEvent      :         p203, after p202, 1d
+    P2-04 Кеш дедупликации         :         p204, after p203, 1d
+    P2-05 Сохранение parsed_events  :         p205, after p203, 1d
+    P2-06 Alert Engine (правила)    :         p206, after p205, 1d
+    P2-07 Сохранение алертов        :         p207, after p206, 1d
+    P2-08 Интеграционный тест       :         p208, after p207, 1d
+
+    section Фаза 3: API + Dashboard
+    P3-01 FastAPI приложение        :         p301, after p103, 1d
+    P3-02 JWT авторизация           :         p302, after p301, 1d
+    P3-03 GET /api/trips            :         p303, after p302, 1d
+    P3-04 GET /api/alerts + PATCH   :         p304, after p302, 1d
+    P3-05 GET /api/stats            :         p305, after p303, 1d
+    P3-06 GET /api/chats            :         p306, after p302, 1d
+    P3-07 HTML дашборд              :         p307, after p304, 2d
+    P3-08 Chart.js графики          :         p308, after p307, 1d
+
+    section Фаза 4: Деплой + QA
+    P4-01 Docker Compose на RUVDS   :         p401, after p308, 1d
+    P4-02 nginx + SSL               :         p402, after p401, 1d
+    P4-03 Unit-тесты pytest         :         p403, after p208, 1d
+    P4-04 E2E smoke-тест            :         p404, after p402, 1d
+    P4-05 README.md                 :         p405, after p404, 1d
+    P4-06 Демо Marshall             :milestone, p406, after p405, 0d
+</div>
+
+<!-- DEPENDENCY MAP -->
+<h2>Карта зависимостей между задачами</h2>
+
+<div class="mermaid">
+flowchart TD
+    P101[P1-01\nРепозиторий] --> P102[P1-02\nDocker Compose]
+    P102 --> P103[P1-03\nСхема БД]
+    P101 --> P104[P1-04\nЛогирование]
+    P104 --> P105[P1-05\nTransport Adapter]
+    P103 --> P106[P1-06\nChat Listener]
+    P105 --> P106
+    P106 --> P107[P1-07\nГрейсфул shutdown]
+
+    P104 --> P201[P2-01\nLLM Client]
+    P201 --> P202[P2-02\nПромпт]
+    P202 --> P203[P2-03\nParsedEvent]
+    P203 --> P204[P2-04\nДедупликация]
+    P203 --> P205[P2-05\nparsed_events БД]
+    P103 --> P205
+    P205 --> P206[P2-06\nAlert Engine]
+    P206 --> P207[P2-07\nalerts БД]
+    P207 --> P208[P2-08\nИнтеграционный тест]
+
+    P103 --> P301[P3-01\nFastAPI]
+    P301 --> P302[P3-02\nJWT Auth]
+    P302 --> P303[P3-03\n/api/trips]
+    P302 --> P304[P3-04\n/api/alerts]
+    P302 --> P306[P3-06\n/api/chats]
+    P205 --> P303
+    P207 --> P304
+    P303 --> P305[P3-05\n/api/stats]
+    P304 --> P305
+    P305 --> P307[P3-07\nHTML Dashboard]
+    P304 --> P307
+    P307 --> P308[P3-08\nChart.js]
+
+    P308 --> P401[P4-01\nДеплой RUVDS]
+    P401 --> P402[P4-02\nnginx + SSL]
+    P208 --> P403[P4-03\nUnit тесты]
+    P402 --> P404[P4-04\nE2E тест]
+    P403 --> P404
+    P404 --> P405[P4-05\nREADME]
+    P405 --> P406[P4-06\nДемо]
+
+    style P406 fill:#10b981,color:#fff,stroke:#059669
+    style P101 fill:#2563eb,color:#fff,stroke:#1d4ed8
+</div>
+
+<!-- DIRECTORY STRUCTURE -->
+<h2>Структура файлов проекта</h2>
+
+<pre>
+marshall-ai-listener/
+├── docker-compose.yml          # app + postgres + (redis опционально)
+├── Dockerfile
+├── .env.example                # шаблон переменных окружения
+├── .gitignore
+├── README.md
+├── requirements.txt
+│
+├── alembic/                    # миграции PostgreSQL
+│   ├── env.py
+│   ├── versions/
+│   │   ├── 001_initial_schema.py
+│   │   └── ...
+│   └── alembic.ini
+│
+├── app/
+│   ├── __init__.py
+│   ├── main.py                 # точка входа: listener + FastAPI
+│   ├── config.py               # Pydantic Settings (из .env)
+│   │
+│   ├── listener/               # S0-F01: Chat Listener
+│   │   ├── __init__.py
+│   │   ├── base.py             # абстрактный MessengerTransport
+│   │   ├── telethon_transport.py   # Telethon (MTProto)
+│   │   └── event_handler.py    # asyncio NewMessage → raw_messages
+│   │
+│   ├── parser/                 # S0-F02: AI Parser
+│   │   ├── __init__.py
+│   │   ├── llm_client.py       # MiniMax + Groq fallback
+│   │   ├── prompts.py          # системный промпт
+│   │   ├── models.py           # Pydantic: ParsedEvent
+│   │   └── pipeline.py         # orchestration: raw → parsed
+│   │
+│   ├── alerts/                 # S0-F03: Alert Engine
+│   │   ├── __init__.py
+│   │   ├── rules.py            # правила генерации алертов
+│   │   └── engine.py           # processed event → alert
+│   │
+│   ├── api/                    # S0-F04: Dashboard API
+│   │   ├── __init__.py
+│   │   ├── app.py              # FastAPI instance
+│   │   ├── auth.py             # JWT middleware
+│   │   ├── routes/
+│   │   │   ├── trips.py        # GET /api/trips
+│   │   │   ├── alerts.py       # GET/PATCH /api/alerts
+│   │   │   ├── stats.py        # GET /api/stats
+│   │   │   └── chats.py        # GET /api/chats
+│   │   └── schemas.py          # Pydantic response models
+│   │
+│   ├── db/
+│   │   ├── __init__.py
+│   │   ├── session.py          # SQLAlchemy async engine
+│   │   └── models.py           # ORM: RawMessage, ParsedEvent, Alert, MonitoredChat
+│   │
+│   └── dashboard/
+│       └── index.html          # SPA дашборд (Chart.js, polling)
+│
+└── tests/
+    ├── conftest.py
+    ├── test_parser.py          # 10 тест-кейсов парсера
+    ├── test_alert_rules.py     # 5 тест-кейсов алертов
+    └── test_api.py             # API эндпоинты (mock DB)
+</pre>
+
+<!-- ENV TEMPLATE -->
+<h2>Шаблон переменных окружения</h2>
+
+<pre>
+# ======== Telegram / Telethon ========
+TG_API_ID=your_api_id
+TG_API_HASH=your_api_hash
+TG_STRING_SESSION=your_string_session
+
+# Режим подключения: mtproto | bot
+LISTENER_MODE=mtproto
+
+# Chat IDs для мониторинга (через запятую)
+MONITORED_CHAT_IDS=-100123456789,-100987654321,-100111222333
+
+# ======== LLM ========
+MINIMAX_API_KEY=your_minimax_key
+MINIMAX_GROUP_ID=your_group_id
+GROQ_API_KEY=your_groq_key
+
+# ======== PostgreSQL ========
+DATABASE_URL=postgresql+asyncpg://marshall:secret@postgres:5432/marshall_listener
+
+# ======== FastAPI / Dashboard ========
+SECRET_KEY=your_jwt_secret_key_min_32_chars
+DASHBOARD_USERNAME=manager
+DASHBOARD_PASSWORD=your_secure_password
+
+# ======== App Config ========
+RATE_LIMIT_MESSAGES_PER_SEC=30
+ALERT_COOLDOWN_MINUTES=30
+DEDUP_CACHE_TTL_MINUTES=5
+LOG_LEVEL=INFO
+</pre>
+
+<!-- RISKS -->
+<h2>Риски и план митигации</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Риск</th>
+            <th>Вероятность</th>
+            <th>Влияние</th>
+            <th>Митигация</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Telegram заблокирует аккаунт (StringSession)</td>
+            <td class="risk-medium">Средняя</td>
+            <td class="risk-high">Высокое</td>
+            <td>Pluggable-адаптер — переключить на Bot API за 1 час. Тестовый аккаунт, не аккаунт сотрудника.</td>
+        </tr>
+        <tr>
+            <td>MiniMax API недоступен / rate limit</td>
+            <td class="risk-low">Низкая</td>
+            <td class="risk-medium">Среднее</td>
+            <td>Groq fallback (Llama 3.3 70B, 100K токенов/день). Retry с backoff уже в P2-01.</td>
+        </tr>
+        <tr>
+            <td>Telegram блокировка в РФ (1 апреля 2026)</td>
+            <td class="risk-high">Высокая</td>
+            <td class="risk-high">Высокое</td>
+            <td>Sprint 0 завершается до 1 апреля. Sprint 1 — Max (VK) как основная платформа.</td>
+        </tr>
+        <tr>
+            <td>LLM парсит неточно (confidence &lt; 0.7)</td>
+            <td class="risk-medium">Средняя</td>
+            <td class="risk-low">Низкое</td>
+            <td>Флаг для ревью в дашборде. Синтетические тесты для калибровки промпта на этапе P2-02.</td>
+        </tr>
+        <tr>
+            <td>PostgreSQL медленно на RUVDS</td>
+            <td class="risk-low">Низкая</td>
+            <td class="risk-low">Низкое</td>
+            <td>Индексы на chat_id, created_at, urgency — заложены в Alembic-миграции (P1-03).</td>
+        </tr>
+        <tr>
+            <td>Нет реальных данных клиента для тестирования</td>
+            <td class="risk-high">Гарантировано</td>
+            <td class="risk-low">Низкое</td>
+            <td>Синтетические данные из master_brief достаточны для демо. Реальные подключаются при сдаче.</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- DOD -->
+<h2>Definition of Done (DoD) — Критерии сдачи Sprint 0</h2>
+
+<p>Sprint 0 считается завершённым, когда ВСЕ следующие пункты выполнены:</p>
+
+<div class="card card-accent">
+    <h3>Техническая готовность</h3>
+    <ul class="checklist">
+        <li>
+            <input type="checkbox" id="dod1">
+            <label for="dod1">Chat Listener подключён к 3 тестовым чатам Telegram, захватывает сообщения в реальном времени (&lt;100 мс)</label>
+        </li>
+        <li>
+            <input type="checkbox" id="dod2">
+            <label for="dod2">AI Parser обрабатывает все 4 синтетических сообщения с confidence &ge; 0.8 для структурированных и &ge; 0.7 для неструктурированных</label>
+        </li>
+        <li>
+            <input type="checkbox" id="dod3">
+            <label for="dod3">Alert Engine генерирует алерты для urgency=high/critical с дедупликацией по cooldown 30 мин</label>
+        </li>
+        <li>
+            <input type="checkbox" id="dod4">
+            <label for="dod4">Dashboard API: все 4 эндпоинта (/trips, /alerts, /stats, /chats) возвращают корректные данные</label>
+        </li>
+        <li>
+            <input type="checkbox" id="dod5">
+            <label for="dod5">HTML дашборд отображает ленту алертов, KPI-карточки и графики, обновляется автоматически каждые 10 секунд</label>
+        </li>
+        <li>
+            <input type="checkbox" id="dod6">
+            <label for="dod6">JWT-авторизация работает: неавторизованный запрос к /api/ возвращает 401</label>
+        </li>
+        <li>
+            <input type="checkbox" id="dod7">
+            <label for="dod7">Docker Compose запускается командой <code>docker compose up -d</code> без ошибок, все healthcheck'и зелёные</label>
+        </li>
+        <li>
+            <input type="checkbox" id="dod8">
+            <label for="dod8">Система задеплоена на RUVDS (88.218.248.114), дашборд доступен по HTTPS</label>
+        </li>
+    </ul>
+</div>
+
+<div class="card card-accent">
+    <h3>Качество кода</h3>
+    <ul class="checklist">
+        <li>
+            <input type="checkbox" id="dod9">
+            <label for="dod9">pytest: минимум 15 тест-кейсов, 0 failures (10 парсер + 5 alert rules)</label>
+        </li>
+        <li>
+            <input type="checkbox" id="dod10">
+            <label for="dod10">E2E smoke-тест: синтетическое сообщение → parsed_event → alert → виден в дашборде за &lt;5 секунд</label>
+        </li>
+        <li>
+            <input type="checkbox" id="dod11">
+            <label for="dod11">Структурированное JSON-логирование: все критические ошибки логируются с контекстом (chat_id, message_id, error)</label>
+        </li>
+        <li>
+            <input type="checkbox" id="dod12">
+            <label for="dod12">Секретов нет в репозитории: .env в .gitignore, только .env.example в git</label>
+        </li>
+    </ul>
+</div>
+
+<div class="card card-accent">
+    <h3>Готовность к демо</h3>
+    <ul class="checklist">
+        <li>
+            <input type="checkbox" id="dod13">
+            <label for="dod13">README.md: инструкция деплоя за &lt;30 минут, описание всех .env переменных</label>
+        </li>
+        <li>
+            <input type="checkbox" id="dod14">
+            <label for="dod14">Синтетические данные загружены в БД: минимум 5 рейсов, 3 алерта разных severity</label>
+        </li>
+        <li>
+            <input type="checkbox" id="dod15">
+            <label for="dod15">Доступ к дашборду передан команде Marshall (URL + credentials)</label>
+        </li>
+        <li>
+            <input type="checkbox" id="dod16">
+            <label for="dod16">10-минутная демонстрация проведена: listener → parser → alert → дашборд в реальном времени</label>
+        </li>
+    </ul>
+</div>
+
+<!-- WHAT IS NOT IN SCOPE -->
+<h2>Что НЕ входит в Sprint 0</h2>
+
+<div class="card card-danger">
+    <p>Следующие функции намеренно исключены из Sprint 0 и перенесены в платные спринты ($250/час):</p>
+    <table class="table-compact">
+        <thead>
+            <tr><th>Функция</th><th>Спринт</th><th>Обоснование</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Bot API транспорт (Telegram Bot)</td><td>Sprint 1</td><td>Требует добавления бота в каждый чат клиента</td></tr>
+            <tr><td>Max (VK), WhatsApp, Viber</td><td>Sprint 1+</td><td>Сначала показываем ценность на Telegram</td></tr>
+            <tr><td>STT (Whisper, голосовые сообщения)</td><td>Sprint 1</td><td>Дополнительные расходы на инференс</td></tr>
+            <tr><td>Интерактивный бот для водителей</td><td>Sprint 1</td><td>Нарушает принцип "нулевых изменений" для пилота</td></tr>
+            <tr><td>Чек-листы и кнопки статусов</td><td>Sprint 1</td><td>Sprint 0 — только пассивное наблюдение</td></tr>
+            <tr><td>Интеграция с АРМ / ТМС Marshall</td><td>Sprint 2+</td><td>Нет API доступа, нужно отдельное соглашение</td></tr>
+            <tr><td>Алерты в Telegram / push-уведомления</td><td>Sprint 1</td><td>Sprint 0 — алерты только в дашборде</td></tr>
+            <tr><td>Многопользовательская авторизация / роли</td><td>Sprint 2</td><td>В пилоте достаточно одного логина</td></tr>
+            <tr><td>Контроль документов (ТСД, термограммы)</td><td>Sprint 1</td><td>Вне скоупа пассивного прослушивания</td></tr>
+            <tr><td>МОВИЗОР / GPS-интеграция</td><td>Sprint 2+</td><td>Подключает только диспетчер вручную</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- NEXT STEPS -->
+<h2>Следующие шаги после Sprint 0</h2>
+
+<div class="card card-success">
+    <h3>Если демо успешно — Sprint 1 ($250/час)</h3>
+    <ul>
+        <li>Подключение к реальным чатам диспетчеров Marshall (~7 аккаунтов)</li>
+        <li>Bot API транспорт как альтернатива MTProto</li>
+        <li>Интерактивный бот для водителей: кнопки статусов, чек-листы</li>
+        <li>Whisper STT — голосовые сообщения водителей</li>
+        <li>Max (VK) адаптер — готовность к блокировке Telegram 1 апреля 2026</li>
+        <li>Push-уведомления алертов в Telegram менеджерам</li>
+        <li>Контроль документов (ТСД, термограммы, фотоотчёты)</li>
+    </ul>
+</div>
+
+<div class="card" style="border-left: 4px solid #7c3aed; background: #ede9fe;">
+    <h3>Параллельно — коммерческое предложение</h3>
+    <p>После демо подготовить ROI-расчёт на основе реальных данных:</p>
+    <ul>
+        <li>Средний рейс Marshall: ~80 000 руб. Штраф 30% (срыв) = <strong>24 000 руб потерь</strong></li>
+        <li>Если система предотвращает 1 штраф в месяц — окупаемость за 1 месяц</li>
+        <li>Целевая аудитория: 500+ партнёров-перевозчиков Marshall как SaaS</li>
+    </ul>
+</div>
+
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad: true, theme: 'default', gantt: {useMaxWidth: true}});</script>
+
+</body>
+</html>

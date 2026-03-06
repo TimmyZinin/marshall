@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marshall AI Listener — Спецификация Chat Listener (S0-F01)</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --accent: #f59e0b;
+            --accent-light: #fef3c7;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+        .nav {
+            position: sticky; top: 0; z-index: 100;
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            padding: 12px 24px;
+            display: flex; align-items: center; gap: 16px;
+            overflow-x: auto; white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        }
+        .nav a {
+            color: rgba(255,255,255,.85); text-decoration: none;
+            font-size: 13px; padding: 6px 12px; border-radius: 6px;
+            transition: all .2s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,.2); color: #fff; }
+        .nav .brand { font-weight: 700; font-size: 15px; color: #fff; margin-right: 8px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+        h1 { font-size: 2rem; margin-bottom: 8px; color: var(--primary); }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 32px; }
+        h2 {
+            font-size: 1.4rem; margin: 40px 0 16px;
+            padding-bottom: 8px; border-bottom: 2px solid var(--primary-light);
+            color: var(--primary);
+        }
+        h3 { font-size: 1.15rem; margin: 24px 0 12px; color: var(--text); }
+        h4 { font-size: 1rem; margin: 16px 0 8px; color: var(--text); }
+        p { margin-bottom: 12px; }
+        .card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .card-accent { border-left: 4px solid var(--primary); }
+        .card-success { border-left: 4px solid var(--success); background: var(--success-light); }
+        .card-warning { border-left: 4px solid var(--warning); background: var(--accent-light); }
+        .card-danger { border-left: 4px solid var(--danger); background: var(--danger-light); }
+        .card-info { border-left: 4px solid var(--primary); background: var(--primary-light); }
+        .vision {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white; border-radius: 16px; padding: 32px;
+            margin-bottom: 32px; font-size: 1.2rem; text-align: center;
+        }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 20px; }
+        .feature-card {
+            background: var(--card); border-radius: 12px; padding: 24px;
+            border: 1px solid var(--border);
+        }
+        .feature-card .tag {
+            display: inline-block; background: var(--primary-light); color: var(--primary);
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .feature-card h3 { margin-top: 4px; }
+        .in-scope li { color: var(--success); }
+        .in-scope li span { color: var(--text); }
+        .out-scope li { color: var(--danger); }
+        .out-scope li span { color: var(--text-muted); }
+        ul { padding-left: 20px; margin-bottom: 12px; }
+        li { margin-bottom: 6px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: .95rem; }
+        th { background: var(--primary); color: white; padding: 10px 14px; text-align: left; }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) { background: #f8fafc; }
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 8px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+        }
+        .badge-must { background: var(--danger-light); color: var(--danger); }
+        .badge-high { background: #fee2e2; color: #dc2626; }
+        .badge-medium { background: var(--accent-light); color: #d97706; }
+        .badge-low { background: var(--success-light); color: var(--success); }
+        .badge-info { background: var(--primary-light); color: var(--primary); }
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        .metric-card {
+            background: var(--card); border-radius: 12px; padding: 20px;
+            border: 1px solid var(--border); text-align: center;
+        }
+        .metric-card .value { font-size: 2rem; font-weight: 800; color: var(--primary); }
+        .metric-card .label { font-size: .85rem; color: var(--text-muted); margin-top: 4px; }
+        pre {
+            background: #1e293b; color: #e2e8f0; padding: 16px;
+            border-radius: 8px; overflow-x: auto; font-size: .85rem;
+            margin-bottom: 16px;
+        }
+        code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+        .inline-code {
+            background: #f1f5f9; color: #e11d48; padding: 2px 6px;
+            border-radius: 4px; font-size: .9em;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+        .req-card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .req-card .req-id {
+            display: inline-block; background: var(--primary-light); color: var(--primary);
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .req-card h4 { margin-top: 4px; margin-bottom: 8px; font-size: 1.05rem; }
+        .req-card .label-row { margin-bottom: 6px; }
+        .req-card .label-row strong { color: var(--text-muted); font-size: .9rem; }
+
+        .con-card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--warning);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .con-card .con-id {
+            display: inline-block; background: var(--accent-light); color: #d97706;
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .con-card h4 { margin-top: 4px; margin-bottom: 8px; font-size: 1.05rem; }
+
+        .gud-card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--success);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .gud-card .gud-id {
+            display: inline-block; background: var(--success-light); color: var(--success);
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .gud-card h4 { margin-top: 4px; margin-bottom: 8px; font-size: 1.05rem; }
+
+        .ac-given { color: var(--text-muted); }
+        .ac-when { color: var(--primary); font-weight: 600; }
+        .ac-then { color: var(--success); font-weight: 600; }
+        .ac-and { color: #64748b; padding-left: 16px; }
+
+        .edge-case {
+            background: var(--card); border-radius: 12px;
+            padding: 20px; margin-bottom: 16px;
+            border: 1px solid var(--border);
+        }
+        .edge-case .case-num {
+            display: inline-block; background: var(--primary-light); color: var(--primary);
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .toc {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 32px;
+            border: 1px solid var(--border);
+        }
+        .toc h3 { margin-top: 0; margin-bottom: 12px; color: var(--primary); }
+        .toc ol { padding-left: 20px; }
+        .toc li { margin-bottom: 4px; }
+        .toc a { color: var(--primary); text-decoration: none; }
+        .toc a:hover { text-decoration: underline; }
+
+        .scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        @media (max-width: 768px) {
+            .feature-grid { grid-template-columns: 1fr; }
+            .metric-grid { grid-template-columns: repeat(2, 1fr); }
+            .scope-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <span class="brand">Marshall SDD</span>
+    <a href="master_brief.html">Мастер-бриф</a>
+    <a href="product_brief.html">Продукт</a>
+    <a href="sdd_orchestration.html">Оркестрация</a>
+    <a href="spec-tool-chat-listener.html" class="active">Listener</a>
+    <a href="spec-tool-ai-parser.html">Parser</a>
+    <a href="spec-tool-alert-engine.html">Alerts</a>
+    <a href="spec-data-schema.html">Schema</a>
+    <a href="spec-tool-dashboard-api.html">API</a>
+    <a href="spec-design-dashboard.html">Dashboard</a>
+    <a href="spec-architecture-overview.html">Архитектура</a>
+    <a href="spec-process-sprint0-plan.html">План</a>
+</nav>
+
+<div class="container">
+
+<h1>Спецификация Chat Listener (S0-F01)</h1>
+<p class="subtitle">Marshall AI Listener &mdash; v1.0 &mdash; 2026-03-06</p>
+
+<!-- Vision -->
+<div class="vision">
+    Chat Listener &mdash; первая компонента системы Marshall AI Listener, ответственная за пассивное подключение к Telegram-чатам диспетчеров и сбор текстовых сообщений. Модуль читает сообщения в реальном времени без отправки ответов, сохраняет raw-данные в PostgreSQL и передаёт информацию в AI Parser для дальнейшей обработки.<br><br>
+    <strong>Главный принцип:</strong> нулевые изменения в работе людей. Диспетчеры пишут как обычно, система просто слушает и структурирует.
+</div>
+
+<!-- TOC -->
+<div class="toc">
+    <h3>Содержание</h3>
+    <ol>
+        <li><a href="#scope">Цель и скоуп</a></li>
+        <li><a href="#definitions">Определения</a></li>
+        <li><a href="#requirements">Требования, ограничения и рекомендации</a></li>
+        <li><a href="#interfaces">Интерфейсы и контракты данных</a></li>
+        <li><a href="#acceptance">Критерии приёмки (Acceptance Criteria)</a></li>
+        <li><a href="#testing">Стратегия тестирования</a></li>
+        <li><a href="#dependencies">Зависимости</a></li>
+        <li><a href="#examples">Примеры и граничные случаи</a></li>
+        <li><a href="#conclusion">Заключение</a></li>
+    </ol>
+</div>
+
+<!-- 1. Scope -->
+<h2 id="scope">1. Цель и скоуп</h2>
+
+<h3>1.1 Цель модуля</h3>
+<p>Обеспечить подключение к групповым чатам Telegram-диспетчеров, захватить ВСЕ текстовые сообщения (включая прямые сообщения) и сохранить raw-сообщения в структурированном формате для анализа AI Parser.</p>
+
+<h3>1.2 Границы скоупа</h3>
+<div class="scope-grid">
+    <div class="card card-success">
+        <h4>Входит в скоуп</h4>
+        <ul class="in-scope">
+            <li><span>Подключение через Telethon (MTProto) как основной транспорт для Sprint 0</span></li>
+            <li><span>Чтение из 3 заранее выбранных групповых чатов (test-группы) + DM</span></li>
+            <li><span>Асинхронный event listener на asyncio</span></li>
+            <li><span>Сохранение raw-сообщений в таблицу <code class="inline-code">raw_messages</code></span></li>
+            <li><span>Graceful shutdown при SIGTERM/SIGINT</span></li>
+            <li><span>Структурированное JSON-логирование</span></li>
+            <li><span>Rate limiting (30 сообщений/сек)</span></li>
+            <li><span>Обработка ошибок подключения и автоподключение</span></li>
+            <li><span>Pluggable-адаптер: интерфейс для будущего Bot API и других мессенджеров</span></li>
+        </ul>
+    </div>
+    <div class="card card-danger">
+        <h4>Выходит из скоупа</h4>
+        <ul class="out-scope">
+            <li><span>Bot API (будущий Sprint 1)</span></li>
+            <li><span>Max, WhatsApp, Viber (будущие спринты)</span></li>
+            <li><span>Голос, аудио-сообщения (будущий Sprint 1 с STT)</span></li>
+            <li><span>Файлы, фото, документы (только текст)</span></li>
+            <li><span>История сообщений старше 30 дней</span></li>
+            <li><span>Отправка сообщений (только чтение)</span></li>
+            <li><span>Ответы, реакции на сообщения</span></li>
+        </ul>
+    </div>
+</div>
+
+<!-- 2. Definitions -->
+<h2 id="definitions">2. Определения</h2>
+<table>
+    <thead>
+        <tr><th>Термин</th><th>Определение</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><strong>MTProto</strong></td><td>Собственный протокол Telegram для подключения клиентов, используется в Telethon</td></tr>
+        <tr><td><strong>Telethon</strong></td><td>Python-библиотека для работы с Telegram API через MTProto</td></tr>
+        <tr><td><strong>StringSession</strong></td><td>Сериализованная сессия Telethon, хранит токены доступа и состояние подключения</td></tr>
+        <tr><td><strong>Pluggable-адаптер</strong></td><td>Интерфейс, позволяющий переключать различные транспорты (MTProto, Bot API, Max) без изменения основной логики</td></tr>
+        <tr><td><strong>Event Listener</strong></td><td>Асинхронный обработчик событий (NewMessage), запускающийся при получении нового сообщения</td></tr>
+        <tr><td><strong>Raw message</strong></td><td>Неструктурированное текстовое сообщение из чата, сохранённое как есть без парсинга</td></tr>
+        <tr><td><strong>DM (Direct Message)</strong></td><td>Приватное сообщение от пользователя напрямую, не в групповом чате</td></tr>
+        <tr><td><strong>Chat ID</strong></td><td>Уникальный идентификатор чата в Telegram (положительный для групп, отрицательный)</td></tr>
+        <tr><td><strong>User ID</strong></td><td>Уникальный идентификатор пользователя в Telegram</td></tr>
+        <tr><td><strong>Message ID</strong></td><td>Уникальный идентификатор сообщения в пределах чата</td></tr>
+        <tr><td><strong>Rate limiting</strong></td><td>Механизм ограничения частоты обработки событий для защиты от перегруза</td></tr>
+        <tr><td><strong>Graceful shutdown</strong></td><td>Плавное завершение работы с закрытием соединений и очистки ресурсов</td></tr>
+    </tbody>
+</table>
+
+<!-- 3. Requirements -->
+<h2 id="requirements">3. Требования, ограничения и рекомендации</h2>
+
+<h3>3.1 Функциональные требования (REQ-CL)</h3>
+
+<!-- REQ-CL-001 -->
+<div class="req-card">
+    <span class="req-id">REQ-CL-001</span>
+    <h4>Подключение через Telethon</h4>
+    <div class="label-row"><strong>Описание:</strong> Модуль должен подключиться к Telegram через Telethon, используя StringSession из переменной окружения <code class="inline-code">TG_SESSION_STRING</code>.</div>
+    <div class="label-row"><strong>Деталь:</strong> Аутентификация происходит один раз при старте. При повторном запуске система использует сохранённую сессию без повторной авторизации.</div>
+    <div class="label-row"><strong>Приём:</strong> Если StringSession невалидна или истекла &rarr; ошибка с логированием, система не запускается.</div>
+</div>
+
+<!-- REQ-CL-002 -->
+<div class="req-card">
+    <span class="req-id">REQ-CL-002</span>
+    <h4>Чтение из 3 групповых чатов</h4>
+    <div class="label-row"><strong>Описание:</strong> Система подключается к трём заранее выбранным чатам, IDs которых указаны в конфигурации (.env переменная <code class="inline-code">LISTENER_CHAT_IDS</code> как JSON-массив).</div>
+    <div class="label-row"><strong>Деталь:</strong> Чаты загружаются при старте, хранятся в памяти. Если один чат недоступен (удалён, аккаунт выбит из чата) &rarr; логируется warning, система продолжает работать с остальными.</div>
+    <div class="label-row"><strong>Приём:</strong> При запуске логируется успешно подключено N чатов из M. N должен быть &ge;1, иначе warning.</div>
+</div>
+
+<!-- REQ-CL-003 -->
+<div class="req-card">
+    <span class="req-id">REQ-CL-003</span>
+    <h4>Чтение прямых сообщений (DM)</h4>
+    <div class="label-row"><strong>Описание:</strong> Система должна перехватывать входящие сообщения в личные чаты (DM), отправленные любыми участниками системы.</div>
+    <div class="label-row"><strong>Деталь:</strong> DM обрабатываются как отдельный вид "чата", с chat_id == sender_id. Это позволяет диспетчерам писать Listener напрямую.</div>
+    <div class="label-row"><strong>Приём:</strong> При получении DM система сохраняет его в <code class="inline-code">raw_messages</code> с пометкой is_direct_message=true.</div>
+</div>
+
+<!-- REQ-CL-004 -->
+<div class="req-card">
+    <span class="req-id">REQ-CL-004</span>
+    <h4>Event Listener на NewMessage</h4>
+    <div class="label-row"><strong>Описание:</strong> Модуль должен использовать asyncio event handler Telethon для захвата новых сообщений в реальном времени.</div>
+    <div class="label-row"><strong>Деталь:</strong> Используется <code class="inline-code">@client.on(events.NewMessage(...))</code> с фильтром на чаты из конфигурации. При получении сообщения запускается асинхронная функция-обработчик.</div>
+    <div class="label-row"><strong>Приём:</strong> Сообщение захватывается и обработано за &lt;100 мс (задержка передачи в очередь AI Parser).</div>
+</div>
+
+<!-- REQ-CL-005 -->
+<div class="req-card">
+    <span class="req-id">REQ-CL-005</span>
+    <h4>Сохранение raw-сообщений в PostgreSQL</h4>
+    <div class="label-row"><strong>Описание:</strong> Каждое полученное сообщение сохраняется в таблицу <code class="inline-code">raw_messages</code> с полными metadata.</div>
+    <div class="label-row"><strong>Структура записи:</strong></div>
+    <pre><code>- raw_message_id (SERIAL PRIMARY KEY)
+- chat_id (INTEGER) &mdash; ID чата в Telegram
+- message_id (INTEGER) &mdash; ID сообщения в Telegram (уникален в пределах чата)
+- sender_id (INTEGER) &mdash; ID отправителя (User ID)
+- sender_name (VARCHAR) &mdash; Имя/никнейм отправителя
+- text (TEXT) &mdash; Полный текст сообщения (без форматирования, plain text)
+- timestamp (TIMESTAMP) &mdash; Время получения сообщения (UTC)
+- created_at (TIMESTAMP) &mdash; Время сохранения в БД (UTC)
+- is_direct_message (BOOLEAN DEFAULT false) &mdash; True если это DM, false если групповой чат
+- raw_data_json (JSONB) &mdash; Полный JSON с metadata (forward_from, reply_to_msg_id, etc.)</code></pre>
+    <div class="label-row"><strong>Приём:</strong> Для каждого поступившего сообщения существует запись в таблице за &lt;200 мс.</div>
+</div>
+
+<!-- REQ-CL-006 -->
+<div class="req-card">
+    <span class="req-id">REQ-CL-006</span>
+    <h4>Только текстовые сообщения</h4>
+    <div class="label-row"><strong>Описание:</strong> Система обрабатывает ТОЛЬКО текстовые сообщения. Игнорирует голосовые сообщения, фото, видео, документы, стикеры, геолокацию и прочие медиа.</div>
+    <div class="label-row"><strong>Деталь:</strong> При получении мультимедийного сообщения система логирует факт (для статистики), но не сохраняет в <code class="inline-code">raw_messages</code>.</div>
+    <div class="label-row"><strong>Приём:</strong> Сообщение без text-контента &rarr; пропущено, не сохранено в БД.</div>
+</div>
+
+<!-- REQ-CL-007 -->
+<div class="req-card">
+    <span class="req-id">REQ-CL-007</span>
+    <h4>Передача в AI Parser</h4>
+    <div class="label-row"><strong>Описание:</strong> После сохранения в <code class="inline-code">raw_messages</code>, сообщение должно быть передано в следующий модуль (AI Parser) для обработки.</div>
+    <div class="label-row"><strong>Интерфейс:</strong> Передача происходит через asyncio queue с объектом содержащим:</div>
+    <pre><code>{
+    "raw_message_id": int,
+    "chat_id": int,
+    "text": str,
+    "sender_name": str,
+    "timestamp": datetime,
+    "is_direct_message": bool
+}</code></pre>
+    <div class="label-row"><strong>Приём:</strong> После сохранения в БД сообщение помещено в очередь в течение 50 мс.</div>
+</div>
+
+<!-- REQ-CL-008 -->
+<div class="req-card">
+    <span class="req-id">REQ-CL-008</span>
+    <h4>Rate limiting 30 сообщений/сек</h4>
+    <div class="label-row"><strong>Описание:</strong> Система должна ограничивать обработку сообщений до 30 в секунду для защиты от перегруза LLM и БД.</div>
+    <div class="label-row"><strong>Деталь:</strong> Превышающие лимит сообщения помещаются в очередь диска (SQLite буфер). При восстановлении пропускная способность сообщение обрабатывается из очереди.</div>
+    <div class="label-row"><strong>Приём:</strong> При нагрузке &gt;30/сек система логирует "Rate limit hit, N messages queued" и обрабатывает их в порядке очереди без потерь.</div>
+</div>
+
+<!-- REQ-CL-009 -->
+<div class="req-card">
+    <span class="req-id">REQ-CL-009</span>
+    <h4>Graceful shutdown</h4>
+    <div class="label-row"><strong>Описание:</strong> При получении сигнала SIGTERM или SIGINT (ctrl+c) система должна плавно завершиться без потери данных.</div>
+    <div class="label-row"><strong>Процесс:</strong></div>
+    <ol style="padding-left: 20px; margin-bottom: 12px;">
+        <li>Прекратить приём новых событий</li>
+        <li>Дождаться завершения обработки очереди (max 30 сек timeout)</li>
+        <li>Закрыть соединение с Telegram</li>
+        <li>Закрыть соединение с PostgreSQL</li>
+        <li>Завершиться с exit code 0</li>
+    </ol>
+    <div class="label-row"><strong>Приём:</strong> После SIGTERM &rarr; логирование "Shutdown initiated", очередь обработана, соединения закрыты за &lt;5 сек.</div>
+</div>
+
+<!-- REQ-CL-010 -->
+<div class="req-card">
+    <span class="req-id">REQ-CL-010</span>
+    <h4>Структурированное логирование (JSON)</h4>
+    <div class="label-row"><strong>Описание:</strong> Все события (подключение, сообщение, ошибка, shutdown) логируются в формате JSON для удобства парсинга.</div>
+    <div class="label-row"><strong>Формат:</strong></div>
+    <pre><code>{
+  "timestamp": "2026-03-06T14:32:10.123Z",
+  "level": "INFO",
+  "component": "ChatListener",
+  "event": "message_received",
+  "raw_message_id": 12345,
+  "chat_id": -1001234567890,
+  "sender_id": 987654321,
+  "text_length": 45,
+  "processing_time_ms": 87
+}</code></pre>
+    <div class="label-row"><strong>Приём:</strong> Каждая значимая операция залогирована. Логи отправляются в stdout (Docker подхватит).</div>
+</div>
+
+<!-- REQ-CL-011 -->
+<div class="req-card">
+    <span class="req-id">REQ-CL-011</span>
+    <h4>Автоподключение при разрыве соединения</h4>
+    <div class="label-row"><strong>Описание:</strong> Если соединение с Telegram разорвано (таймаут, сеть упала), система должна попытаться переподключиться с экспоненциальной задержкой.</div>
+    <div class="label-row"><strong>Стратегия:</strong></div>
+    <table>
+        <thead><tr><th>Попытка</th><th>Задержка</th></tr></thead>
+        <tbody>
+            <tr><td>1-я</td><td>5 сек</td></tr>
+            <tr><td>2-я</td><td>10 сек</td></tr>
+            <tr><td>3-я</td><td>20 сек</td></tr>
+            <tr><td>4-я и далее</td><td>60 сек (max)</td></tr>
+            <tr><td>После 5 неудачных</td><td>Graceful shutdown с ошибкой</td></tr>
+        </tbody>
+    </table>
+    <div class="label-row"><strong>Приём:</strong> При разрыве логируется "Connection lost, reconnecting in X sec", сообщения новые не приходят, но система не падает.</div>
+</div>
+
+<!-- REQ-CL-012 -->
+<div class="req-card">
+    <span class="req-id">REQ-CL-012</span>
+    <h4>Обработка ошибок БД</h4>
+    <div class="label-row"><strong>Описание:</strong> При ошибке сохранения в PostgreSQL система должна логировать ошибку и повторить попытку 3 раза с экспоненциальной задержкой.</div>
+    <div class="label-row"><strong>Деталь:</strong> Если после 3 попыток БД недоступна &rarr; поместить сообщение в очередь диска (на будущую обработку). Система продолжает слушать новые сообщения.</div>
+    <div class="label-row"><strong>Приём:</strong> При отказе БД &rarr; логируется "DB error, retrying (attempt X/3)", затем сообщение в очередь диска.</div>
+</div>
+
+<!-- 3.2 Constraints -->
+<h3>3.2 Ограничения (CON-CL)</h3>
+
+<!-- CON-CL-001 -->
+<div class="con-card">
+    <span class="con-id">CON-CL-001</span>
+    <h4>Только Sprint 0 &mdash; MTProto</h4>
+    <div class="label-row"><strong>Описание:</strong> На Sprint 0 используется ТОЛЬКО Telethon (MTProto). Bot API отложена на Sprint 1.</div>
+    <div class="label-row"><strong>Риск:</strong> Риск бана аккаунта Telegram при активном использовании. Требуется сервисный аккаунт (не личный диспетчера).</div>
+    <div class="label-row"><strong>Смягчение:</strong> Используется отдельный номер телефона для сессии, логируются все операции для аудита.</div>
+</div>
+
+<!-- CON-CL-002 -->
+<div class="con-card">
+    <span class="con-id">CON-CL-002</span>
+    <h4>Нет интеграции с АРМ Marshall</h4>
+    <div class="label-row"><strong>Описание:</strong> Chat Listener НЕ подключается к АРМ Marshall, не читает API Marshall. Sprint 0 автономен.</div>
+    <div class="label-row"><strong>Последствие:</strong> Нет возможности привязать trip_id из сообщения к данным АРМ. Это делается в следующих спринтах.</div>
+</div>
+
+<!-- CON-CL-003 -->
+<div class="con-card">
+    <span class="con-id">CON-CL-003</span>
+    <h4>Только текст, no media</h4>
+    <div class="label-row"><strong>Описание:</strong> Система игнорирует все мультимедийные сообщения (фото, видео, голос, документы).</div>
+    <div class="label-row"><strong>Обоснование:</strong> STT и распознавание документов требуют специальной обработки и отложены на платные спринты.</div>
+</div>
+
+<!-- CON-CL-004 -->
+<div class="con-card">
+    <span class="con-id">CON-CL-004</span>
+    <h4>История &le;30 дней</h4>
+    <div class="label-row"><strong>Описание:</strong> При подключении система может загрузить последние 30 дней истории каждого чата. Старшую историю загружать дорого и не нужно для пилота.</div>
+    <div class="label-row"><strong>Практика:</strong> При запуске система загружает историю за последние 7 дней (компромисс между покрытием и скоростью).</div>
+</div>
+
+<!-- CON-CL-005 -->
+<div class="con-card">
+    <span class="con-id">CON-CL-005</span>
+    <h4>3 тестовых чата</h4>
+    <div class="label-row"><strong>Описание:</strong> Sprint 0 подключается к 3 тестовым чатам, созданным для разработки и демонстрации. В production будут все чаты диспетчеров (7-10 групп).</div>
+    <div class="label-row"><strong>Практика:</strong> Конфигурация через .env позволяет легко добавить новые чаты.</div>
+</div>
+
+<!-- 3.3 Recommendations -->
+<h3>3.3 Рекомендации (GUD-CL)</h3>
+
+<!-- GUD-CL-001 -->
+<div class="gud-card">
+    <span class="gud-id">GUD-CL-001</span>
+    <h4>Сохранить контекст отправителя</h4>
+    <p><strong>Рекомендация:</strong> Для каждого сообщения сохранять полное имя/никнейм отправителя (sender_name). Это помогает при парсинге + аналитике.</p>
+    <p><strong>Пример:</strong> "Диспетчер Алексей" вместо "Алексей" &mdash; более специфично.</p>
+</div>
+
+<!-- GUD-CL-002 -->
+<div class="gud-card">
+    <span class="gud-id">GUD-CL-002</span>
+    <h4>Логировать версию Telethon и TG API</h4>
+    <p><strong>Рекомендация:</strong> При старте логировать версию используемых библиотек для отладки.</p>
+    <pre><code>{
+  "event": "startup",
+  "telethon_version": "1.34.0",
+  "telegram_api_version": "183"
+}</code></pre>
+</div>
+
+<!-- GUD-CL-003 -->
+<div class="gud-card">
+    <span class="gud-id">GUD-CL-003</span>
+    <h4>Метрика: сообщения в секунду</h4>
+    <p><strong>Рекомендация:</strong> Отслеживать в логах средний throughput (сообщений в секунду) для мониторинга нагрузки и оптимизации.</p>
+</div>
+
+<!-- GUD-CL-004 -->
+<div class="gud-card">
+    <span class="gud-id">GUD-CL-004</span>
+    <h4>Тестовые данные: синтетические сообщения</h4>
+    <p><strong>Рекомендация:</strong> Создать скрипт генерации синтетических сообщений в test-чаты для нагрузочного тестирования без зависимости от реальных данных.</p>
+</div>
+
+<!-- GUD-CL-005 -->
+<div class="gud-card">
+    <span class="gud-id">GUD-CL-005</span>
+    <h4>Pluggable-адаптер &mdash; создать интерфейс NOW</h4>
+    <p><strong>Рекомендация:</strong> Хотя Bot API отложена на Sprint 1, создать абстракцию TransportAdapter прямо в Chat Listener, чтобы переключение было простым.</p>
+    <p><strong>Архитектура:</strong></p>
+    <pre><code>class TransportAdapter:
+    async def connect(self, config: Dict) -> None: ...
+    async def listen(self) -> AsyncGenerator[RawMessage]: ...
+    async def disconnect(self) -> None: ...
+
+class TelethonAdapter(TransportAdapter): ...
+class BotAPIAdapter(TransportAdapter): ...  # Пусто, заглушка на Sprint 1
+
+listener = ChatListener(transport=TelethonAdapter(...))</code></pre>
+</div>
+
+<!-- 4. Interfaces -->
+<h2 id="interfaces">4. Интерфейсы и контракты данных</h2>
+
+<h3>4.1 Конфигурация (входные переменные окружения)</h3>
+<pre><code># .env файл
+LISTENER_MODE=mtproto                    # mtproto | bot_api (будущее)
+TG_SESSION_STRING=&lt;string_session_base64&gt; # Telethon StringSession
+LISTENER_CHAT_IDS='[-1001234567890, -1009876543210, -1005555555555]'  # JSON array
+LISTENER_RATE_LIMIT=30                   # сообщений в сек
+LISTENER_HISTORY_DAYS=7                  # дней истории при подключении
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=marshall_listener
+DB_USER=postgres
+DB_PASSWORD=&lt;password&gt;
+LOG_LEVEL=INFO                           # DEBUG | INFO | WARNING | ERROR
+SHUTDOWN_TIMEOUT=30                      # сек для graceful shutdown
+QUEUE_BUFFER_PATH=/tmp/listener_queue.db # SQLite буфер для rate limiting</code></pre>
+
+<h3>4.2 Структура данных: RawMessage (Python класс)</h3>
+<pre><code>from dataclasses import dataclass
+from datetime import datetime
+from typing import Optional, Dict
+
+@dataclass
+class RawMessage:
+    """Сырое сообщение из Telegram"""
+    chat_id: int                    # ID чата (-1001234567890)
+    message_id: int                 # ID сообщения в чате (12345)
+    sender_id: int                  # User ID отправителя (987654321)
+    sender_name: str                # Имя/никнейм отправителя
+    text: str                       # Полный текст сообщения
+    timestamp: datetime             # Время отправки (UTC)
+    is_direct_message: bool = False # True если DM, False если группа
+    raw_data_json: Dict = None      # Полный JSON с Telegram metadata</code></pre>
+
+<h3>4.3 Таблица PostgreSQL: raw_messages</h3>
+<pre><code>CREATE TABLE raw_messages (
+    raw_message_id SERIAL PRIMARY KEY,
+    chat_id BIGINT NOT NULL,              -- ID чата Telegram
+    message_id BIGINT NOT NULL,           -- ID сообщения в чате
+    sender_id BIGINT NOT NULL,            -- ID отправителя
+    sender_name VARCHAR(255),             -- Имя отправителя
+    text TEXT NOT NULL,                   -- Полный текст
+    timestamp TIMESTAMP WITH TIME ZONE,   -- Время отправки
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    is_direct_message BOOLEAN DEFAULT false,
+    raw_data_json JSONB,                  -- Полный JSON Telegram
+
+    -- Индексы для быстрого поиска
+    INDEX idx_chat_timestamp ON raw_messages(chat_id, timestamp DESC),
+    INDEX idx_sender_id ON raw_messages(sender_id),
+    INDEX idx_timestamp ON raw_messages(timestamp DESC),
+    INDEX idx_is_direct_message ON raw_messages(is_direct_message)
+);
+
+-- Партиционирование по времени (для больших объёмов)
+-- Для Sprint 0 можно опустить, добавить в Sprint 1</code></pre>
+
+<h3>4.4 Очередь для AI Parser (asyncio.Queue)</h3>
+<p><strong>Интерфейс отправки в Parser:</strong></p>
+<pre><code>message_queue: asyncio.Queue[ProcessingMessage]
+
+@dataclass
+class ProcessingMessage:
+    """Сообщение для передачи в AI Parser"""
+    raw_message_id: int
+    chat_id: int
+    text: str
+    sender_name: str
+    timestamp: datetime
+    is_direct_message: bool</code></pre>
+
+<p><strong>Использование в Parser:</strong></p>
+<pre><code>while True:
+    msg = await message_queue.get()
+    parsed_data = await ai_parser.parse(msg)
+    # сохранить в parsed_data таблицу
+    message_queue.task_done()</code></pre>
+
+<h3>4.5 Обработка ошибок (контракт исключений)</h3>
+<pre><code>class ChatListenerError(Exception):
+    """Базовое исключение Chat Listener"""
+    pass
+
+class ConnectionError(ChatListenerError):
+    """Ошибка подключения к Telegram"""
+    pass
+
+class DatabaseError(ChatListenerError):
+    """Ошибка БД"""
+    pass
+
+class ConfigError(ChatListenerError):
+    """Ошибка конфигурации"""
+    pass
+
+class ShutdownError(ChatListenerError):
+    """Ошибка при shutdown"""
+    pass</code></pre>
+
+<!-- 5. Acceptance Criteria -->
+<h2 id="acceptance">5. Критерии приёмки (Acceptance Criteria)</h2>
+
+<table>
+    <thead>
+        <tr><th style="width:120px">ID</th><th>Название</th><th>Given / When / Then</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><span class="badge badge-info">AC-CL-001</span></td>
+            <td><strong>Telethon подключение</strong></td>
+            <td>
+                <span class="ac-given">Given</span> переменная окружения <code class="inline-code">TG_SESSION_STRING</code> содержит валидную StringSession<br>
+                <span class="ac-when">When</span> система запущена<br>
+                <span class="ac-then">Then</span> она подключается к Telegram за &lt;5 сек и логирует "Connected to Telegram"<br>
+                <span class="ac-and">And</span> обработчик NewMessage зарегистрирован
+            </td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-info">AC-CL-002</span></td>
+            <td><strong>Чтение из 3 чатов</strong></td>
+            <td>
+                <span class="ac-given">Given</span> 3 чата с IDs из <code class="inline-code">LISTENER_CHAT_IDS</code> активны и аккаунт добавлен в них<br>
+                <span class="ac-when">When</span> система запущена<br>
+                <span class="ac-then">Then</span> логируется "Listening to 3 chats" (или "Listening to N chats")<br>
+                <span class="ac-and">And</span> при новом сообщении в чат N события попадают в обработчик
+            </td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-info">AC-CL-003</span></td>
+            <td><strong>Захват DM</strong></td>
+            <td>
+                <span class="ac-given">Given</span> другой пользователь отправляет DM в аккаунт системы<br>
+                <span class="ac-when">When</span> сообщение доставлено в Telegram<br>
+                <span class="ac-then">Then</span> оно захватывается, сохраняется с <code class="inline-code">is_direct_message=true</code><br>
+                <span class="ac-and">And</span> попадает в очередь Parser
+            </td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-info">AC-CL-004</span></td>
+            <td><strong>Сохранение в БД за &lt;200 мс</strong></td>
+            <td>
+                <span class="ac-given">Given</span> новое сообщение получено из Telegram<br>
+                <span class="ac-when">When</span> обработка начата<br>
+                <span class="ac-then">Then</span> запись в таблицу <code class="inline-code">raw_messages</code> выполнена за &lt;200 мс<br>
+                <span class="ac-and">And</span> timestamp и created_at корректны (UTC)
+            </td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-info">AC-CL-005</span></td>
+            <td><strong>Только текст, no media</strong></td>
+            <td>
+                <span class="ac-given">Given</span> в чат отправлено фото, видео или стикер (без text)<br>
+                <span class="ac-when">When</span> обработчик получает событие<br>
+                <span class="ac-then">Then</span> сообщение логируется как "skipped_media_message"<br>
+                <span class="ac-and">And</span> в таблицу <code class="inline-code">raw_messages</code> запись НЕ добавляется
+            </td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-info">AC-CL-006</span></td>
+            <td><strong>Передача в очередь Parser</strong></td>
+            <td>
+                <span class="ac-given">Given</span> текстовое сообщение сохранено в БД<br>
+                <span class="ac-when">When</span> INSERT выполнен<br>
+                <span class="ac-then">Then</span> объект <code class="inline-code">ProcessingMessage</code> помещён в <code class="inline-code">message_queue</code><br>
+                <span class="ac-and">And</span> очередь содержит &gt;0 элементов
+            </td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-info">AC-CL-007</span></td>
+            <td><strong>Rate limit 30/сек</strong></td>
+            <td>
+                <span class="ac-given">Given</span> в течение 1 сек поступает 50 сообщений<br>
+                <span class="ac-when">When</span> обработка начата<br>
+                <span class="ac-then">Then</span> первые 30 обработаны синхронно<br>
+                <span class="ac-and">And</span> оставшиеся 20 помещены в диск-буфер (SQLite)<br>
+                <span class="ac-and">And</span> логируется "Rate limit hit, 20 messages queued"<br>
+                <span class="ac-and">And</span> буферизованные сообщения обработаны после, в порядке очереди
+            </td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-info">AC-CL-008</span></td>
+            <td><strong>Graceful shutdown</strong></td>
+            <td>
+                <span class="ac-given">Given</span> система работает и обрабатывает сообщения<br>
+                <span class="ac-when">When</span> отправлен сигнал SIGTERM (kill -15 pid)<br>
+                <span class="ac-then">Then</span> логируется "Shutdown initiated"<br>
+                <span class="ac-and">And</span> очередь сообщений обработана (или timeout 30 сек)<br>
+                <span class="ac-and">And</span> соединения закрыты<br>
+                <span class="ac-and">And</span> процесс завершился с exit code 0
+            </td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-info">AC-CL-009</span></td>
+            <td><strong>JSON-логирование</strong></td>
+            <td>
+                <span class="ac-given">Given</span> система работает<br>
+                <span class="ac-when">When</span> происходит любое событие (start, message, error, shutdown)<br>
+                <span class="ac-then">Then</span> каждое событие залогировано в формате JSON<br>
+                <span class="ac-and">And</span> JSON содержит поля: timestamp, level, component, event, релевантные данные<br>
+                <span class="ac-and">And</span> логи выводятся в stdout (подхватываются Docker)
+            </td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-info">AC-CL-010</span></td>
+            <td><strong>Автоподключение</strong></td>
+            <td>
+                <span class="ac-given">Given</span> соединение с Telegram разорвано<br>
+                <span class="ac-when">When</span> connection.close() получено<br>
+                <span class="ac-then">Then</span> логируется "Connection lost, reconnecting in 5 sec"<br>
+                <span class="ac-and">And</span> система ждёт 5 сек и пытается переподключиться<br>
+                <span class="ac-and">And</span> если успех &rarr; логируется "Reconnected", обработка продолжается<br>
+                <span class="ac-and">And</span> если 5 попыток неудачны &rarr; graceful shutdown с ошибкой
+            </td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-info">AC-CL-011</span></td>
+            <td><strong>Обработка ошибок БД</strong></td>
+            <td>
+                <span class="ac-given">Given</span> PostgreSQL недоступна при попытке INSERT<br>
+                <span class="ac-when">When</span> выполняется сохранение сообщения<br>
+                <span class="ac-then">Then</span> логируется "DB error: [error message], retrying (attempt 1/3)"<br>
+                <span class="ac-and">And</span> делается 3 попытки с паузами (1 сек, 2 сек, 3 сек)<br>
+                <span class="ac-and">And</span> если все 3 неудачны &rarr; сообщение помещено в диск-буфер (SQLite)<br>
+                <span class="ac-and">And</span> сообщение из буфера обработано когда БД восстановится
+            </td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-info">AC-CL-012</span></td>
+            <td><strong>Pluggable-адаптер (интерфейс)</strong></td>
+            <td>
+                <span class="ac-given">Given</span> код Chat Listener содержит абстракцию <code class="inline-code">TransportAdapter</code><br>
+                <span class="ac-when">When</span> инициализируется Chat Listener<br>
+                <span class="ac-then">Then</span> можно передать любой адаптер (TelethonAdapter, BotAPIAdapter)<br>
+                <span class="ac-and">And</span> интерфейс одинаков (connect, listen, disconnect)<br>
+                <span class="ac-and">And</span> переключение на другой транспорт требует изменение только 1 строки конфигурации
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- 6. Testing -->
+<h2 id="testing">6. Стратегия тестирования</h2>
+
+<h3>6.1 Unit-тесты</h3>
+<p><strong>Модули для тестирования:</strong></p>
+<ol style="padding-left: 20px; margin-bottom: 12px;">
+    <li><code class="inline-code">test_config.py</code> &mdash; парсинг конфигурации, валидация переменных окружения</li>
+    <li><code class="inline-code">test_raw_message.py</code> &mdash; класс RawMessage, сериализация, десериализация</li>
+    <li><code class="inline-code">test_queue.py</code> &mdash; asyncio queue, добавление/удаление элементов</li>
+    <li><code class="inline-code">test_rate_limiter.py</code> &mdash; алгоритм rate limiting, диск-буфер</li>
+</ol>
+
+<p><strong>Примеры тестов:</strong></p>
+<pre><code># test_config.py
+def test_config_from_env():
+    """Конфиг успешно парсится из .env"""
+    os.environ['LISTENER_MODE'] = 'mtproto'
+    config = load_config()
+    assert config.listener_mode == 'mtproto'
+
+def test_config_invalid_json():
+    """Невалидный JSON в LISTENER_CHAT_IDS &rarr; ошибка"""
+    os.environ['LISTENER_CHAT_IDS'] = 'not json'
+    with pytest.raises(ConfigError):
+        load_config()
+
+# test_rate_limiter.py
+async def test_rate_limit_allows_30_per_sec():
+    """Лимит 30 сообщений в сек"""
+    limiter = RateLimiter(limit=30)
+    for i in range(30):
+        assert await limiter.acquire() == True
+    # 31-е должно быть отложено
+    assert await limiter.acquire_nowait() == False</code></pre>
+
+<h3>6.2 Integration-тесты</h3>
+<p><strong>Зависимости для тестов:</strong></p>
+<ul>
+    <li>Test database PostgreSQL (test_marshall_listener)</li>
+    <li>Test Telegram group (Marshall Test &mdash; Chat Listener Staging)</li>
+    <li>Telethon client с test-аккаунтом</li>
+</ul>
+
+<p><strong>Сценарии:</strong></p>
+<pre><code># test_integration_telegram.py
+async def test_message_received_and_saved():
+    """Сообщение в чат &rarr; сохранено в БД"""
+    listener = ChatListener(config)
+    await listener.connect()
+
+    # Отправить тестовое сообщение из другого аккаунта
+    # (симуляция через другого Telethon client или Telegram Web API)
+
+    await asyncio.sleep(0.5)  # дать время на обработку
+
+    # Проверить что запись в raw_messages
+    result = await db.fetch(
+        "SELECT text FROM raw_messages WHERE text = $1",
+        "Test message"
+    )
+    assert len(result) == 1
+    assert result[0]['text'] == "Test message"
+
+async def test_rate_limit_integration():
+    """Отправить 50 сообщений &rarr; первые 30 обработаны, остальные в буфер"""
+    # Отправить 50 сообщений быстро
+    for i in range(50):
+        await send_test_message(f"Message {i}")
+
+    await asyncio.sleep(2)
+
+    # Проверить в БД и буфере
+    db_count = await db.fetch("SELECT COUNT(*) FROM raw_messages")
+    buffer_count = await sqlite_queue.fetch("SELECT COUNT(*) FROM queue")
+
+    assert db_count[0]['count'] > 0
+    assert buffer_count[0]['count'] > 0  # часть в буфере</code></pre>
+
+<h3>6.3 E2E-тесты (система целиком)</h3>
+<pre><code># test_e2e_listener.py
+async def test_full_pipeline():
+    """Сообщение из Telegram &rarr; БД &rarr; очередь для Parser"""
+    listener = ChatListener(config)
+    await listener.start()  # запустить фоновую задачу
+
+    await asyncio.sleep(1)  # дать время на подключение
+
+    # Отправить тестовое сообщение
+    await send_test_message("Рейс 4521, Москва-Краснодар")
+
+    await asyncio.sleep(0.5)  # обработка
+
+    # Проверить в БД
+    row = await db.fetchrow(
+        "SELECT * FROM raw_messages WHERE text LIKE '%Рейс 4521%'"
+    )
+    assert row is not None
+    assert row['text'] == "Рейс 4521, Москва-Краснодар"
+
+    # Проверить очередь Parser
+    msg = await listener.message_queue.get()
+    assert msg.text == "Рейс 4521, Москва-Краснодар"
+    assert msg.raw_message_id == row['raw_message_id']
+
+async def test_shutdown_saves_queue():
+    """Graceful shutdown &rarr; очередь сохранена"""
+    listener = ChatListener(config)
+    await listener.start()
+
+    # Отправить 10 сообщений
+    for i in range(10):
+        await send_test_message(f"Test {i}")
+
+    # Отправить SIGTERM
+    listener.shutdown()
+
+    # Дождаться завершения
+    await asyncio.wait_for(listener.shutdown_event.wait(), timeout=5)
+
+    # Проверить что все 10 в БД или буфере
+    total = await db.fetch("SELECT COUNT(*) FROM raw_messages")
+    # + проверить буфер при необходимости
+    assert total >= 10</code></pre>
+
+<h3>6.4 Нагрузочное тестирование</h3>
+<pre><code># test_load.py
+async def test_throughput_100_msg_per_sec():
+    """100 сообщений в сек &rarr; система не падает, rate limit срабатывает"""
+    listener = ChatListener(config)
+    await listener.start()
+
+    # Отправить 100 сообщений в течение 1 сек
+    for i in range(100):
+        await send_test_message(f"Load test {i}")
+        await asyncio.sleep(0.01)  # 100 в сек
+
+    await asyncio.sleep(5)
+
+    # Все должны быть в БД или буфере, без потерь
+    total_db = await db.fetch("SELECT COUNT(*) FROM raw_messages")
+    # Проверить что 100 обработаны
+    assert total_db[0]['count'] >= 100 or buffer_has_data()</code></pre>
+
+<h3>6.5 Тестовые данные (fixtures)</h3>
+<pre><code># conftest.py (pytest)
+import pytest
+from datetime import datetime
+
+@pytest.fixture
+async def listener_config():
+    """Тестовая конфигурация"""
+    return {
+        'listener_mode': 'mtproto',
+        'tg_session_string': os.getenv('TEST_TG_SESSION'),
+        'listener_chat_ids': [-1001234567890],  # test chat
+        'listener_rate_limit': 30,
+        'db_host': 'localhost',
+        'db_name': 'test_marshall_listener',
+        # и т.д.
+    }
+
+@pytest.fixture
+async def postgres_db():
+    """БД для тестов"""
+    db = await asyncpg.connect('postgresql://...')
+    # Создать таблицы
+    await db.execute(CREATE_TABLE_QUERIES)
+    yield db
+    # Очистить после теста
+    await db.execute("TRUNCATE raw_messages")
+    await db.close()
+
+@pytest.fixture
+async def chat_listener(listener_config, postgres_db):
+    """ChatListener готов к использованию"""
+    listener = ChatListener(listener_config, db=postgres_db)
+    yield listener
+    # Cleanup
+    await listener.disconnect()</code></pre>
+
+<!-- 7. Dependencies -->
+<h2 id="dependencies">7. Зависимости</h2>
+
+<h3>7.1 Библиотеки Python</h3>
+<table>
+    <thead>
+        <tr><th>Библиотека</th><th>Версия</th><th>Назначение</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><code class="inline-code">telethon</code></td><td>1.34.0</td><td>MTProto подключение</td></tr>
+        <tr><td><code class="inline-code">asyncpg</code></td><td>0.29.0</td><td>PostgreSQL асинхронный драйвер</td></tr>
+        <tr><td><code class="inline-code">python-dotenv</code></td><td>1.0.0</td><td>Парсинг .env файлов</td></tr>
+        <tr><td><code class="inline-code">python-json-logger</code></td><td>2.0.7</td><td>JSON логирование</td></tr>
+        <tr><td><code class="inline-code">aiofiles</code></td><td>23.2.1</td><td>Асинхронная работа с файлами (для буфера)</td></tr>
+        <tr><td><code class="inline-code">aiosqlite</code></td><td>0.19.0</td><td>SQLite3 буфер для rate limiting (асинхронно)</td></tr>
+        <tr><td><code class="inline-code">pydantic</code></td><td>2.5.0</td><td>Валидация конфигурации</td></tr>
+    </tbody>
+</table>
+
+<h3>7.2 Инфраструктура</h3>
+<table>
+    <thead>
+        <tr><th>Компонент</th><th>Версия</th><th>Примечания</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Python</td><td>3.11+</td><td>Асинхронность, async/await</td></tr>
+        <tr><td>PostgreSQL</td><td>15+</td><td>Основное хранилище</td></tr>
+        <tr><td>Docker</td><td>Latest</td><td>Контейнеризация</td></tr>
+        <tr><td>RUVDS VPS</td><td>88.218.248.114</td><td>Хостинг (Тим)</td></tr>
+        <tr><td>Telegram API</td><td>V183+</td><td>MTProto протокол</td></tr>
+    </tbody>
+</table>
+
+<h3>7.3 Внешние зависимости</h3>
+<ul>
+    <li><strong>Telegram account</strong> &mdash; аккаунт с номером телефона для StringSession (сервисный, не личный)</li>
+    <li><strong>Test Telegram group</strong> &mdash; 3 групповых чата для разработки</li>
+    <li><strong>PostgreSQL экземпляр</strong> &mdash; на RUVDS или локально</li>
+    <li><strong>StringSession</strong> &mdash; получена один раз от Telethon, сохранена в .env</li>
+</ul>
+
+<!-- 8. Examples -->
+<h2 id="examples">8. Примеры и граничные случаи</h2>
+
+<h3>8.1 Примеры использования</h3>
+
+<!-- Example 1 -->
+<div class="card card-accent">
+    <h4>Пример 1: Простое сообщение в групповой чат</h4>
+    <p><strong>Входные данные (Telegram):</strong></p>
+    <pre><code>Чат: Marshall Test &mdash; WB Рейсы
+Отправитель: Диспетчер Алексей (ID: 123456789)
+Время: 2026-03-06 14:32:10 UTC
+Текст: "Рейс 4521, Москва-Краснодар, слот на погрузку WB 14:00, реф охладить до +2."</code></pre>
+
+    <p><strong>Сохранение в БД:</strong></p>
+    <pre><code>{
+  "raw_message_id": 1,
+  "chat_id": -1001234567890,
+  "message_id": 12345,
+  "sender_id": 123456789,
+  "sender_name": "Диспетчер Алексей",
+  "text": "Рейс 4521, Москва-Краснодар, слот на погрузку WB 14:00, реф охладить до +2.",
+  "timestamp": "2026-03-06T14:32:10Z",
+  "created_at": "2026-03-06T14:32:10.087Z",
+  "is_direct_message": false,
+  "raw_data_json": {
+    "message_id": 12345,
+    "from_id": 123456789,
+    "chat_id": -1001234567890,
+    "date": 1741265530,
+    "edit_date": null,
+    "fwd_from": null,
+    "reply_to_msg_id": null
+  }
+}</code></pre>
+
+    <p><strong>Передача в Parser:</strong></p>
+    <pre><code>ProcessingMessage(
+    raw_message_id=1,
+    chat_id=-1001234567890,
+    text="Рейс 4521, Москва-Краснодар, слот на погрузку WB 14:00, реф охладить до +2.",
+    sender_name="Диспетчер Алексей",
+    timestamp=datetime(2026, 3, 6, 14, 32, 10),
+    is_direct_message=False
+)</code></pre>
+</div>
+
+<!-- Example 2 -->
+<div class="card card-accent">
+    <h4>Пример 2: Прямое сообщение (DM)</h4>
+    <p><strong>Входные данные (Telegram):</strong></p>
+    <pre><code>Тип: Private chat (DM)
+Отправитель: Водитель Иван (ID: 987654321)
+Время: 2026-03-06 15:45:30 UTC
+Текст: "Выехал на погрузку. Навигатор показывает 2.5 часа."</code></pre>
+
+    <p><strong>Сохранение в БД:</strong></p>
+    <pre><code>{
+  "raw_message_id": 2,
+  "chat_id": 987654321,          // chat_id == sender_id для DM
+  "message_id": 54321,
+  "sender_id": 987654321,
+  "sender_name": "Водитель Иван",
+  "text": "Выехал на погрузку. Навигатор показывает 2.5 часа.",
+  "timestamp": "2026-03-06T15:45:30Z",
+  "created_at": "2026-03-06T15:45:30.134Z",
+  "is_direct_message": true,     // Флаг DM
+  "raw_data_json": {
+    "message_id": 54321,
+    "from_id": 987654321,
+    "chat_id": 987654321,
+    "date": 1741266330,
+    "is_private": true
+  }
+}</code></pre>
+</div>
+
+<!-- Example 3 -->
+<div class="card card-accent">
+    <h4>Пример 3: Фото (игнорируется)</h4>
+    <p><strong>Входные данные (Telegram):</strong></p>
+    <pre><code>Чат: Marshall Test &mdash; WB Рейсы
+Отправитель: Водитель Иван
+Медиа: Photo (документ ТСД)
+Caption: "Вот чек погрузки"</code></pre>
+
+    <p><strong>Обработка:</strong></p>
+    <pre><code>{
+  "timestamp": "2026-03-06T16:20:15.456Z",
+  "level": "DEBUG",
+  "component": "ChatListener",
+  "event": "skipped_media_message",
+  "chat_id": -1001234567890,
+  "message_id": 12346,
+  "media_type": "photo",
+  "reason": "text_content_empty"
+}</code></pre>
+    <div class="card card-warning" style="margin-top: 12px; margin-bottom: 0;">
+        <strong>В БД:</strong> Запись НЕ добавляется.
+    </div>
+</div>
+
+<h3>8.2 Граничные случаи</h3>
+
+<!-- Edge cases -->
+<div class="edge-case">
+    <span class="case-num">Case 1</span>
+    <h4>Пустая StringSession</h4>
+    <p><strong>Входные данные:</strong> <code class="inline-code">TG_SESSION_STRING=""</code> или не установлена</p>
+    <p><strong>Ожидаемое поведение:</strong> Ошибка при старте, логирование "ConfigError: TG_SESSION_STRING is empty", exit code 1, система не запускается.</p>
+</div>
+
+<div class="edge-case">
+    <span class="case-num">Case 2</span>
+    <h4>Невалидный JSON в LISTENER_CHAT_IDS</h4>
+    <p><strong>Входные данные:</strong> <code class="inline-code">LISTENER_CHAT_IDS="[-123, abc, 456]"</code></p>
+    <p><strong>Ожидаемое поведение:</strong> Ошибка парсинга JSON, логирование "ConfigError: Invalid LISTENER_CHAT_IDS JSON", exit code 1.</p>
+</div>
+
+<div class="edge-case">
+    <span class="case-num">Case 3</span>
+    <h4>Аккаунт выбит из одного из 3 чатов</h4>
+    <p><strong>Входные данные:</strong> Аккаунт не участник в чате -1001111111111</p>
+    <p><strong>Ожидаемое поведение:</strong> Логирование "WARNING: Unable to join chat -1001111111111, skipping", система продолжает слушать оставшиеся 2 чата.</p>
+</div>
+
+<div class="edge-case">
+    <span class="case-num">Case 4</span>
+    <h4>Очень длинное сообщение (&gt;4096 символов)</h4>
+    <p><strong>Входные данные:</strong> Текст 10 000 символов</p>
+    <p><strong>Ожидаемое поведение:</strong> Полный текст сохраняется в БД (text &mdash; TEXT, не ограничено), передаётся в Parser как есть. Parser может обрезать для LLM.</p>
+</div>
+
+<div class="edge-case">
+    <span class="case-num">Case 5</span>
+    <h4>Сообщение на иностранном языке (не русский)</h4>
+    <p><strong>Входные данные:</strong> "Delivered to London warehouse at 14:30"</p>
+    <p><strong>Ожидаемое поведение:</strong> Сохраняется как есть, в БД язык не проверяется. Parser должен обрабатывать многоязычный контент.</p>
+</div>
+
+<div class="edge-case">
+    <span class="case-num">Case 6</span>
+    <h4>Спецсимволы и emoji</h4>
+    <p><strong>Входные данные:</strong> "Рейс 4521 завершён +5 бонусов!"</p>
+    <p><strong>Ожидаемое поведение:</strong> Спецсимволы и emoji сохраняются в БД (UTF-8), передаются в Parser. No issues.</p>
+</div>
+
+<div class="edge-case">
+    <span class="case-num">Case 7</span>
+    <h4>Упомянутые пользователи (@username)</h4>
+    <p><strong>Входные данные:</strong> "@Алексей, это срочно! Рейс 4521 опаздывает."</p>
+    <p><strong>Ожидаемое поведение:</strong> Сообщение сохраняется с упоминанием как есть. Parser должен распознавать упоминания при анализе контекста.</p>
+</div>
+
+<div class="edge-case">
+    <span class="case-num">Case 8</span>
+    <h4>Ответ на сообщение (reply)</h4>
+    <p><strong>Входные данные:</strong> Сообщение является ответом на сообщение ID 12344</p>
+    <p><strong>Ожидаемое поведение:</strong> raw_data_json содержит <code class="inline-code">reply_to_msg_id</code>, text сохраняется полностью (не включает исходное сообщение), Parser может использовать контекст из linked message.</p>
+</div>
+
+<div class="edge-case">
+    <span class="case-num">Case 9</span>
+    <h4>PostgreSQL недоступна при старте</h4>
+    <p><strong>Входные данные:</strong> DB_HOST неправильный или БД упала</p>
+    <p><strong>Ожидаемое поведение:</strong> Ошибка подключения при старте, логирование "DatabaseError: Unable to connect to PostgreSQL", попытка переподключения 3 раза, затем graceful shutdown, exit code 1.</p>
+</div>
+
+<div class="edge-case">
+    <span class="case-num">Case 10</span>
+    <h4>Rate limit &mdash; 100 сообщений в 1 сек</h4>
+    <p><strong>Входные данные:</strong> Flood из 100 сообщений за 1 сек</p>
+    <p><strong>Ожидаемое поведение:</strong> Первые 30 обработаны, остальные 70 в диск-буфер (SQLite), логирование "Rate limit hit, 70 messages queued", буферизованные обработаны поочередно в следующие секунды.</p>
+</div>
+
+<div class="edge-case">
+    <span class="case-num">Case 11</span>
+    <h4>Дублирующееся сообщение (resend)</h4>
+    <p><strong>Входные данные:</strong> Одно сообщение получено дважды от Telegram (edge case MTProto)</p>
+    <p><strong>Ожидаемое поведение:</strong> Второе получение &mdash; обработано как новое сообщение, добавлено в raw_messages. Дедупликация (если нужна) делается на уровне Parser или Alert Engine, не на уровне Listener.</p>
+</div>
+
+<div class="edge-case">
+    <span class="case-num">Case 12</span>
+    <h4>SIGTERM во время обработки большого буфера</h4>
+    <p><strong>Входные данные:</strong> Сигнал SIGTERM пришёл, в диск-буфере 200 сообщений</p>
+    <p><strong>Ожидаемое поведение:</strong> Логирование "Shutdown initiated", система ждёт 30 сек (SHUTDOWN_TIMEOUT), пытается обработать буфер, затем закрывает БД и выходит с кодом 0. Необработанные сообщения остаются в буфере для обработки при следующем запуске.</p>
+</div>
+
+<!-- 9. Conclusion -->
+<h2 id="conclusion">Заключение</h2>
+
+<div class="card card-success">
+    <p>Chat Listener (S0-F01) &mdash; критическая компонента для захвата данных из Telegram-чатов диспетчеров. Спецификация определяет:</p>
+    <ol style="padding-left: 20px; margin-top: 12px;">
+        <li><strong>Функционал:</strong> подключение через Telethon, чтение из 3 чатов + DM, сохранение в PostgreSQL, передача в Parser</li>
+        <li><strong>Надежность:</strong> graceful shutdown, автоподключение, обработка ошибок БД</li>
+        <li><strong>Производительность:</strong> rate limiting 30/сек, latency &lt;200 мс для сохранения</li>
+        <li><strong>Интеграция:</strong> pluggable-адаптер для будущего Bot API</li>
+        <li><strong>Логирование:</strong> структурированное JSON для мониторинга</li>
+    </ol>
+    <p style="margin-top: 12px; margin-bottom: 0;">Спецификация полностью определяет требования, интерфейсы и критерии приёмки. Разработчик может реализовать модуль независимо, используя только этот документ.</p>
+</div>
+
+</div>
+</body>
+</html>

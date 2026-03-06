@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marshall AI Listener — Спецификация Dashboard REST API</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --accent: #f59e0b;
+            --accent-light: #fef3c7;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --get: #10b981;
+            --get-light: #d1fae5;
+            --post: #2563eb;
+            --post-light: #dbeafe;
+            --patch: #f59e0b;
+            --patch-light: #fef3c7;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+        .nav {
+            position: sticky; top: 0; z-index: 100;
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            padding: 12px 24px;
+            display: flex; align-items: center; gap: 16px;
+            overflow-x: auto; white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        }
+        .nav a {
+            color: rgba(255,255,255,.85); text-decoration: none;
+            font-size: 13px; padding: 6px 12px; border-radius: 6px;
+            transition: all .2s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,.2); color: #fff; }
+        .nav .brand { font-weight: 700; font-size: 15px; color: #fff; margin-right: 8px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+        h1 { font-size: 2rem; margin-bottom: 8px; color: var(--primary); }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 32px; }
+        h2 {
+            font-size: 1.4rem; margin: 40px 0 16px;
+            padding-bottom: 8px; border-bottom: 2px solid var(--primary-light);
+            color: var(--primary);
+        }
+        h3 { font-size: 1.15rem; margin: 24px 0 12px; color: var(--text); }
+        h4 { font-size: 1rem; margin: 16px 0 8px; color: var(--text); }
+        p { margin-bottom: 12px; }
+        .card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .card-accent { border-left: 4px solid var(--primary); }
+        .card-success { border-left: 4px solid var(--success); background: var(--success-light); }
+        .card-warning { border-left: 4px solid var(--warning); background: var(--accent-light); }
+        .card-danger { border-left: 4px solid var(--danger); background: var(--danger-light); }
+        ul { padding-left: 20px; margin-bottom: 12px; }
+        li { margin-bottom: 6px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: .95rem; }
+        th { background: var(--primary); color: white; padding: 10px 14px; text-align: left; }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) { background: #f8fafc; }
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 8px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+        }
+        .badge-must { background: var(--danger-light); color: var(--danger); }
+        .badge-high { background: #fee2e2; color: #dc2626; }
+        .badge-medium { background: var(--accent-light); color: #d97706; }
+        .badge-low { background: var(--success-light); color: var(--success); }
+        pre {
+            background: #1e293b; color: #e2e8f0; padding: 16px;
+            border-radius: 8px; overflow-x: auto; font-size: .85rem;
+            margin-bottom: 16px;
+        }
+        code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+        code.inline {
+            background: #f1f5f9; color: #0f172a; padding: 2px 6px;
+            border-radius: 4px; font-size: .9em;
+        }
+
+        /* Endpoint cards */
+        .endpoint-card {
+            background: var(--card); border-radius: 12px;
+            padding: 0; margin-bottom: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 6px rgba(0,0,0,.06);
+            overflow: hidden;
+        }
+        .endpoint-header {
+            display: flex; align-items: center; gap: 12px;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            background: #f8fafc;
+        }
+        .method-badge {
+            display: inline-block; padding: 4px 14px; border-radius: 6px;
+            font-size: 13px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.5px; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+        .method-get { background: var(--get-light); color: #059669; border: 1px solid #a7f3d0; }
+        .method-post { background: var(--post-light); color: #1d4ed8; border: 1px solid #93c5fd; }
+        .method-patch { background: var(--patch-light); color: #b45309; border: 1px solid #fcd34d; }
+        .endpoint-path {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 1rem; font-weight: 600; color: var(--text);
+        }
+        .endpoint-desc {
+            font-size: .9rem; color: var(--text-muted); margin-left: auto;
+        }
+        .endpoint-body { padding: 24px; }
+        .endpoint-body h4 { margin-top: 20px; }
+        .endpoint-body h4:first-child { margin-top: 0; }
+        .endpoint-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+        .endpoint-meta-item {
+            font-size: .85rem; color: var(--text-muted);
+        }
+        .endpoint-meta-item strong { color: var(--text); }
+
+        /* Requirement cards */
+        .req-card {
+            background: var(--card); border-radius: 12px;
+            padding: 20px; margin-bottom: 16px;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+        }
+        .req-id { font-weight: 700; color: var(--primary); font-size: .9rem; margin-bottom: 4px; }
+
+        /* AC cards */
+        .ac-card {
+            background: var(--card); border-radius: 10px;
+            padding: 16px 20px; margin-bottom: 12px;
+            border: 1px solid var(--border);
+        }
+        .ac-id { font-weight: 700; color: var(--success); font-size: .85rem; }
+        .ac-given, .ac-when, .ac-then { font-size: .95rem; margin: 4px 0; }
+        .ac-given strong, .ac-when strong, .ac-then strong { color: var(--primary); }
+
+        /* Scope lists */
+        .in-scope li { color: var(--success); }
+        .in-scope li span { color: var(--text); }
+        .out-scope li { color: var(--danger); }
+        .out-scope li span { color: var(--text-muted); }
+
+        /* Tree */
+        .tree { background: #1e293b; color: #e2e8f0; padding: 20px; border-radius: 8px; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: .85rem; white-space: pre; overflow-x: auto; margin-bottom: 16px; }
+
+        .meta-info {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px 32px;
+            font-size: .95rem; margin-bottom: 24px;
+        }
+        .meta-info dt { font-weight: 600; color: var(--text-muted); }
+        .meta-info dd { margin: 0 0 8px; }
+
+        @media (max-width: 768px) {
+            .endpoint-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .endpoint-desc { margin-left: 0; }
+            .meta-info { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <span class="brand">Marshall SDD</span>
+    <a href="master_brief.html">Мастер-бриф</a>
+    <a href="product_brief.html">Продукт</a>
+    <a href="sdd_orchestration.html">Оркестрация</a>
+    <a href="spec-tool-chat-listener.html">Listener</a>
+    <a href="spec-tool-ai-parser.html">Parser</a>
+    <a href="spec-tool-alert-engine.html">Alerts</a>
+    <a href="spec-data-schema.html">Schema</a>
+    <a href="spec-tool-dashboard-api.html" class="active">API</a>
+    <a href="spec-design-dashboard.html">Dashboard</a>
+    <a href="spec-architecture-overview.html">Архитектура</a>
+    <a href="spec-process-sprint0-plan.html">План</a>
+</nav>
+
+<div class="container">
+
+<h1>Спецификация Dashboard REST API</h1>
+<p class="subtitle">Marshall AI Listener — модуль S0-F04 | Sprint 0</p>
+
+<dl class="meta-info">
+    <dt>Версия</dt><dd>1.0</dd>
+    <dt>Дата</dt><dd>2026-03-06</dd>
+    <dt>Владелец</dt><dd>Тим Зинин (Zinin Corp)</dd>
+    <dt>Модуль</dt><dd>S0-F04 (Dashboard API)</dd>
+    <dt>Спринт</dt><dd>Sprint 0 (Спринт 4)</dd>
+    <dt>Зависимости</dt><dd>master_brief, product_brief, spec-data-schema, spec-tool-alert-engine</dd>
+</dl>
+
+<!-- ===== 1. Цель и скоуп ===== -->
+<h2>1. Цель и скоуп</h2>
+
+<h3>1.1 Цель</h3>
+<p>Спецификация описывает REST API на FastAPI, который обеспечивает веб-дашборд менеджеров Marshall данными о рейсах, алертах и статистике. API является единственным публичным интерфейсом системы в Sprint 0: бизнес-логика (Chat Listener, AI Parser, Alert Engine) работает независимо, а API предоставляет только доступ на чтение к накопленным данным и ограниченное управление статусами алертов.</p>
+
+<div class="card card-accent">
+    <strong>Ключевые свойства:</strong>
+    <ul style="margin-top:8px">
+        <li>Только REST (без WebSocket в Sprint 0 — дашборд использует polling каждые 3 секунды)</li>
+        <li>Авторизация через JWT Bearer-токен с ролевым контролем доступа</li>
+        <li>Асинхронная реализация на FastAPI + asyncpg</li>
+        <li>Полная поддержка фильтрации, пагинации, сортировки</li>
+    </ul>
+</div>
+
+<h3>1.2 Скоуп</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="card" style="border-left:4px solid var(--success)">
+        <h4 style="color:var(--success);margin-top:0">Входит в скоуп Sprint 0</h4>
+        <ul class="in-scope">
+            <li><span>9 endpoint-групп: trips, alerts, stats, chats, auth, health</span></li>
+            <li><span>JWT-авторизация с тремя ролями (admin, manager, viewer)</span></li>
+            <li><span>Пагинация на основе page + limit для всех коллекций</span></li>
+            <li><span>Фильтрация по всем основным параметрам (customer, status, severity, date)</span></li>
+            <li><span>Ответы в JSON со стандартизированными кодами ошибок</span></li>
+        </ul>
+    </div>
+    <div class="card" style="border-left:4px solid var(--danger)">
+        <h4 style="color:var(--danger);margin-top:0">Выходит из скоупа (Sprint 1+)</h4>
+        <ul class="out-scope">
+            <li><span>WebSocket / Server-Sent Events</span></li>
+            <li><span>Экспорт данных в CSV или Excel</span></li>
+            <li><span>Кастомные фильтры и сохранённые запросы</span></li>
+            <li><span>OAuth 2.0 / SSO / LDAP авторизация</span></li>
+            <li><span>Webhook-уведомления</span></li>
+            <li><span>Bulk-операции над алертами</span></li>
+            <li><span>GraphQL</span></li>
+        </ul>
+    </div>
+</div>
+
+<h3>1.3 Пользователи API</h3>
+<table>
+    <thead><tr><th>Роль</th><th>Описание</th><th>Разрешения</th></tr></thead>
+    <tbody>
+        <tr><td><code class="inline">admin</code></td><td>Полный доступ: просмотр, управление алертами, управление пользователями</td><td>Все endpoints</td></tr>
+        <tr><td><code class="inline">manager</code></td><td>Просмотр + управление статусами алертов</td><td>GET все + PATCH /alerts/{id}</td></tr>
+        <tr><td><code class="inline">viewer</code></td><td>Только чтение (руководство Marshall)</td><td>Только GET endpoints</td></tr>
+    </tbody>
+</table>
+
+<!-- ===== 2. Определения ===== -->
+<h2>2. Определения</h2>
+<table>
+    <thead><tr><th>Термин</th><th>Определение</th></tr></thead>
+    <tbody>
+        <tr><td><strong>JWT</strong></td><td>JSON Web Token — самодостаточный токен авторизации, подписанный секретным ключом HS256. Срок жизни 24 часа</td></tr>
+        <tr><td><strong>Bearer-токен</strong></td><td>Схема авторизации HTTP: <code class="inline">Authorization: Bearer &lt;jwt&gt;</code>. Требуется для всех endpoint-ов кроме /api/health и /api/auth/login</td></tr>
+        <tr><td><strong>Роль (role)</strong></td><td>Уровень доступа пользователя дашборда: admin, manager, viewer. Хранится в payload JWT</td></tr>
+        <tr><td><strong>Пагинация</strong></td><td>Разбивка коллекции на страницы с параметрами <code class="inline">page</code> (номер страницы, начиная с 1) и <code class="inline">limit</code> (размер страницы, дефолт 20, макс 100)</td></tr>
+        <tr><td><strong>Trip</strong></td><td>Рейс Marshall — перевозка с уникальным trip_id, маршрутом, заказчиком, статусом. Агрегируется из parsed_messages</td></tr>
+        <tr><td><strong>Alert</strong></td><td>Критическое событие, обнаруженное Alert Engine по бизнес-правилам. Имеет тип, severity, статус жизненного цикла</td></tr>
+        <tr><td><strong>Severity</strong></td><td>Критичность алерта: <code class="inline">high</code> (блокирует рейс, штраф), <code class="inline">medium</code> (требует внимания), <code class="inline">low</code> (информационный)</td></tr>
+        <tr><td><strong>Alert Status</strong></td><td>Жизненный цикл алерта: <code class="inline">new</code> (создан системой) &rarr; <code class="inline">reviewed</code> (менеджер увидел) &rarr; <code class="inline">resolved</code> (закрыт)</td></tr>
+        <tr><td><strong>Trip Status</strong></td><td>Статус рейса: assigned, in_transit, loading, unloading, completed, problem, cancelled</td></tr>
+        <tr><td><strong>Chat Message</strong></td><td>Сырое сообщение из чата диспетчеров с привязанным результатом парсинга LLM</td></tr>
+        <tr><td><strong>asyncpg</strong></td><td>Асинхронный PostgreSQL-драйвер для Python. Используется вместо SQLAlchemy ORM</td></tr>
+        <tr><td><strong>Pydantic v2</strong></td><td>Библиотека валидации данных Python. Используется для Request/Response схем FastAPI</td></tr>
+        <tr><td><strong>CORS</strong></td><td>Cross-Origin Resource Sharing. Настраивается для разрешения запросов от браузерного дашборда</td></tr>
+        <tr><td><strong>UTC</strong></td><td>Coordinated Universal Time. Все timestamps в API возвращаются в UTC (ISO 8601 с суффиксом Z)</td></tr>
+        <tr><td><strong>MSK</strong></td><td>Moscow Standard Time (UTC+3). Отображение временных меток на фронтенде — MSK</td></tr>
+    </tbody>
+</table>
+
+<!-- ===== 3. Требования, ограничения и рекомендации ===== -->
+<h2>3. Требования, ограничения и рекомендации</h2>
+
+<h3>3.1 Функциональные требования</h3>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-001: Список рейсов с фильтрацией</div>
+    <p><strong>Требование:</strong> GET /api/trips должен возвращать список рейсов с поддержкой фильтров по заказчику (customer), статусу (status), диапазону дат (date_from, date_to), а также пагинацией (page, limit). Каждый объект Trip включает поле alert_count.</p>
+    <p><strong>Обоснование:</strong> Основной экран дашборда — список активных рейсов. Менеджер фильтрует по заказчику (Тандер, WB, X5) или по статусу (active/problem).</p>
+    <p><strong>Пример:</strong> <code class="inline">GET /api/trips?customer=WB&amp;status=in_transit&amp;page=1&amp;limit=20</code></p>
+</div>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-002: Детали одного рейса</div>
+    <p><strong>Требование:</strong> GET /api/trips/{trip_id} должен возвращать полный объект Trip, список связанных алертов и последние 10 парсированных сообщений по этому рейсу в хронологическом порядке.</p>
+    <p><strong>Обоснование:</strong> Менеджер кликает на рейс в дашборде и видит полный контекст: что происходит с рейсом, какие алерты созданы, что говорили в чате.</p>
+</div>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-003: Лента алертов с фильтрацией</div>
+    <p><strong>Требование:</strong> GET /api/alerts должен возвращать список алертов с фильтрами по severity, status, customer, alert_type, диапазону дат и пагинацией. Сортировка по умолчанию: created_at DESC, HIGH-алерты первыми.</p>
+    <p><strong>Обоснование:</strong> Вкладка "Алерты" — второй основной экран дашборда. Менеджер видит критические события отсортированные по важности.</p>
+</div>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-004: Управление статусом алерта</div>
+    <p><strong>Требование:</strong> PATCH /api/alerts/{alert_id} должен позволять обновить статус алерта (reviewed, resolved, false_positive) и зафиксировать имя пользователя (reviewed_by). Операция доступна только ролям admin и manager.</p>
+    <p><strong>Обоснование:</strong> Менеджер видит алерт, оценивает ситуацию и отмечает его как "просмотрен" или "закрыт". Это основное интерактивное действие в дашборде Sprint 0.</p>
+</div>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-005: Сводная статистика</div>
+    <p><strong>Требование:</strong> GET /api/stats должен возвращать агрегированные метрики за период (today, week, month): total_trips, active_trips, total_alerts, high_alerts, avg_latency_ms, messages_today.</p>
+    <p><strong>Обоснование:</strong> Виджеты в заголовке дашборда — KPI-плитки для руководства Marshall.</p>
+</div>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-006: Данные для графиков</div>
+    <p><strong>Требование:</strong> GET /api/stats/chart должен возвращать временной ряд данных для построения графиков с параметрами metric (trips, alerts, latency), period (today, week, month) и granularity (hour, day). Ответ — массив объектов {timestamp, value}.</p>
+    <p><strong>Обоснование:</strong> Дашборд отображает 3 графика на Chart.js. API должен готовить данные, сгруппированные по часам или дням.</p>
+</div>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-007: История сообщений по рейсу</div>
+    <p><strong>Требование:</strong> GET /api/chats/{trip_id} должен возвращать хронологический список всех сырых сообщений по рейсу с результатами парсинга (если есть).</p>
+    <p><strong>Обоснование:</strong> Менеджер должен иметь возможность открыть "детали рейса" и прочитать переписку, которая привела к алерту. Это доказательная база для оспаривания штрафов.</p>
+</div>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-008: Авторизация через JWT</div>
+    <p><strong>Требование:</strong> POST /api/auth/login должен принимать {username, password}, валидировать по таблице dashboard_users (bcrypt-хеш), обновлять last_login_at и возвращать JWT-токен с expiry 24 часа.</p>
+    <p><strong>Обоснование:</strong> Дашборд требует авторизации. Sprint 0 использует простую пару username/password без OAuth.</p>
+</div>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-009: Health check endpoint</div>
+    <p><strong>Требование:</strong> GET /api/health должен возвращать статус системы (status: ok/degraded/down), доступность PostgreSQL и uptime_seconds без авторизации.</p>
+    <p><strong>Обоснование:</strong> Мониторинг Docker-контейнера. RUVDS cron-скрипт пингует этот endpoint каждые 5 минут.</p>
+</div>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-010: Ролевой контроль доступа (RBAC)</div>
+    <p><strong>Требование:</strong> Все endpoint-ы кроме /api/health и /api/auth/login требуют валидного JWT. PATCH /api/alerts/{alert_id} требует роль manager или admin. Viewer-роль имеет доступ только к GET-запросам.</p>
+</div>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-011: Стандартизированные ответы об ошибках</div>
+    <p><strong>Требование:</strong> Все ошибочные ответы должны возвращать JSON: {error_code, message, details, request_id}. HTTP-коды: 400, 401, 403, 404, 422, 500.</p>
+</div>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-012: Пагинация для всех коллекций</div>
+    <p><strong>Требование:</strong> Все endpoint-ы с массивами поддерживают page (дефолт 1) и limit (дефолт 20, макс 100). Ответ включает метаданные: total, page, limit, pages.</p>
+</div>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-013: Фильтрация по диапазону дат</div>
+    <p><strong>Требование:</strong> /api/trips и /api/alerts поддерживают date_from и date_to в формате ISO 8601.</p>
+</div>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-014: Структурированное логирование запросов</div>
+    <p><strong>Требование:</strong> Каждый HTTP-запрос логируется в JSON: timestamp, method, path, status_code, duration_ms, user, request_id.</p>
+</div>
+
+<div class="req-card">
+    <div class="req-id">REQ-API-015: CORS для браузерного дашборда</div>
+    <p><strong>Требование:</strong> FastAPI настраивает CORS-заголовки для разрешения запросов от localhost и от 88.218.248.114 (RUVDS).</p>
+</div>
+
+<h3>3.2 Ограничения</h3>
+<table>
+    <thead><tr><th>ID</th><th>Ограничение</th></tr></thead>
+    <tbody>
+        <tr><td><strong>CON-API-001</strong></td><td>Нет WebSocket в Sprint 0. Polling каждые 3 секунды.</td></tr>
+        <tr><td><strong>CON-API-002</strong></td><td>JWT без refresh-токена. Срок жизни 24 часа.</td></tr>
+        <tr><td><strong>CON-API-003</strong></td><td>Пароли в .env, не в admin-интерфейсе. Создание пользователей через SQL INSERT.</td></tr>
+        <tr><td><strong>CON-API-004</strong></td><td>Нет rate limiting. Polling 3 сек от одного клиента допустим.</td></tr>
+        <tr><td><strong>CON-API-005</strong></td><td>Нет кеширования ответов. Все запросы идут в PostgreSQL.</td></tr>
+        <tr><td><strong>CON-API-006</strong></td><td>Timestamp только в UTC. Конвертация в MSK — ответственность фронтенда.</td></tr>
+        <tr><td><strong>CON-API-007</strong></td><td>Максимальный размер ответа — 100 элементов (500 для /api/chats).</td></tr>
+    </tbody>
+</table>
+
+<h3>3.3 Рекомендации</h3>
+<table>
+    <thead><tr><th>ID</th><th>Рекомендация</th></tr></thead>
+    <tbody>
+        <tr><td><strong>REC-API-001</strong></td><td>Использовать asyncpg connection pool (10-20 соединений).</td></tr>
+        <tr><td><strong>REC-API-002</strong></td><td>Добавить request_id в middleware (UUID для каждого запроса).</td></tr>
+        <tr><td><strong>REC-API-003</strong></td><td>Составной частичный индекс <code class="inline">idx_alerts_active_high</code> для GET /api/alerts?status=new&amp;severity=high.</td></tr>
+        <tr><td><strong>REC-API-004</strong></td><td>Возвращать <code class="inline">Cache-Control: no-store</code> для алертов и рейсов.</td></tr>
+        <tr><td><strong>REC-API-005</strong></td><td>Использовать Pydantic v2 ResponseModel для автодокументации и фильтрации полей.</td></tr>
+    </tbody>
+</table>
+
+<!-- ===== 4. Интерфейсы и контракты данных ===== -->
+<h2>4. Интерфейсы и контракты данных</h2>
+
+<h3>4.1 Базовая информация</h3>
+<table>
+    <thead><tr><th>Параметр</th><th>Значение</th></tr></thead>
+    <tbody>
+        <tr><td>Base URL (продакшн)</td><td><code class="inline">http://88.218.248.114:8000</code></td></tr>
+        <tr><td>Base URL (разработка)</td><td><code class="inline">http://localhost:8000</code></td></tr>
+        <tr><td>Версия API</td><td>v1 (без prefix в Sprint 0)</td></tr>
+        <tr><td>Content-Type</td><td><code class="inline">application/json</code></td></tr>
+        <tr><td>Авторизация</td><td><code class="inline">Authorization: Bearer &lt;jwt_token&gt;</code></td></tr>
+        <tr><td>Формат timestamp</td><td>ISO 8601, UTC: <code class="inline">2026-03-06T14:30:15.000Z</code></td></tr>
+        <tr><td>Кодировка</td><td>UTF-8</td></tr>
+    </tbody>
+</table>
+
+<h3>4.2 Общие схемы</h3>
+
+<h4>Схема пагинированного ответа</h4>
+<pre><code>{
+  "data": [...],
+  "pagination": {
+    "total": 145,
+    "page": 1,
+    "limit": 20,
+    "pages": 8
+  }
+}</code></pre>
+
+<h4>Схема ошибки</h4>
+<pre><code>{
+  "error_code": "ALERT_NOT_FOUND",
+  "message": "Алерт с указанным ID не найден",
+  "details": null,
+  "request_id": "req-550e8400-e29b-41d4-a716"
+}</code></pre>
+
+<h4>Схема объекта Trip</h4>
+<pre><code>{
+  "id": 42,
+  "trip_id": "4521",
+  "route_from": "Москва",
+  "route_to": "Краснодар",
+  "customer": "WB",
+  "driver_name": "Иван Иванов",
+  "dispatcher_name": "Алексей",
+  "status": "in_transit",
+  "slot_time": "2026-03-06T11:00:00.000Z",
+  "departure_time": "2026-03-06T09:45:00.000Z",
+  "arrival_time": null,
+  "alert_count": 2,
+  "last_update": "2026-03-06T12:20:00.000Z",
+  "created_at": "2026-03-06T09:15:00.000Z",
+  "updated_at": "2026-03-06T12:20:00.000Z"
+}</code></pre>
+
+<h4>Схема объекта Alert</h4>
+<pre><code>{
+  "id": 101,
+  "trip_id": "4521",
+  "alert_type": "delay",
+  "severity": "medium",
+  "message": "Возможное опоздание на 40 мин на слот WB 14:00 рейс 4521",
+  "customer": "WB",
+  "rule_id": "wb_delay_1h",
+  "status": "new",
+  "reviewed_by": null,
+  "reviewed_at": null,
+  "created_at": "2026-03-06T11:30:15.000Z",
+  "parsed_data": {
+    "urgency": "medium",
+    "issue": "Стою в пробке на МКАД, опаздываю на 40 мин",
+    "confidence": 0.87,
+    "slot_time": "14:00"
+  }
+}</code></pre>
+
+<h4>Схема объекта ChatMessage</h4>
+<pre><code>{
+  "id": 5003,
+  "chat_id": -100123456789,
+  "chat_name": "Marshall Test — WB Рейсы",
+  "sender_name": "Водитель Иван",
+  "text": "Стою в пробке на МКАД, опаздываю минут на 40",
+  "timestamp": "2026-03-06T08:30:00.000Z",
+  "created_at": "2026-03-06T08:30:01.000Z",
+  "parsed": {
+    "trip_id": "4521",
+    "urgency": "medium",
+    "issue": "Опоздание на 40 мин из-за пробки",
+    "confidence": 0.87,
+    "status": "problem"
+  }
+}</code></pre>
+
+<!-- ===== ENDPOINTS ===== -->
+<h3>4.3 Endpoints</h3>
+
+<!-- POST /api/auth/login -->
+<div class="endpoint-card">
+    <div class="endpoint-header">
+        <span class="method-badge method-post">POST</span>
+        <span class="endpoint-path">/api/auth/login</span>
+        <span class="endpoint-desc">Авторизация пользователя дашборда</span>
+    </div>
+    <div class="endpoint-body">
+        <div class="endpoint-meta">
+            <span class="endpoint-meta-item"><strong>Авторизация:</strong> Не требуется</span>
+        </div>
+
+        <h4>Request Body</h4>
+<pre><code>{
+  "username": "victoria",
+  "password": "securepassword123"
+}</code></pre>
+        <table>
+            <thead><tr><th>Поле</th><th>Тип</th><th>Обяз.</th><th>Описание</th></tr></thead>
+            <tbody>
+                <tr><td>username</td><td>string</td><td>Да</td><td>Логин из dashboard_users. Длина 1-100</td></tr>
+                <tr><td>password</td><td>string</td><td>Да</td><td>Пароль. Проверяется по bcrypt-хешу</td></tr>
+            </tbody>
+        </table>
+
+        <h4>Response 200 OK</h4>
+<pre><code>{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...signature",
+  "expires_at": "2026-03-07T14:00:00.000Z",
+  "user": {
+    "username": "victoria",
+    "role": "manager",
+    "display_name": "Виктория Фимина"
+  }
+}</code></pre>
+
+        <h4>JWT Payload</h4>
+<pre><code>{
+  "sub": "victoria",
+  "role": "manager",
+  "display_name": "Виктория Фимина",
+  "exp": 1741872000,
+  "iat": 1741785600
+}</code></pre>
+
+        <h4>HTTP Status Codes</h4>
+        <table>
+            <thead><tr><th>Код</th><th>Условие</th></tr></thead>
+            <tbody>
+                <tr><td>200</td><td>Успешная авторизация</td></tr>
+                <tr><td>400</td><td>Отсутствует username или password</td></tr>
+                <tr><td>401</td><td>Неверные учётные данные</td></tr>
+                <tr><td>403</td><td>Аккаунт деактивирован (is_active=false)</td></tr>
+                <tr><td>422</td><td>Ошибка валидации Pydantic</td></tr>
+                <tr><td>500</td><td>Ошибка базы данных</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- GET /api/trips -->
+<div class="endpoint-card">
+    <div class="endpoint-header">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/api/trips</span>
+        <span class="endpoint-desc">Список рейсов с фильтрацией и пагинацией</span>
+    </div>
+    <div class="endpoint-body">
+        <div class="endpoint-meta">
+            <span class="endpoint-meta-item"><strong>Авторизация:</strong> Bearer token (любая роль)</span>
+        </div>
+
+        <h4>Query Parameters</h4>
+        <table>
+            <thead><tr><th>Параметр</th><th>Тип</th><th>Дефолт</th><th>Описание</th></tr></thead>
+            <tbody>
+                <tr><td>customer</td><td>string</td><td>null</td><td>Фильтр: Тандер, WB, X5, Магнит, Сельта, Сибур</td></tr>
+                <tr><td>status</td><td>string</td><td>null</td><td>Фильтр: assigned, in_transit, loading, unloading, completed, problem, cancelled</td></tr>
+                <tr><td>date_from</td><td>ISO 8601</td><td>null</td><td>Начало диапазона дат (по created_at)</td></tr>
+                <tr><td>date_to</td><td>ISO 8601</td><td>null</td><td>Конец диапазона дат</td></tr>
+                <tr><td>page</td><td>integer</td><td>1</td><td>Номер страницы (мин. 1)</td></tr>
+                <tr><td>limit</td><td>integer</td><td>20</td><td>Размер страницы (мин. 1, макс. 100)</td></tr>
+                <tr><td>sort</td><td>string</td><td>created_at:desc</td><td>Сортировка: created_at, updated_at, alert_count, trip_id</td></tr>
+            </tbody>
+        </table>
+
+        <h4>Response 200 OK</h4>
+<pre><code>{
+  "data": [
+    {
+      "id": 42,
+      "trip_id": "4521",
+      "route_from": "Москва",
+      "route_to": "Краснодар",
+      "customer": "WB",
+      "driver_name": "Иван Иванов",
+      "dispatcher_name": "Алексей",
+      "status": "in_transit",
+      "slot_time": "2026-03-06T11:00:00.000Z",
+      "departure_time": "2026-03-06T09:45:00.000Z",
+      "arrival_time": null,
+      "alert_count": 2,
+      "last_update": "2026-03-06T12:20:00.000Z",
+      "created_at": "2026-03-06T09:15:00.000Z",
+      "updated_at": "2026-03-06T12:20:00.000Z"
+    }
+  ],
+  "pagination": { "total": 12, "page": 1, "limit": 20, "pages": 1 }
+}</code></pre>
+
+        <h4>HTTP Status Codes</h4>
+        <table>
+            <thead><tr><th>Код</th><th>Условие</th></tr></thead>
+            <tbody>
+                <tr><td>200</td><td>Успех (может быть пустой массив data)</td></tr>
+                <tr><td>400</td><td>Неверный формат date_from/date_to или недопустимое значение status/customer</td></tr>
+                <tr><td>401</td><td>Отсутствует или просрочен JWT-токен</td></tr>
+                <tr><td>422</td><td>Ошибка валидации (например, page=-1)</td></tr>
+                <tr><td>500</td><td>Ошибка базы данных</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- GET /api/trips/{trip_id} -->
+<div class="endpoint-card">
+    <div class="endpoint-header">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/api/trips/{trip_id}</span>
+        <span class="endpoint-desc">Детали рейса с алертами и сообщениями</span>
+    </div>
+    <div class="endpoint-body">
+        <div class="endpoint-meta">
+            <span class="endpoint-meta-item"><strong>Авторизация:</strong> Bearer token (любая роль)</span>
+        </div>
+
+        <h4>Path Parameters</h4>
+        <table>
+            <thead><tr><th>Параметр</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+                <tr><td>trip_id</td><td>string</td><td>Идентификатор рейса (например, "4521")</td></tr>
+            </tbody>
+        </table>
+
+        <h4>Response 200 OK</h4>
+<pre><code>{
+  "trip": {
+    "id": 42, "trip_id": "4521",
+    "route_from": "Москва", "route_to": "Краснодар",
+    "customer": "WB", "driver_name": "Иван Иванов",
+    "dispatcher_name": "Алексей", "status": "in_transit",
+    "slot_time": "2026-03-06T11:00:00.000Z",
+    "alert_count": 2,
+    "created_at": "2026-03-06T09:15:00.000Z"
+  },
+  "alerts": [
+    {
+      "id": 101, "trip_id": "4521",
+      "alert_type": "delay", "severity": "medium",
+      "message": "Возможное опоздание на 40 мин на слот WB 14:00",
+      "status": "new", "created_at": "2026-03-06T11:30:15.000Z",
+      "parsed_data": { "urgency": "medium", "confidence": 0.87 }
+    }
+  ],
+  "recent_messages": [
+    {
+      "id": 5003, "sender_name": "Водитель Иван",
+      "text": "Стою в пробке на МКАД, опаздываю минут на 40",
+      "timestamp": "2026-03-06T08:30:00.000Z",
+      "parsed": { "urgency": "medium", "confidence": 0.87 }
+    }
+  ]
+}</code></pre>
+        <p><strong>Примечание:</strong> <code class="inline">recent_messages</code> — последние 10 парсированных сообщений в хронологическом порядке (от старых к новым).</p>
+
+        <h4>HTTP Status Codes</h4>
+        <table>
+            <thead><tr><th>Код</th><th>Условие</th></tr></thead>
+            <tbody>
+                <tr><td>200</td><td>Рейс найден</td></tr>
+                <tr><td>401</td><td>Отсутствует или просрочен JWT-токен</td></tr>
+                <tr><td>404</td><td>Рейс с указанным trip_id не найден</td></tr>
+                <tr><td>500</td><td>Ошибка базы данных</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- GET /api/alerts -->
+<div class="endpoint-card">
+    <div class="endpoint-header">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/api/alerts</span>
+        <span class="endpoint-desc">Лента алертов с фильтрацией и пагинацией</span>
+    </div>
+    <div class="endpoint-body">
+        <div class="endpoint-meta">
+            <span class="endpoint-meta-item"><strong>Авторизация:</strong> Bearer token (любая роль)</span>
+        </div>
+
+        <h4>Query Parameters</h4>
+        <table>
+            <thead><tr><th>Параметр</th><th>Тип</th><th>Дефолт</th><th>Описание</th></tr></thead>
+            <tbody>
+                <tr><td>severity</td><td>string</td><td>null</td><td>Фильтр: high, medium, low</td></tr>
+                <tr><td>status</td><td>string</td><td>null</td><td>Фильтр: new, reviewed, resolved</td></tr>
+                <tr><td>customer</td><td>string</td><td>null</td><td>Фильтр по заказчику</td></tr>
+                <tr><td>alert_type</td><td>string</td><td>null</td><td>Фильтр: delay, equipment_failure, downtime, safety_violation, docs_missing</td></tr>
+                <tr><td>trip_id</td><td>string</td><td>null</td><td>Фильтр по номеру рейса</td></tr>
+                <tr><td>date_from</td><td>ISO 8601</td><td>null</td><td>Начало диапазона дат</td></tr>
+                <tr><td>date_to</td><td>ISO 8601</td><td>null</td><td>Конец диапазона дат</td></tr>
+                <tr><td>page</td><td>integer</td><td>1</td><td>Номер страницы</td></tr>
+                <tr><td>limit</td><td>integer</td><td>20</td><td>Размер страницы (макс. 100)</td></tr>
+                <tr><td>sort</td><td>string</td><td>severity_weight:desc, created_at:desc</td><td>Сортировка. severity_weight: high=3, medium=2, low=1</td></tr>
+            </tbody>
+        </table>
+
+        <h4>Response 200 OK</h4>
+<pre><code>{
+  "data": [
+    {
+      "id": 105, "trip_id": "7803",
+      "alert_type": "equipment_failure", "severity": "high",
+      "message": "КРИТИЧНО: Нарушение температуры у Тандер 7803: Реф показывает +8",
+      "customer": "Тандер", "rule_id": "thander_temp_violation",
+      "status": "new", "reviewed_by": null, "reviewed_at": null,
+      "created_at": "2026-03-06T07:45:00.000Z",
+      "parsed_data": { "urgency": "high", "issue": "Реф не выходит на температуру", "confidence": 0.92 }
+    },
+    {
+      "id": 101, "trip_id": "4521",
+      "alert_type": "delay", "severity": "medium",
+      "message": "Возможное опоздание на 40 мин на слот WB 14:00 рейс 4521",
+      "customer": "WB", "status": "new",
+      "created_at": "2026-03-06T11:30:15.000Z",
+      "parsed_data": { "urgency": "medium", "confidence": 0.87 }
+    }
+  ],
+  "pagination": { "total": 45, "page": 1, "limit": 20, "pages": 3 }
+}</code></pre>
+
+        <h4>HTTP Status Codes</h4>
+        <table>
+            <thead><tr><th>Код</th><th>Условие</th></tr></thead>
+            <tbody>
+                <tr><td>200</td><td>Успех (может быть пустой массив)</td></tr>
+                <tr><td>400</td><td>Недопустимое значение severity, status или alert_type</td></tr>
+                <tr><td>401</td><td>Отсутствует или просрочен JWT-токен</td></tr>
+                <tr><td>422</td><td>Ошибка валидации параметров</td></tr>
+                <tr><td>500</td><td>Ошибка базы данных</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- PATCH /api/alerts/{alert_id} -->
+<div class="endpoint-card">
+    <div class="endpoint-header">
+        <span class="method-badge method-patch">PATCH</span>
+        <span class="endpoint-path">/api/alerts/{alert_id}</span>
+        <span class="endpoint-desc">Обновить статус алерта</span>
+    </div>
+    <div class="endpoint-body">
+        <div class="endpoint-meta">
+            <span class="endpoint-meta-item"><strong>Авторизация:</strong> Bearer token (только admin, manager)</span>
+        </div>
+
+        <h4>Path Parameters</h4>
+        <table>
+            <thead><tr><th>Параметр</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+                <tr><td>alert_id</td><td>integer</td><td>Первичный ключ алерта (alerts.id)</td></tr>
+            </tbody>
+        </table>
+
+        <h4>Request Body</h4>
+<pre><code>{
+  "status": "reviewed",
+  "reviewed_by": "Виктория Фимина"
+}</code></pre>
+        <table>
+            <thead><tr><th>Поле</th><th>Тип</th><th>Обяз.</th><th>Допустимые значения</th><th>Описание</th></tr></thead>
+            <tbody>
+                <tr><td>status</td><td>string</td><td>Да</td><td>reviewed, resolved, false_positive</td><td>Новый статус алерта</td></tr>
+                <tr><td>reviewed_by</td><td>string</td><td>Если reviewed</td><td>--</td><td>Имя пользователя</td></tr>
+            </tbody>
+        </table>
+
+        <p><strong>Примечание:</strong> <code class="inline">false_positive</code> сохраняется как <code class="inline">resolved</code> с пометкой в reviewed_by.</p>
+
+        <h4>Допустимые переходы статусов</h4>
+        <div class="card" style="padding:16px; display:flex; gap:24px; flex-wrap:wrap">
+            <div><span class="badge badge-low" style="background:var(--success-light);color:var(--success)">new</span> &rarr; reviewed</div>
+            <div><span class="badge badge-low" style="background:var(--success-light);color:var(--success)">new</span> &rarr; resolved</div>
+            <div><span class="badge badge-low" style="background:var(--success-light);color:var(--success)">new</span> &rarr; false_positive</div>
+            <div><span class="badge badge-low" style="background:var(--success-light);color:var(--success)">reviewed</span> &rarr; resolved</div>
+            <div><span class="badge badge-low" style="background:var(--success-light);color:var(--success)">reviewed</span> &rarr; false_positive</div>
+            <div style="color:var(--danger)"><span class="badge badge-high">resolved</span> &rarr; любой (ЗАПРЕЩЕНО)</div>
+            <div style="color:var(--danger)"><span class="badge badge-high">false_positive</span> &rarr; любой (ЗАПРЕЩЕНО)</div>
+        </div>
+
+        <h4>Response 200 OK</h4>
+<pre><code>{
+  "id": 101, "trip_id": "4521",
+  "alert_type": "delay", "severity": "medium",
+  "message": "Возможное опоздание на 40 мин на слот WB 14:00 рейс 4521",
+  "customer": "WB", "status": "reviewed",
+  "reviewed_by": "Виктория Фимина",
+  "reviewed_at": "2026-03-06T14:35:20.000Z",
+  "created_at": "2026-03-06T11:30:15.000Z"
+}</code></pre>
+
+        <h4>HTTP Status Codes</h4>
+        <table>
+            <thead><tr><th>Код</th><th>Условие</th></tr></thead>
+            <tbody>
+                <tr><td>200</td><td>Статус успешно обновлён</td></tr>
+                <tr><td>400</td><td>Недопустимый переход статуса</td></tr>
+                <tr><td>401</td><td>Отсутствует или просрочен JWT-токен</td></tr>
+                <tr><td>403</td><td>Роль viewer не может изменять алерты</td></tr>
+                <tr><td>404</td><td>Алерт с указанным ID не найден</td></tr>
+                <tr><td>422</td><td>Ошибка валидации</td></tr>
+                <tr><td>500</td><td>Ошибка базы данных</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- GET /api/stats -->
+<div class="endpoint-card">
+    <div class="endpoint-header">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/api/stats</span>
+        <span class="endpoint-desc">Сводная статистика для KPI-виджетов</span>
+    </div>
+    <div class="endpoint-body">
+        <div class="endpoint-meta">
+            <span class="endpoint-meta-item"><strong>Авторизация:</strong> Bearer token (любая роль)</span>
+        </div>
+
+        <h4>Query Parameters</h4>
+        <table>
+            <thead><tr><th>Параметр</th><th>Тип</th><th>Дефолт</th><th>Описание</th></tr></thead>
+            <tbody>
+                <tr><td>period</td><td>string</td><td>today</td><td>Период: today, week, month</td></tr>
+                <tr><td>customer</td><td>string</td><td>null</td><td>Фильтр по заказчику</td></tr>
+            </tbody>
+        </table>
+        <p><strong>Периоды:</strong> today = с 00:00 UTC, week = последние 7 дней, month = последние 30 дней.</p>
+
+        <h4>Response 200 OK</h4>
+<pre><code>{
+  "period": "today",
+  "generated_at": "2026-03-06T15:00:00.000Z",
+  "trips": {
+    "total": 12, "active": 8, "completed": 3, "with_problems": 2
+  },
+  "alerts": {
+    "total": 15, "high": 2, "medium": 8, "low": 5,
+    "new": 10, "reviewed": 3, "resolved": 2
+  },
+  "messages": {
+    "today": 187, "parsed": 183, "parse_errors": 4
+  },
+  "performance": {
+    "avg_parse_latency_ms": 1240,
+    "avg_alert_latency_ms": 85,
+    "uptime_seconds": 43200
+  }
+}</code></pre>
+
+        <h4>HTTP Status Codes</h4>
+        <table>
+            <thead><tr><th>Код</th><th>Условие</th></tr></thead>
+            <tbody>
+                <tr><td>200</td><td>Статистика рассчитана</td></tr>
+                <tr><td>400</td><td>Неверное значение period</td></tr>
+                <tr><td>401</td><td>Отсутствует или просрочен JWT-токен</td></tr>
+                <tr><td>500</td><td>Ошибка базы данных</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- GET /api/stats/chart -->
+<div class="endpoint-card">
+    <div class="endpoint-header">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/api/stats/chart</span>
+        <span class="endpoint-desc">Временные ряды для графиков Chart.js</span>
+    </div>
+    <div class="endpoint-body">
+        <div class="endpoint-meta">
+            <span class="endpoint-meta-item"><strong>Авторизация:</strong> Bearer token (любая роль)</span>
+        </div>
+
+        <h4>Query Parameters</h4>
+        <table>
+            <thead><tr><th>Параметр</th><th>Тип</th><th>Дефолт</th><th>Описание</th></tr></thead>
+            <tbody>
+                <tr><td>metric</td><td>string</td><td>trips</td><td>Метрика: trips, alerts, latency</td></tr>
+                <tr><td>period</td><td>string</td><td>today</td><td>Период: today, week, month</td></tr>
+                <tr><td>granularity</td><td>string</td><td>auto</td><td>Гранулярность: hour, day. auto = hour для today/week, day для month</td></tr>
+                <tr><td>customer</td><td>string</td><td>null</td><td>Фильтр по заказчику</td></tr>
+                <tr><td>severity</td><td>string</td><td>null</td><td>Только для metric=alerts. Фильтр по severity</td></tr>
+            </tbody>
+        </table>
+
+        <h4>Response 200 OK (metric=alerts, period=today, granularity=hour)</h4>
+<pre><code>{
+  "metric": "alerts",
+  "period": "today",
+  "granularity": "hour",
+  "customer": null,
+  "data": [
+    { "timestamp": "2026-03-06T00:00:00.000Z", "value": 0 },
+    { "timestamp": "2026-03-06T01:00:00.000Z", "value": 1 },
+    { "timestamp": "2026-03-06T07:00:00.000Z", "value": 3 },
+    { "timestamp": "2026-03-06T08:00:00.000Z", "value": 5 },
+    { "timestamp": "2026-03-06T09:00:00.000Z", "value": 2 },
+    { "timestamp": "2026-03-06T14:00:00.000Z", "value": 4 }
+  ],
+  "summary": {
+    "total": 15,
+    "peak_value": 5,
+    "peak_timestamp": "2026-03-06T08:00:00.000Z"
+  }
+}</code></pre>
+        <p><strong>Примечание:</strong> Для period=today + granularity=hour возвращается 24 точки (с нулями для часов без данных).</p>
+
+        <h4>HTTP Status Codes</h4>
+        <table>
+            <thead><tr><th>Код</th><th>Условие</th></tr></thead>
+            <tbody>
+                <tr><td>200</td><td>Данные рассчитаны</td></tr>
+                <tr><td>400</td><td>Неверные значения metric, period или granularity</td></tr>
+                <tr><td>401</td><td>Отсутствует или просрочен JWT-токен</td></tr>
+                <tr><td>500</td><td>Ошибка базы данных</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- GET /api/chats/{trip_id} -->
+<div class="endpoint-card">
+    <div class="endpoint-header">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/api/chats/{trip_id}</span>
+        <span class="endpoint-desc">Хронологическая история сообщений по рейсу</span>
+    </div>
+    <div class="endpoint-body">
+        <div class="endpoint-meta">
+            <span class="endpoint-meta-item"><strong>Авторизация:</strong> Bearer token (любая роль)</span>
+        </div>
+
+        <h4>Path Parameters</h4>
+        <table>
+            <thead><tr><th>Параметр</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+                <tr><td>trip_id</td><td>string</td><td>Идентификатор рейса. Поиск по parsed_messages.trip_id</td></tr>
+            </tbody>
+        </table>
+
+        <h4>Query Parameters</h4>
+        <table>
+            <thead><tr><th>Параметр</th><th>Тип</th><th>Дефолт</th><th>Описание</th></tr></thead>
+            <tbody>
+                <tr><td>page</td><td>integer</td><td>1</td><td>Номер страницы</td></tr>
+                <tr><td>limit</td><td>integer</td><td>50</td><td>Размер страницы (макс. 500)</td></tr>
+            </tbody>
+        </table>
+
+        <h4>Response 200 OK</h4>
+<pre><code>{
+  "trip_id": "4521",
+  "data": [
+    {
+      "id": 5001,
+      "chat_id": -100123456789,
+      "chat_name": "Marshall Test — WB Рейсы",
+      "sender_name": "Диспетчер Алексей",
+      "text": "Рейс 4521, Москва-Краснодар, слот на погрузку WB 14:00...",
+      "timestamp": "2026-03-06T06:15:00.000Z",
+      "parsed": {
+        "trip_id": "4521", "route_from": "Москва", "route_to": "Краснодар",
+        "status": "assigned", "customer": "WB",
+        "urgency": "low", "issue": null, "confidence": 0.95
+      }
+    },
+    {
+      "id": 5003,
+      "chat_id": -100123456789,
+      "chat_name": "Marshall Test — WB Рейсы",
+      "sender_name": "Водитель Иван",
+      "text": "Стою в пробке на МКАД, опаздываю минут на 40",
+      "timestamp": "2026-03-06T08:30:00.000Z",
+      "parsed": {
+        "trip_id": "4521", "status": "problem", "customer": "WB",
+        "urgency": "medium", "issue": "Опоздание на 40 мин из-за пробки",
+        "confidence": 0.87
+      }
+    }
+  ],
+  "pagination": { "total": 18, "page": 1, "limit": 50, "pages": 1 }
+}</code></pre>
+        <p><strong>Примечание:</strong> Сообщения отсортированы по timestamp ASC (от старых к новым). Поле <code class="inline">parsed</code> может быть null.</p>
+
+        <h4>HTTP Status Codes</h4>
+        <table>
+            <thead><tr><th>Код</th><th>Условие</th></tr></thead>
+            <tbody>
+                <tr><td>200</td><td>История получена (может быть пустой массив)</td></tr>
+                <tr><td>401</td><td>Отсутствует или просрочен JWT-токен</td></tr>
+                <tr><td>404</td><td>Рейс с указанным trip_id не найден</td></tr>
+                <tr><td>500</td><td>Ошибка базы данных</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- GET /api/health -->
+<div class="endpoint-card">
+    <div class="endpoint-header">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-path">/api/health</span>
+        <span class="endpoint-desc">Health check для мониторинга и Docker healthcheck</span>
+    </div>
+    <div class="endpoint-body">
+        <div class="endpoint-meta">
+            <span class="endpoint-meta-item"><strong>Авторизация:</strong> Не требуется</span>
+        </div>
+
+        <h4>Response 200 OK (система в норме)</h4>
+<pre><code>{
+  "status": "ok",
+  "db": "connected",
+  "uptime_seconds": 43200,
+  "version": "1.0.0",
+  "timestamp": "2026-03-06T15:00:00.000Z"
+}</code></pre>
+
+        <h4>Response 200 OK (деградированное состояние)</h4>
+<pre><code>{
+  "status": "degraded",
+  "db": "disconnected",
+  "uptime_seconds": 43200,
+  "version": "1.0.0",
+  "timestamp": "2026-03-06T15:00:00.000Z",
+  "issues": ["PostgreSQL connection failed"]
+}</code></pre>
+        <p><strong>Примечание:</strong> Endpoint возвращает HTTP 200 даже при degraded — мониторинг получает детали. При полном падении endpoint просто недоступен.</p>
+    </div>
+</div>
+
+<!-- 4.12 Таблица всех endpoints -->
+<h3>4.12 Сводная таблица всех endpoint-ов</h3>
+<table>
+    <thead><tr><th>Метод</th><th>Путь</th><th>Авторизация</th><th>Роли</th><th>Описание</th></tr></thead>
+    <tbody>
+        <tr><td><span class="method-badge method-post" style="padding:2px 8px;font-size:11px">POST</span></td><td>/api/auth/login</td><td>Нет</td><td>--</td><td>Авторизация, получение JWT</td></tr>
+        <tr><td><span class="method-badge method-get" style="padding:2px 8px;font-size:11px">GET</span></td><td>/api/health</td><td>Нет</td><td>--</td><td>Health check системы</td></tr>
+        <tr><td><span class="method-badge method-get" style="padding:2px 8px;font-size:11px">GET</span></td><td>/api/trips</td><td>Bearer</td><td>admin, manager, viewer</td><td>Список рейсов</td></tr>
+        <tr><td><span class="method-badge method-get" style="padding:2px 8px;font-size:11px">GET</span></td><td>/api/trips/{trip_id}</td><td>Bearer</td><td>admin, manager, viewer</td><td>Детали рейса</td></tr>
+        <tr><td><span class="method-badge method-get" style="padding:2px 8px;font-size:11px">GET</span></td><td>/api/alerts</td><td>Bearer</td><td>admin, manager, viewer</td><td>Лента алертов</td></tr>
+        <tr><td><span class="method-badge method-patch" style="padding:2px 8px;font-size:11px">PATCH</span></td><td>/api/alerts/{alert_id}</td><td>Bearer</td><td>admin, manager</td><td>Обновить статус алерта</td></tr>
+        <tr><td><span class="method-badge method-get" style="padding:2px 8px;font-size:11px">GET</span></td><td>/api/stats</td><td>Bearer</td><td>admin, manager, viewer</td><td>Сводная статистика</td></tr>
+        <tr><td><span class="method-badge method-get" style="padding:2px 8px;font-size:11px">GET</span></td><td>/api/stats/chart</td><td>Bearer</td><td>admin, manager, viewer</td><td>Данные для графиков</td></tr>
+        <tr><td><span class="method-badge method-get" style="padding:2px 8px;font-size:11px">GET</span></td><td>/api/chats/{trip_id}</td><td>Bearer</td><td>admin, manager, viewer</td><td>История чата по рейсу</td></tr>
+    </tbody>
+</table>
+
+<!-- ===== 5. Критерии приёмки ===== -->
+<h2>5. Критерии приёмки</h2>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-001: Успешная авторизация возвращает JWT</div>
+    <p class="ac-given"><strong>Given</strong> пользователь "victoria" существует с ролью "manager" и паролем "testpass"</p>
+    <p class="ac-when"><strong>When</strong> POST /api/auth/login с body {"username": "victoria", "password": "testpass"}</p>
+    <p class="ac-then"><strong>Then</strong> ответ 200 OK, поле token — валидный JWT, role="manager", expires_at через 24 часа</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-002: Неверный пароль возвращает 401</div>
+    <p class="ac-given"><strong>Given</strong> пользователь "victoria" существует</p>
+    <p class="ac-when"><strong>When</strong> POST /api/auth/login с body {"username": "victoria", "password": "wrongpass"}</p>
+    <p class="ac-then"><strong>Then</strong> ответ 401 Unauthorized, error_code="INVALID_CREDENTIALS"</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-003: Запрос без токена возвращает 401</div>
+    <p class="ac-given"><strong>Given</strong> GET /api/trips без заголовка Authorization</p>
+    <p class="ac-then"><strong>Then</strong> ответ 401 Unauthorized, error_code="MISSING_TOKEN"</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-004: Просроченный токен возвращает 401</div>
+    <p class="ac-given"><strong>Given</strong> JWT-токен с exp в прошлом</p>
+    <p class="ac-then"><strong>Then</strong> ответ 401 Unauthorized, error_code="TOKEN_EXPIRED"</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-005: Viewer не может изменять алерты</div>
+    <p class="ac-given"><strong>Given</strong> пользователь с ролью "viewer" и валидным JWT</p>
+    <p class="ac-when"><strong>When</strong> PATCH /api/alerts/101 с body {"status": "reviewed", "reviewed_by": "test"}</p>
+    <p class="ac-then"><strong>Then</strong> ответ 403 Forbidden, error_code="INSUFFICIENT_PERMISSIONS"</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-006: Список рейсов с фильтром по заказчику</div>
+    <p class="ac-given"><strong>Given</strong> в БД 12 рейсов: 5 WB, 4 Тандер, 3 X5</p>
+    <p class="ac-when"><strong>When</strong> GET /api/trips?customer=WB</p>
+    <p class="ac-then"><strong>Then</strong> ответ 200, data содержит 5 объектов, все с customer="WB", pagination.total=5</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-007: Пагинация работает корректно</div>
+    <p class="ac-given"><strong>Given</strong> в БД 45 алертов</p>
+    <p class="ac-when"><strong>When</strong> GET /api/alerts?page=2&amp;limit=20</p>
+    <p class="ac-then"><strong>Then</strong> ответ 200, data содержит 20 объектов (21-40), pagination.total=45, pagination.pages=3</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-008: HIGH-алерты идут первыми в ленте</div>
+    <p class="ac-given"><strong>Given</strong> 3 алерта: LOW (12:00), HIGH (10:00), MEDIUM (11:00)</p>
+    <p class="ac-when"><strong>When</strong> GET /api/alerts (сортировка по умолчанию)</p>
+    <p class="ac-then"><strong>Then</strong> первый — HIGH, затем MEDIUM, затем LOW</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-009: Статус алерта обновляется с фиксацией reviewed_by</div>
+    <p class="ac-given"><strong>Given</strong> алерт id=101, status="new"</p>
+    <p class="ac-when"><strong>When</strong> PATCH /api/alerts/101 {"status": "reviewed", "reviewed_by": "Виктория"}</p>
+    <p class="ac-then"><strong>Then</strong> ответ 200, status="reviewed", reviewed_by="Виктория", reviewed_at = текущее UTC</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-010: Переход из resolved недопустим</div>
+    <p class="ac-given"><strong>Given</strong> алерт id=102, status="resolved"</p>
+    <p class="ac-when"><strong>When</strong> PATCH /api/alerts/102 {"status": "reviewed", "reviewed_by": "test"}</p>
+    <p class="ac-then"><strong>Then</strong> ответ 400, error_code="INVALID_STATUS_TRANSITION"</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-011: Детали рейса с алертами и сообщениями</div>
+    <p class="ac-given"><strong>Given</strong> рейс "4521" с 2 алертами и 18 сообщениями</p>
+    <p class="ac-when"><strong>When</strong> GET /api/trips/4521</p>
+    <p class="ac-then"><strong>Then</strong> ответ 200, alerts.length=2, recent_messages.length=10 (последние 10 из 18)</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-012: Несуществующий рейс возвращает 404</div>
+    <p class="ac-when"><strong>When</strong> GET /api/trips/9999</p>
+    <p class="ac-then"><strong>Then</strong> ответ 404, error_code="TRIP_NOT_FOUND"</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-013: Статистика возвращает корректные счётчики</div>
+    <p class="ac-when"><strong>When</strong> GET /api/stats?period=today</p>
+    <p class="ac-then"><strong>Then</strong> ответ 200, trips.total=12, trips.active=8, alerts.high=2, messages.today=187</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-014: График возвращает 24 точки для period=today</div>
+    <p class="ac-when"><strong>When</strong> GET /api/stats/chart?metric=alerts&amp;period=today&amp;granularity=hour</p>
+    <p class="ac-then"><strong>Then</strong> ответ 200, data.length=24, timestamp первой точки = 00:00 текущего дня UTC</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-015: История чата в хронологическом порядке</div>
+    <p class="ac-given"><strong>Given</strong> рейс "4521" с 18 сообщениями от 06:15 до 22:10</p>
+    <p class="ac-when"><strong>When</strong> GET /api/chats/4521</p>
+    <p class="ac-then"><strong>Then</strong> ответ 200, data в порядке timestamp ASC, pagination.total=18</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-016: Health check без авторизации</div>
+    <p class="ac-when"><strong>When</strong> GET /api/health без заголовка Authorization</p>
+    <p class="ac-then"><strong>Then</strong> ответ 200, status="ok", db="connected", uptime_seconds > 0</p>
+</div>
+
+<div class="ac-card">
+    <div class="ac-id">AC-API-017: Фильтр по диапазону дат</div>
+    <p class="ac-given"><strong>Given</strong> алерты: 5-го марта (20 шт.) и 6-го марта (25 шт.)</p>
+    <p class="ac-when"><strong>When</strong> GET /api/alerts?date_from=2026-03-06T00:00:00Z&amp;date_to=2026-03-06T23:59:59Z</p>
+    <p class="ac-then"><strong>Then</strong> ответ 200, pagination.total=25</p>
+</div>
+
+<!-- ===== 6. Стратегия тестирования ===== -->
+<h2>6. Стратегия тестирования</h2>
+
+<h3>6.1 Юнит-тесты (pytest)</h3>
+<p><strong>Тестируемые компоненты:</strong> Pydantic-схемы, функции валидации, JWT-логика.</p>
+<pre><code># tests/test_auth.py
+def test_create_jwt_token():
+    """JWT создаётся с корректными полями"""
+    token = create_jwt_token(username="victoria", role="manager")
+    payload = decode_jwt_token(token)
+    assert payload["sub"] == "victoria"
+    assert payload["role"] == "manager"
+    assert payload["exp"] > time.time()
+
+def test_expired_jwt_raises():
+    """Просроченный JWT вызывает исключение"""
+    token = create_jwt_token(username="test", role="viewer", expires_delta=-1)
+    with pytest.raises(JWTError, match="Token expired"):
+        decode_jwt_token(token)
+
+def test_pagination_params_validation():
+    """page &lt; 1 вызывает ValidationError"""
+    with pytest.raises(ValidationError):
+        PaginationParams(page=0, limit=20)
+
+def test_pagination_limit_max():
+    """limit &gt; 100 вызывает ValidationError"""
+    with pytest.raises(ValidationError):
+        PaginationParams(page=1, limit=101)</code></pre>
+
+<h3>6.2 Интеграционные тесты (pytest + httpx + TestClient)</h3>
+<p><strong>Тестируемые компоненты:</strong> Все endpoint-ы с реальной тестовой БД PostgreSQL.</p>
+<pre><code># tests/test_api_integration.py
+@pytest.mark.asyncio
+async def test_login_success(client, test_user):
+    response = await client.post("/api/auth/login", json={
+        "username": "victoria", "password": "testpass"
+    })
+    assert response.status_code == 200
+    assert "token" in response.json()
+    assert response.json()["user"]["role"] == "manager"
+
+@pytest.mark.asyncio
+async def test_get_trips_requires_auth(client):
+    response = await client.get("/api/trips")
+    assert response.status_code == 401
+    assert response.json()["error_code"] == "MISSING_TOKEN"
+
+@pytest.mark.asyncio
+async def test_get_trips_filter_customer(client, auth_headers, seed_trips):
+    response = await client.get("/api/trips?customer=WB", headers=auth_headers)
+    assert response.status_code == 200
+    assert all(t["customer"] == "WB" for t in response.json()["data"])
+
+@pytest.mark.asyncio
+async def test_patch_alert_viewer_forbidden(client, viewer_headers, seed_alert):
+    response = await client.patch(
+        f"/api/alerts/{seed_alert['id']}",
+        json={"status": "reviewed", "reviewed_by": "test"},
+        headers=viewer_headers
+    )
+    assert response.status_code == 403
+
+@pytest.mark.asyncio
+async def test_patch_alert_resolved_to_reviewed_fails(client, manager_headers, resolved_alert):
+    response = await client.patch(
+        f"/api/alerts/{resolved_alert['id']}",
+        json={"status": "reviewed", "reviewed_by": "test"},
+        headers=manager_headers
+    )
+    assert response.status_code == 400
+    assert response.json()["error_code"] == "INVALID_STATUS_TRANSITION"</code></pre>
+
+<h3>6.3 Сценарные тесты (E2E)</h3>
+<table>
+    <thead><tr><th>Сценарий</th><th>Шаги</th><th>Ожидаемый результат</th></tr></thead>
+    <tbody>
+        <tr><td><strong>Полный цикл алерта</strong></td><td>1. Алерт создан &rarr; 2. GET alerts?status=new &rarr; 3. PATCH reviewed &rarr; 4. GET alerts?status=reviewed</td><td>Алерт прошёл жизненный цикл, зафиксирован reviewed_by</td></tr>
+        <tr><td><strong>Polling каждые 3 сек</strong></td><td>5 запросов GET /api/alerts с интервалом 3 сек</td><td>Все 5 вернули 200, данные актуальны</td></tr>
+        <tr><td><strong>Фильтр заказчик + период</strong></td><td>GET /api/alerts?customer=WB&amp;date_from=2026-03-06</td><td>Только WB-алерты за сегодня</td></tr>
+        <tr><td><strong>Детали рейса с историей</strong></td><td>GET /api/trips/4521 &rarr; GET /api/chats/4521</td><td>Рейс найден, 18 сообщений в хронологии</td></tr>
+        <tr><td><strong>Health check</strong></td><td>GET /api/health</td><td>200 OK без авторизации</td></tr>
+    </tbody>
+</table>
+
+<h3>6.4 Нагрузочное тестирование</h3>
+<table>
+    <thead><tr><th>Метрика</th><th>Цель</th></tr></thead>
+    <tbody>
+        <tr><td>P95 latency GET /api/alerts</td><td>&lt; 200 мс</td></tr>
+        <tr><td>P95 latency GET /api/trips</td><td>&lt; 150 мс</td></tr>
+        <tr><td>P95 latency GET /api/stats</td><td>&lt; 300 мс</td></tr>
+        <tr><td>Throughput при polling 3 сек x 3 пользователя</td><td>&gt; 3 RPS без деградации</td></tr>
+    </tbody>
+</table>
+
+<!-- ===== 7. Зависимости ===== -->
+<h2>7. Зависимости</h2>
+
+<h3>7.1 Зависимости от других модулей</h3>
+<table>
+    <thead><tr><th>Модуль</th><th>Интерфейс</th><th>Причина</th></tr></thead>
+    <tbody>
+        <tr><td><strong>spec-data-schema</strong></td><td>Таблицы: trips, alerts, raw_messages, parsed_messages, dashboard_users</td><td>API читает данные из этих таблиц</td></tr>
+        <tr><td><strong>spec-tool-alert-engine</strong></td><td>Таблица alerts, поля: type, severity, status, rule_id</td><td>Alert Engine пишет алерты, API их читает</td></tr>
+        <tr><td><strong>spec-tool-chat-listener</strong></td><td>Таблица raw_messages</td><td>/api/chats/{trip_id} читает raw_messages</td></tr>
+        <tr><td><strong>spec-tool-ai-parser</strong></td><td>Таблица parsed_messages</td><td>Поле parsed в ChatMessage</td></tr>
+    </tbody>
+</table>
+
+<h3>7.2 Внешние технологические зависимости</h3>
+<table>
+    <thead><tr><th>Зависимость</th><th>Версия</th><th>Назначение</th></tr></thead>
+    <tbody>
+        <tr><td>FastAPI</td><td>0.109+</td><td>Web-фреймворк, автогенерация OpenAPI docs</td></tr>
+        <tr><td>Pydantic</td><td>v2.5+</td><td>Валидация request/response схем</td></tr>
+        <tr><td>asyncpg</td><td>0.29+</td><td>Асинхронный PostgreSQL-драйвер</td></tr>
+        <tr><td>python-jose</td><td>3.3+</td><td>JWT encode/decode (HS256)</td></tr>
+        <tr><td>passlib[bcrypt]</td><td>1.7+</td><td>Проверка bcrypt-хеша пароля</td></tr>
+        <tr><td>python-json-logger</td><td>2.0+</td><td>Структурированное JSON-логирование</td></tr>
+        <tr><td>uvicorn</td><td>0.27+</td><td>ASGI-сервер для FastAPI</td></tr>
+        <tr><td>PostgreSQL</td><td>15+</td><td>База данных</td></tr>
+    </tbody>
+</table>
+
+<h3>7.3 Переменные окружения</h3>
+<table>
+    <thead><tr><th>Переменная</th><th>Описание</th><th>Пример</th></tr></thead>
+    <tbody>
+        <tr><td><code class="inline">DATABASE_URL</code></td><td>asyncpg-совместимый URL PostgreSQL</td><td><code class="inline">postgresql://user:pass@postgres:5432/marshall</code></td></tr>
+        <tr><td><code class="inline">JWT_SECRET_KEY</code></td><td>Секретный ключ для подписи JWT (мин. 32 символа)</td><td><code class="inline">super-secret-key-change-in-production</code></td></tr>
+        <tr><td><code class="inline">JWT_EXPIRE_HOURS</code></td><td>Срок жизни JWT в часах</td><td><code class="inline">24</code></td></tr>
+        <tr><td><code class="inline">API_HOST</code></td><td>Хост FastAPI-сервера</td><td><code class="inline">0.0.0.0</code></td></tr>
+        <tr><td><code class="inline">API_PORT</code></td><td>Порт FastAPI-сервера</td><td><code class="inline">8000</code></td></tr>
+        <tr><td><code class="inline">CORS_ORIGINS</code></td><td>Допустимые CORS Origins (через запятую)</td><td><code class="inline">http://localhost:3000,http://88.218.248.114</code></td></tr>
+        <tr><td><code class="inline">LOG_LEVEL</code></td><td>Уровень логирования</td><td><code class="inline">INFO</code></td></tr>
+    </tbody>
+</table>
+
+<!-- ===== 8. Примеры и граничные случаи ===== -->
+<h2>8. Примеры и граничные случаи</h2>
+
+<h3>8.1 Полный flow авторизации и получения алертов</h3>
+<pre><code># Шаг 1: Получить JWT-токен
+curl -X POST http://88.218.248.114:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "victoria", "password": "manager123"}' \
+  | jq '.token'
+# &rarr; "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+# Шаг 2: Получить HIGH-алерты
+curl -X GET "http://88.218.248.114:8000/api/alerts?severity=high&amp;status=new&amp;limit=10" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</code></pre>
+
+<h4>Ожидаемый ответ:</h4>
+<pre><code>{
+  "data": [
+    {
+      "id": 105, "trip_id": "7803",
+      "alert_type": "equipment_failure", "severity": "high",
+      "message": "КРИТИЧНО: Нарушение температуры у Тандер 7803: Реф показывает +8",
+      "customer": "Тандер", "status": "new",
+      "created_at": "2026-03-06T07:45:00.000Z"
+    }
+  ],
+  "pagination": { "total": 2, "page": 1, "limit": 10, "pages": 1 }
+}</code></pre>
+
+<h3>8.2 Просмотр и закрытие алерта</h3>
+<pre><code># Шаг 1: Отметить алерт как просмотренный
+curl -X PATCH http://88.218.248.114:8000/api/alerts/105 \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "reviewed", "reviewed_by": "Виктория Фимина"}'
+# Ответ: 200 OK, status="reviewed", reviewed_at="..."
+
+# Шаг 2: После устранения проблемы — закрыть алерт
+curl -X PATCH http://88.218.248.114:8000/api/alerts/105 \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "resolved", "reviewed_by": "Виктория Фимина"}'</code></pre>
+
+<h3>8.3 Статистика и данные для графика</h3>
+<pre><code># Сводная статистика за сегодня
+curl "http://88.218.248.114:8000/api/stats?period=today" \
+  -H "Authorization: Bearer &lt;token&gt;"
+
+# График алертов за неделю (по дням)
+curl "http://88.218.248.114:8000/api/stats/chart?metric=alerts&amp;period=week&amp;granularity=day" \
+  -H "Authorization: Bearer &lt;token&gt;"</code></pre>
+
+<h4>Ожидаемый ответ для графика:</h4>
+<pre><code>{
+  "metric": "alerts", "period": "week", "granularity": "day",
+  "data": [
+    { "timestamp": "2026-02-28T00:00:00.000Z", "value": 8 },
+    { "timestamp": "2026-03-01T00:00:00.000Z", "value": 12 },
+    { "timestamp": "2026-03-02T00:00:00.000Z", "value": 5 },
+    { "timestamp": "2026-03-03T00:00:00.000Z", "value": 15 },
+    { "timestamp": "2026-03-04T00:00:00.000Z", "value": 3 },
+    { "timestamp": "2026-03-05T00:00:00.000Z", "value": 7 },
+    { "timestamp": "2026-03-06T00:00:00.000Z", "value": 15 }
+  ],
+  "summary": { "total": 65, "peak_value": 15, "peak_timestamp": "2026-03-06T00:00:00.000Z" }
+}</code></pre>
+
+<h3>8.4 История чата по рейсу</h3>
+<pre><code>curl "http://88.218.248.114:8000/api/chats/4521" \
+  -H "Authorization: Bearer &lt;token&gt;"</code></pre>
+<h4>Ожидаемый ответ (сокращённый):</h4>
+<pre><code>{
+  "trip_id": "4521",
+  "data": [
+    {
+      "id": 5001, "sender_name": "Диспетчер Алексей",
+      "text": "Рейс 4521, Москва-Краснодар, слот на погрузку WB 14:00...",
+      "timestamp": "2026-03-06T06:15:00.000Z",
+      "parsed": { "trip_id": "4521", "status": "assigned", "urgency": "low", "confidence": 0.95 }
+    },
+    {
+      "id": 5003, "sender_name": "Водитель Иван",
+      "text": "Стою в пробке на МКАД, опаздываю минут на 40",
+      "timestamp": "2026-03-06T08:30:00.000Z",
+      "parsed": { "trip_id": "4521", "status": "problem", "urgency": "medium", "issue": "Опоздание 40 мин", "confidence": 0.87 }
+    }
+  ],
+  "pagination": { "total": 18, "page": 1, "limit": 50, "pages": 1 }
+}</code></pre>
+
+<h3>8.5 Граничные случаи</h3>
+
+<div class="card card-warning">
+    <h4 style="margin-top:0">Пустой список (нет данных за период)</h4>
+    <p>GET /api/alerts?date_from=2026-01-01&amp;date_to=2026-01-02 &rarr; <strong>200 OK</strong> (не 404)</p>
+<pre><code>{ "data": [], "pagination": { "total": 0, "page": 1, "limit": 20, "pages": 0 } }</code></pre>
+</div>
+
+<div class="card card-warning">
+    <h4 style="margin-top:0">Рейс без парсированных данных</h4>
+    <p>Рейс существует в trips, но нет записей в parsed_messages. GET /api/trips/{trip_id} возвращает alerts=[] и recent_messages=[]. <strong>Не</strong> возвращает 404.</p>
+</div>
+
+<div class="card card-warning">
+    <h4 style="margin-top:0">Информационный алерт без trip_id</h4>
+    <p>Некоторые алерты создаются без привязки к рейсу (например, ДТП на трассе). Возвращаются с trip_id=null.</p>
+<pre><code>{
+  "id": 120, "trip_id": null,
+  "alert_type": "downtime", "severity": "medium",
+  "message": "Инцидент на трассе М4 Дон км 680 — возможны задержки",
+  "customer": null, "status": "new",
+  "created_at": "2026-03-06T10:30:00.000Z"
+}</code></pre>
+</div>
+
+<div class="card card-warning">
+    <h4 style="margin-top:0">Превышение лимита пагинации</h4>
+    <p>GET /api/alerts?limit=200 &rarr; <strong>422 Unprocessable Entity</strong></p>
+<pre><code>{
+  "error_code": "VALIDATION_ERROR",
+  "message": "Параметр limit не может превышать 100",
+  "details": { "field": "limit", "value": 200, "max": 100 },
+  "request_id": "req-abc123"
+}</code></pre>
+</div>
+
+<div class="card card-warning">
+    <h4 style="margin-top:0">Неверный формат даты</h4>
+    <p>GET /api/trips?date_from=06.03.2026 &rarr; <strong>400 Bad Request</strong></p>
+<pre><code>{
+  "error_code": "INVALID_DATE_FORMAT",
+  "message": "Параметр date_from должен быть в формате ISO 8601 (YYYY-MM-DD или YYYY-MM-DDTHH:MM:SSZ)",
+  "details": { "field": "date_from", "value": "06.03.2026" },
+  "request_id": "req-def456"
+}</code></pre>
+</div>
+
+<div class="card card-warning">
+    <h4 style="margin-top:0">Деактивированный пользователь</h4>
+    <p>POST /api/auth/login с корректным паролем, но is_active=false &rarr; <strong>403 Forbidden</strong></p>
+<pre><code>{
+  "error_code": "ACCOUNT_DISABLED",
+  "message": "Учётная запись деактивирована. Обратитесь к администратору.",
+  "request_id": "req-ghi789"
+}</code></pre>
+</div>
+
+<!-- ===== Приложение А ===== -->
+<h2>Приложение А: Каталог кодов ошибок</h2>
+<table>
+    <thead><tr><th>error_code</th><th>HTTP</th><th>Условие</th></tr></thead>
+    <tbody>
+        <tr><td><code class="inline">MISSING_TOKEN</code></td><td>401</td><td>Заголовок Authorization отсутствует</td></tr>
+        <tr><td><code class="inline">INVALID_TOKEN</code></td><td>401</td><td>Неверная подпись JWT</td></tr>
+        <tr><td><code class="inline">TOKEN_EXPIRED</code></td><td>401</td><td>JWT просрочен</td></tr>
+        <tr><td><code class="inline">INVALID_CREDENTIALS</code></td><td>401</td><td>Неверный логин или пароль</td></tr>
+        <tr><td><code class="inline">ACCOUNT_DISABLED</code></td><td>403</td><td>is_active=false в dashboard_users</td></tr>
+        <tr><td><code class="inline">INSUFFICIENT_PERMISSIONS</code></td><td>403</td><td>Роль не позволяет выполнить операцию</td></tr>
+        <tr><td><code class="inline">TRIP_NOT_FOUND</code></td><td>404</td><td>trips.trip_id не найден</td></tr>
+        <tr><td><code class="inline">ALERT_NOT_FOUND</code></td><td>404</td><td>alerts.id не найден</td></tr>
+        <tr><td><code class="inline">INVALID_STATUS_TRANSITION</code></td><td>400</td><td>Недопустимый переход статуса алерта</td></tr>
+        <tr><td><code class="inline">INVALID_DATE_FORMAT</code></td><td>400</td><td>date_from или date_to в неверном формате</td></tr>
+        <tr><td><code class="inline">VALIDATION_ERROR</code></td><td>422</td><td>Ошибка валидации параметров (Pydantic)</td></tr>
+        <tr><td><code class="inline">DATABASE_ERROR</code></td><td>500</td><td>Ошибка запроса к PostgreSQL</td></tr>
+        <tr><td><code class="inline">INTERNAL_ERROR</code></td><td>500</td><td>Непредвиденная внутренняя ошибка</td></tr>
+    </tbody>
+</table>
+
+<!-- ===== Приложение Б ===== -->
+<h2>Приложение Б: Структура проекта FastAPI</h2>
+<div class="tree">marshall-listener/
+├── api/
+│   ├── __init__.py
+│   ├── main.py                 # FastAPI app, CORS, middleware, роутеры
+│   ├── deps.py                 # Зависимости: get_db(), get_current_user()
+│   ├── auth.py                 # JWT: create_token, verify_token, get_password_hash
+│   ├── models/
+│   │   ├── trip.py             # Pydantic-схемы Trip
+│   │   ├── alert.py            # Pydantic-схемы Alert
+│   │   ├── stats.py            # Pydantic-схемы Stats, ChartData
+│   │   ├── chat.py             # Pydantic-схемы ChatMessage
+│   │   └── common.py           # PaginationParams, ErrorResponse
+│   └── routers/
+│       ├── auth.py             # POST /api/auth/login
+│       ├── trips.py            # GET /api/trips, GET /api/trips/{trip_id}
+│       ├── alerts.py           # GET /api/alerts, PATCH /api/alerts/{id}
+│       ├── stats.py            # GET /api/stats, GET /api/stats/chart
+│       ├── chats.py            # GET /api/chats/{trip_id}
+│       └── health.py           # GET /api/health
+├── db/
+│   ├── connection.py           # asyncpg pool, get_connection()
+│   └── queries/
+│       ├── trips.py            # SQL-запросы для trips
+│       ├── alerts.py           # SQL-запросы для alerts
+│       ├── stats.py            # SQL-запросы для stats
+│       └── chats.py            # SQL-запросы для чатов
+└── tests/
+    ├── conftest.py             # Fixtures: test_db, client, auth_headers
+    ├── test_auth.py
+    ├── test_trips.py
+    ├── test_alerts.py
+    ├── test_stats.py
+    └── test_chats.py</div>
+
+<p style="text-align:center;color:var(--text-muted);margin-top:40px;font-size:.9rem">Документ создан: 2026-03-06. Версия: 1.0. Статус: ГОТОВО К РЕАЛИЗАЦИИ.</p>
+
+</div>
+</body>
+</html>

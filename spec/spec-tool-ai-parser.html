@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marshall AI Listener — Спецификация AI Parser</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --accent: #f59e0b;
+            --accent-light: #fef3c7;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+        .nav {
+            position: sticky; top: 0; z-index: 100;
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            padding: 12px 24px;
+            display: flex; align-items: center; gap: 16px;
+            overflow-x: auto; white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        }
+        .nav a {
+            color: rgba(255,255,255,.85); text-decoration: none;
+            font-size: 13px; padding: 6px 12px; border-radius: 6px;
+            transition: all .2s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,.2); color: #fff; }
+        .nav .brand { font-weight: 700; font-size: 15px; color: #fff; margin-right: 8px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+        h1 { font-size: 2rem; margin-bottom: 8px; color: var(--primary); }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 32px; }
+        h2 {
+            font-size: 1.4rem; margin: 40px 0 16px;
+            padding-bottom: 8px; border-bottom: 2px solid var(--primary-light);
+            color: var(--primary);
+        }
+        h3 { font-size: 1.15rem; margin: 24px 0 12px; color: var(--text); }
+        h4 { font-size: 1rem; margin: 16px 0 8px; color: var(--text-muted); }
+        p { margin-bottom: 12px; }
+        .card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .card-accent { border-left: 4px solid var(--primary); }
+        .card-success { border-left: 4px solid var(--success); background: var(--success-light); }
+        .card-warning { border-left: 4px solid var(--warning); background: var(--accent-light); }
+        .card-danger { border-left: 4px solid var(--danger); background: var(--danger-light); }
+        .vision {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white; border-radius: 16px; padding: 32px;
+            margin-bottom: 32px; font-size: 1.2rem; text-align: center;
+        }
+        ul { padding-left: 20px; margin-bottom: 12px; }
+        li { margin-bottom: 6px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: .95rem; }
+        th { background: var(--primary); color: white; padding: 10px 14px; text-align: left; }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) { background: #f8fafc; }
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 8px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+        }
+        .badge-must { background: var(--danger-light); color: var(--danger); }
+        .badge-high { background: #fee2e2; color: #dc2626; }
+        .badge-medium { background: var(--accent-light); color: #d97706; }
+        .badge-low { background: var(--success-light); color: var(--success); }
+        .badge-primary { background: var(--primary-light); color: var(--primary); }
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        .metric-card {
+            background: var(--card); border-radius: 12px; padding: 20px;
+            border: 1px solid var(--border); text-align: center;
+        }
+        .metric-card .value { font-size: 2rem; font-weight: 800; color: var(--primary); }
+        .metric-card .label { font-size: .85rem; color: var(--text-muted); margin-top: 4px; }
+        pre {
+            background: #1e293b; color: #e2e8f0; padding: 16px;
+            border-radius: 8px; overflow-x: auto; font-size: .85rem;
+            margin-bottom: 16px; line-height: 1.5;
+        }
+        code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+        .inline-code {
+            background: var(--primary-light); color: var(--primary);
+            padding: 2px 6px; border-radius: 4px; font-size: .9em;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+        .req-card {
+            background: var(--card); border-radius: 12px; padding: 20px;
+            margin-bottom: 16px; border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+        }
+        .req-card .req-id {
+            display: inline-block; background: var(--primary-light); color: var(--primary);
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .req-card h3 { margin-top: 4px; margin-bottom: 8px; }
+        .con-card {
+            background: var(--card); border-radius: 12px; padding: 20px;
+            margin-bottom: 16px; border: 1px solid var(--border);
+            border-left: 4px solid var(--accent);
+        }
+        .con-card .con-id {
+            display: inline-block; background: var(--accent-light); color: #d97706;
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .con-card h3 { margin-top: 4px; margin-bottom: 8px; }
+        .diagram-box {
+            background: var(--card); border: 2px solid var(--primary-light);
+            border-radius: 12px; padding: 24px; margin-bottom: 20px;
+            text-align: center; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: .95rem; line-height: 2;
+        }
+        .diagram-box .node {
+            display: inline-block; background: var(--primary-light); color: var(--primary);
+            padding: 8px 20px; border-radius: 8px; font-weight: 700;
+            border: 2px solid var(--primary); margin: 4px;
+        }
+        .diagram-box .node-active {
+            background: var(--primary); color: white;
+        }
+        .diagram-box .node-fallback {
+            background: var(--accent-light); color: #d97706;
+            border-color: var(--accent);
+        }
+        .diagram-box .node-last {
+            background: var(--danger-light); color: var(--danger);
+            border-color: var(--danger);
+        }
+        .diagram-box .arrow {
+            display: inline-block; color: var(--text-muted);
+            font-size: 1.2rem; margin: 0 8px; vertical-align: middle;
+        }
+        .diagram-box .arrow-label {
+            display: block; font-size: .75rem; color: var(--text-muted);
+            font-weight: 400;
+        }
+        .example-block {
+            background: var(--card); border-radius: 12px; padding: 20px;
+            margin-bottom: 20px; border: 1px solid var(--border);
+        }
+        .example-block h4 { color: var(--primary); margin-bottom: 8px; }
+        .example-label {
+            font-size: .8rem; font-weight: 700; text-transform: uppercase;
+            color: var(--text-muted); margin-bottom: 4px;
+        }
+        .test-check { color: var(--success); font-weight: 700; }
+        .prompt-block {
+            background: #0f172a; color: #94a3b8; padding: 24px;
+            border-radius: 12px; overflow-x: auto; font-size: .82rem;
+            margin-bottom: 16px; line-height: 1.6;
+            border: 2px solid #334155;
+        }
+        .prompt-block .prompt-heading {
+            color: #60a5fa; font-weight: 700;
+        }
+        .prompt-block .prompt-field {
+            color: #f59e0b;
+        }
+        .prompt-block .prompt-var {
+            color: #a78bfa;
+        }
+        .prompt-block .prompt-comment {
+            color: #6b7280; font-style: italic;
+        }
+        .prompt-block .prompt-keyword {
+            color: #34d399;
+        }
+        .prompt-block .prompt-status {
+            color: #fb923c; font-weight: 600;
+        }
+        .json-key { color: #60a5fa; }
+        .json-string { color: #34d399; }
+        .json-number { color: #f59e0b; }
+        .json-null { color: #a78bfa; }
+        .json-comment { color: #6b7280; font-style: italic; }
+        .sql-keyword { color: #c084fc; font-weight: 700; }
+        .sql-type { color: #60a5fa; }
+        .sql-comment { color: #6b7280; font-style: italic; }
+        .py-keyword { color: #c084fc; }
+        .py-string { color: #34d399; }
+        .py-comment { color: #6b7280; font-style: italic; }
+        .py-func { color: #60a5fa; }
+        .py-number { color: #f59e0b; }
+        .dep-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 20px; }
+        @media (max-width: 768px) {
+            .dep-grid { grid-template-columns: 1fr; }
+            .metric-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <span class="brand">Marshall SDD</span>
+    <a href="master_brief.html">Мастер-бриф</a>
+    <a href="product_brief.html">Продукт</a>
+    <a href="sdd_orchestration.html">Оркестрация</a>
+    <a href="spec-tool-chat-listener.html">Listener</a>
+    <a href="spec-tool-ai-parser.html" class="active">Parser</a>
+    <a href="spec-tool-alert-engine.html">Alerts</a>
+    <a href="spec-data-schema.html">Schema</a>
+    <a href="spec-tool-dashboard-api.html">API</a>
+    <a href="spec-design-dashboard.html">Dashboard</a>
+    <a href="spec-architecture-overview.html">Архитектура</a>
+    <a href="spec-process-sprint0-plan.html">План</a>
+</nav>
+
+<div class="container">
+
+<h1>Спецификация AI Parser (S0-F02)</h1>
+<p class="subtitle">Marshall AI Listener — v1.0 | 2026-03-06</p>
+
+<!-- ===== 1. Цель и скоуп ===== -->
+<h2>1. Цель и скоуп</h2>
+
+<div class="vision">
+    <strong>AI Parser</strong> — компонент, который принимает сырые текстовые сообщения из диспетчерских чатов и извлекает из них структурированные логистические данные через LLM (Large Language Model). Парсер преобразует неструктурированный текст в JSON с полями: trip_id, маршрут, статус, заказчик, срочность, проблемы и уровень уверенности.
+</div>
+
+<h3>1.1 Входные данные</h3>
+<div class="card card-accent">
+    <ul>
+        <li><strong>Raw message:</strong> Текст сообщения из чата + metadata (sender_name, chat_name, timestamp, chat_history)</li>
+        <li><strong>Chat history:</strong> Опционально — последние N сообщений из чата для контекста (определение trip_id)</li>
+        <li><strong>Customer rules:</strong> Справочник правил для 6 заказчиков (Тандер, WB, X5, Магнит, Сельта, Сибур)</li>
+    </ul>
+</div>
+
+<h3>1.2 Выходные данные</h3>
+<div class="card card-accent">
+    <ul>
+        <li><strong>Parsed message JSON:</strong> Структурированный результат с полями trip_id, route_from, route_to, slot_time, status, customer, urgency, issue, confidence</li>
+        <li><strong>PostgreSQL запись:</strong> Сохранение результата в таблицу <span class="inline-code">parsed_messages</span></li>
+        <li><strong>Флаг низкого качества:</strong> confidence &lt; 0.70 &rarr; запись помечается для ручного ревью</li>
+    </ul>
+</div>
+
+<h3>1.3 Связь с другими модулями</h3>
+<div class="diagram-box">
+    <span class="node">Chat Listener (S0-F01)</span>
+    <span class="arrow">&darr; <span class="arrow-label">raw_messages (очередь)</span></span><br>
+    <span class="node node-active">AI Parser (S0-F02)</span>
+    <span class="arrow">&darr; <span class="arrow-label">parsed_data (JSON)</span></span><br>
+    <span class="node">Alert Engine (S0-F03)</span>
+    <span class="arrow">&darr; <span class="arrow-label">alerts</span></span><br>
+    <span class="node">Dashboard API</span>
+</div>
+
+<div class="card">
+    <ul>
+        <li><strong>&larr; От Chat Listener:</strong> Получает очередь сообщений через RabbitMQ / Redis / File Queue</li>
+        <li><strong>&rarr; К Alert Engine:</strong> Передаёт parsed_data для анализа правил</li>
+        <li><strong>&rarr; К PostgreSQL:</strong> Сохраняет результаты в таблицу <span class="inline-code">parsed_messages</span></li>
+        <li><strong>&larr; LLM API:</strong> Обращается к MiniMax M2.5 (основной), Groq Llama 3.3 70B (fallback)</li>
+    </ul>
+</div>
+
+<!-- ===== 2. Определения ===== -->
+<h2>2. Определения</h2>
+
+<table>
+    <thead>
+        <tr><th>Термин</th><th>Определение</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><strong>trip_id</strong></td><td>Уникальный идентификатор рейса (рецепт номер), строка или число, напр. "4521"</td></tr>
+        <tr><td><strong>Confidence score</strong></td><td>Число от 0.0 до 1.0, отражающее уверенность парсера в корректности результата. 1.0 = полная уверенность, 0.0 = парсинг не удался</td></tr>
+        <tr><td><strong>MiniMax M2.5</strong></td><td>LLM (Large Language Model) от компании MiniMax, используется как основной провайдер. Плата по токенам</td></tr>
+        <tr><td><strong>Groq Llama 3.3 70B</strong></td><td>Open-source LLM, используется как fallback. Бесплатный tier: 100K токенов/день</td></tr>
+        <tr><td><strong>Fallback chain</strong></td><td>Цепочка обращений: сначала MiniMax &rarr; если ошибка/timeout &rarr; Groq &rarr; если оба упали &rarr; regex-парсинг</td></tr>
+        <tr><td><strong>Дедупликация</strong></td><td>Механизм, предотвращающий повторный парсинг одного и того же сообщения в окне 5 минут</td></tr>
+        <tr><td><strong>Prompt engineering</strong></td><td>Искусство создания инструкций для LLM, чтобы получить нужный результат</td></tr>
+        <tr><td><strong>Структурированный парсинг</strong></td><td>Извлечение данных в предопределённый JSON-формат (не свободный текст)</td></tr>
+        <tr><td><strong>Rate limiting</strong></td><td>Ограничение на количество запросов к LLM API (чтобы не превышать квоту и не перегружать систему)</td></tr>
+        <tr><td><strong>Chat context</strong></td><td>Контекст чата (предыдущие сообщения), используется для определения trip_id и статуса рейса</td></tr>
+        <tr><td><strong>Customer rules</strong></td><td>Справочник специфических правил для каждого заказчика (Тандер, WB и т.д.)</td></tr>
+    </tbody>
+</table>
+
+<!-- ===== 3. Требования ===== -->
+<h2>3. Требования, ограничения и рекомендации</h2>
+
+<h3>3.1 Функциональные требования (REQ)</h3>
+
+<!-- REQ-AP-001 -->
+<div class="req-card">
+    <span class="req-id">REQ-AP-001</span>
+    <h3>Парсинг trip_id с точностью &ge;85%</h3>
+    <p>Парсер должен точно распознавать trip_id из сообщений диспетчеров в &ge;85% случаев.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>trip_id может быть в начале сообщения ("Рейс 4521, ..."), в середине, или отсутствовать</li>
+        <li>Если trip_id в контексте (предыдущие сообщения), парсер должен использовать контекст для связи</li>
+        <li>trip_id может быть представлен как "Рейс 4521", "4521", "рейс 4521", "4521-Москва-Краснодар"</li>
+        <li>Ложные распознавания (например, "214.50" как trip_id): не должны быть рассмотрены, confidence &lt; 0.5</li>
+    </ul>
+</div>
+
+<!-- REQ-AP-002 -->
+<div class="req-card">
+    <span class="req-id">REQ-AP-002</span>
+    <h3>Извлечение маршрута (route_from, route_to)</h3>
+    <p>Парсер должен извлекать географические маршруты из сообщения.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>route_from, route_to: города/регионы (Москва, Краснодар, СПб, Ростов и т.д.)</li>
+        <li>Если маршрут не упоминается явно, поле = null</li>
+        <li>Маршруты могут быть сокращены (МСК-КРД, Москва-Краснодар) — парсер должен нормализовать</li>
+        <li>Опечатки в названиях городов: не должны быть исправлены автоматически (confidence &darr;)</li>
+    </ul>
+</div>
+
+<!-- REQ-AP-003 -->
+<div class="req-card">
+    <span class="req-id">REQ-AP-003</span>
+    <h3>Определение статуса рейса</h3>
+    <p>Парсер должен определять текущий статус рейса из сообщения.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>Допустимые статусы: <span class="inline-code">assigned</span>, <span class="inline-code">loading</span>, <span class="inline-code">in_transit</span>, <span class="inline-code">unloading</span>, <span class="inline-code">completed</span>, <span class="inline-code">problem</span></li>
+        <li>"Рейс назначен", "Водитель подтверждает" &rarr; status = <span class="inline-code">assigned</span></li>
+        <li>"На месте погрузки", "Погрузка началась" &rarr; status = <span class="inline-code">loading</span></li>
+        <li>"Выехал", "В пути" &rarr; status = <span class="inline-code">in_transit</span></li>
+        <li>"Выгрузка началась" &rarr; status = <span class="inline-code">unloading</span></li>
+        <li>"Прибыл", "Завершен" &rarr; status = <span class="inline-code">completed</span></li>
+        <li>"Проблема", "сломалось", "опаздываю", "ДТП" &rarr; status = <span class="inline-code">problem</span></li>
+    </ul>
+</div>
+
+<!-- REQ-AP-004 -->
+<div class="req-card">
+    <span class="req-id">REQ-AP-004</span>
+    <h3>Извлечение времени слота</h3>
+    <p>Парсер должен извлекать время слота прибытия/выезда на погрузку.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>slot_time: время в формате HH:MM (14:00, 09:30) или null если не упоминается</li>
+        <li>Примеры: "слот WB 14:00", "выезжаю в 14:00", "слот на погрузку 9:30"</li>
+        <li>Если время упоминается без контекста слота (просто "в 14:00") — попытка использовать контекст</li>
+        <li>Время может быть в диапазоне (14:00-15:00) &rarr; брать начало диапазона</li>
+    </ul>
+</div>
+
+<!-- REQ-AP-005 -->
+<div class="req-card">
+    <span class="req-id">REQ-AP-005</span>
+    <h3>Определение заказчика</h3>
+    <p>Парсер должен идентифицировать заказчика из сообщения.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>Допустимые заказчики: Тандер, WB, X5, Магнит, Сельта, Сибур (+ other)</li>
+        <li>Примеры: "слот WB 14:00" &rarr; customer = "WB", "Тандер Ростов" &rarr; customer = "Тандер"</li>
+        <li>Если заказчик не упоминается явно, попытка определить из контекста (предыдущие сообщения)</li>
+        <li>Если не удаётся — customer = null</li>
+    </ul>
+</div>
+
+<!-- REQ-AP-006 -->
+<div class="req-card">
+    <span class="req-id">REQ-AP-006</span>
+    <h3>Определение уровня срочности (urgency)</h3>
+    <p>Парсер должен оценивать срочность проблемы.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>Допустимые уровни: <span class="inline-code">low</span>, <span class="inline-code">medium</span>, <span class="inline-code">high</span></li>
+        <li><span class="badge badge-high">HIGH</span> — поломка оборудования, опоздание &gt;4ч, ДТП, проблема с безопасностью, срыв рейса</li>
+        <li><span class="badge badge-medium">MEDIUM</span> — опоздание 40 мин - 4ч, простой &gt;1ч, предупреждение, проблема контекстная</li>
+        <li><span class="badge badge-low">LOW</span> — информационное сообщение, статус OK, плановое обновление</li>
+        <li>Если status = <span class="inline-code">problem</span> &rarr; urgency &ge; <span class="inline-code">medium</span></li>
+    </ul>
+</div>
+
+<!-- REQ-AP-007 -->
+<div class="req-card">
+    <span class="req-id">REQ-AP-007</span>
+    <h3>Извлечение описания проблемы (issue)</h3>
+    <p>Парсер должен извлекать текст проблемы если она упоминается.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>issue: строка с описанием проблемы (опоздание, поломка, простой и т.д.) или null если проблемы нет</li>
+        <li>"Стою в пробке на МКАД, опаздываю минут на 40" &rarr; issue = "Пробка, опоздание ~40 мин"</li>
+        <li>"реф не выходит на температуру, показывает +8" &rarr; issue = "Поломка рефрижератора, температура +8 вместо нормы"</li>
+        <li>"На месте, всё норма" &rarr; issue = null</li>
+        <li>Максимум 150 символов</li>
+    </ul>
+</div>
+
+<!-- REQ-AP-008 -->
+<div class="req-card">
+    <span class="req-id">REQ-AP-008</span>
+    <h3>Confidence score для каждого парсинга</h3>
+    <p>Парсер должен возвращать уровень уверенности в результате.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>confidence: число от 0.0 до 1.0</li>
+        <li>Полная уверенность (confidence &ge; 0.90): ясный trip_id, ясный маршрут, явно указан заказчик</li>
+        <li>Средняя уверенность (0.70-0.89): trip_id определён из контекста, маршрут ясен</li>
+        <li>Низкая уверенность (&lt; 0.70): trip_id отсутствует, маршрут неясен, много неоднозначности</li>
+        <li>confidence = 0.0: парсинг не удался (message не распознана как логистическое сообщение)</li>
+    </ul>
+</div>
+
+<!-- REQ-AP-009 -->
+<div class="req-card">
+    <span class="req-id">REQ-AP-009</span>
+    <h3>Использование контекста чата для определения trip_id</h3>
+    <p>При отсутствии явного trip_id в текущем сообщении, парсер должен обращаться к истории чата.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>Если trip_id не в текущем сообщении, смотреть последние N сообщений (N = 10) из того же чата</li>
+        <li>Если в истории есть сообщение с trip_id и статусом (assigned/loading), использовать его как контекст</li>
+        <li>Максимум 5 минут истории (не брать очень старые сообщения)</li>
+        <li>Если контекст используется &rarr; confidence -0.15</li>
+    </ul>
+</div>
+
+<!-- REQ-AP-010 -->
+<div class="req-card">
+    <span class="req-id">REQ-AP-010</span>
+    <h3>Дедупликация сообщений</h3>
+    <p>Парсер не должен обрабатывать одно и то же сообщение дважды в окне 5 минут.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>Дедупликация по (message_text, sender_id, timestamp) &rarr; hash(text)</li>
+        <li>В памяти или Redis: ключ = message_hash, TTL = 5 мин</li>
+        <li>Если сообщение уже обработано и в кеше &rarr; skip, не обращаться к LLM</li>
+        <li>Log: "Message dedup: hash=... skipped"</li>
+    </ul>
+</div>
+
+<!-- REQ-AP-011 -->
+<div class="req-card">
+    <span class="req-id">REQ-AP-011</span>
+    <h3>Fallback chain: MiniMax &rarr; Groq &rarr; Regex</h3>
+    <p>При сбое основного LLM, парсер должен иметь fallback механизм.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>Попытка 1: MiniMax M2.5 (основной), timeout = 5 сек</li>
+        <li>Попытка 2: Groq Llama 3.3 70B (если MiniMax ошибка/timeout), timeout = 5 сек</li>
+        <li>Попытка 3: Regex-парсинг (базовое распознавание trip_id, маршрута) если оба LLM упали</li>
+        <li>При fallback на Groq/Regex &rarr; confidence -0.25</li>
+        <li>Log каждый fallback: "MiniMax timeout, fallback to Groq"</li>
+    </ul>
+</div>
+
+<!-- REQ-AP-012 -->
+<div class="req-card">
+    <span class="req-id">REQ-AP-012</span>
+    <h3>Rate limiting для API LLM</h3>
+    <p>Парсер должен ограничивать частоту запросов к LLM API.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>MiniMax: &le; 100 запросов/мин (по тарифу)</li>
+        <li>Groq: &le; 100K токенов/день</li>
+        <li>Очередь сообщений: если парсер отстаёт, сообщения накапливаются в Redis/RabbitMQ (не теряются)</li>
+        <li>Log: "Rate limit exceeded, message queued"</li>
+        <li>При превышении rate limit &rarr; откладывать парсинг, не отбрасывать</li>
+    </ul>
+</div>
+
+<!-- ===== 3.2 Нефункциональные (CON) ===== -->
+<h3>3.2 Нефункциональные требования (CON)</h3>
+
+<!-- CON-AP-001 -->
+<div class="con-card">
+    <span class="con-id">CON-AP-001</span>
+    <h3>Латентность парсинга</h3>
+    <p>Время от поступления сообщения до результата парсинга &le; 5 секунд.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>Начало: сообщение получено Chat Listener'ом</li>
+        <li>Конец: результат записан в PostgreSQL и передан в Alert Engine</li>
+        <li>Включает: вызов LLM API, обработка результата, запись в БД</li>
+        <li>P95 латентность: &le; 5 сек; P99: &le; 10 сек</li>
+    </ul>
+</div>
+
+<!-- CON-AP-002 -->
+<div class="con-card">
+    <span class="con-id">CON-AP-002</span>
+    <h3>Максимальный объём обработки</h3>
+    <p>Парсер должен обрабатывать &le; 30 сообщений в секунду.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>Rate limiting: 30 msg/sec от Chat Listener'а</li>
+        <li>Выше 30 msg/sec &rarr; очередь, не потеря данных</li>
+        <li>Монитор: количество сообщений в очереди (Alert: если &gt;1000)</li>
+    </ul>
+</div>
+
+<!-- CON-AP-003 -->
+<div class="con-card">
+    <span class="con-id">CON-AP-003</span>
+    <h3>Стоимость LLM токенов</h3>
+    <p>Расход токенов &le; 50K/день для Sprint 0.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>Бюджет: 50K токенов/день (MiniMax + Groq вместе)</li>
+        <li>Мониторинг: логирование расхода токенов по часам</li>
+        <li>Срыв бюджета: alert администратору, fallback на Regex</li>
+    </ul>
+</div>
+
+<!-- CON-AP-004 -->
+<div class="con-card">
+    <span class="con-id">CON-AP-004</span>
+    <h3>Безопасность данных</h3>
+    <p>Парсер не должен хранить или логировать сырые сообщения с персональными данными.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>Логи содержат только: message_hash, trip_id, customer, status (не содержат имён водителей, номеров телефонов)</li>
+        <li>JSON-логирование в structured format</li>
+        <li>Никакие credentials/tokens в логах</li>
+    </ul>
+</div>
+
+<!-- CON-AP-005 -->
+<div class="con-card">
+    <span class="con-id">CON-AP-005</span>
+    <h3>Устойчивость к ошибкам</h3>
+    <p>Парсер должен продолжать работу при сбоях.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>Ошибка в парсинге одного сообщения &rarr; не влияет на обработку остальных</li>
+        <li>Исключения логируются, сообщение помечается для ревью (confidence=0)</li>
+        <li>Restart: graceful shutdown на SIGTERM, завершение активных операций за &le; 10 сек</li>
+    </ul>
+</div>
+
+<!-- CON-AP-006 -->
+<div class="con-card">
+    <span class="con-id">CON-AP-006</span>
+    <h3>Версионирование промпта</h3>
+    <p>Парсер должен поддерживать версионирование LLM-промпта.</p>
+    <h4>Критерии:</h4>
+    <ul>
+        <li>Каждый промпт имеет версию (v1, v2, v3...)</li>
+        <li>При изменении промпта &rarr; новая версия, A/B-тест результатов</li>
+        <li>Переключение версий через .env переменную (<span class="inline-code">PARSER_PROMPT_VERSION=v2</span>)</li>
+    </ul>
+</div>
+
+<!-- ===== 4. Интерфейсы и контракты ===== -->
+<h2>4. Интерфейсы и контракты данных</h2>
+
+<h3>4.1 Входной интерфейс от Chat Listener</h3>
+<p><strong>Канал доставки:</strong> Redis QUEUE или RabbitMQ topic <span class="inline-code">raw_messages</span></p>
+
+<p class="example-label">Формат сообщения:</p>
+<pre><code>{
+  <span class="json-key">"message_id"</span>: <span class="json-string">"msg_uuid_123"</span>,
+  <span class="json-key">"text"</span>: <span class="json-string">"Рейс 4521, Москва-Краснодар, слот на погрузку WB 14:00, реф охладить до +2"</span>,
+  <span class="json-key">"sender_id"</span>: <span class="json-string">"user_123"</span>,
+  <span class="json-key">"sender_name"</span>: <span class="json-string">"Алексей"</span>,
+  <span class="json-key">"chat_id"</span>: <span class="json-string">"chat_456"</span>,
+  <span class="json-key">"chat_name"</span>: <span class="json-string">"Marshall Test — WB Рейсы"</span>,
+  <span class="json-key">"timestamp"</span>: <span class="json-string">"2026-03-06T09:15:00Z"</span>,
+  <span class="json-key">"chat_history"</span>: [
+    {
+      <span class="json-key">"sender_name"</span>: <span class="json-string">"Диспетчер Мария"</span>,
+      <span class="json-key">"text"</span>: <span class="json-string">"Сегодня активна группа WB Ростов"</span>,
+      <span class="json-key">"timestamp"</span>: <span class="json-string">"2026-03-06T08:00:00Z"</span>
+    }
+  ]
+}</code></pre>
+
+<h3>4.2 Выходной интерфейс в Alert Engine и PostgreSQL</h3>
+<p><strong>Канал доставки:</strong> Redis QUEUE или RabbitMQ topic <span class="inline-code">parsed_messages</span> + прямая запись в DB</p>
+
+<p class="example-label">Формат результата:</p>
+<pre><code>{
+  <span class="json-key">"message_id"</span>: <span class="json-string">"msg_uuid_123"</span>,
+  <span class="json-key">"trip_id"</span>: <span class="json-string">"4521"</span>,
+  <span class="json-key">"route_from"</span>: <span class="json-string">"Москва"</span>,
+  <span class="json-key">"route_to"</span>: <span class="json-string">"Краснодар"</span>,
+  <span class="json-key">"slot_time"</span>: <span class="json-string">"14:00"</span>,
+  <span class="json-key">"status"</span>: <span class="json-string">"assigned"</span>,
+  <span class="json-key">"customer"</span>: <span class="json-string">"WB"</span>,
+  <span class="json-key">"urgency"</span>: <span class="json-string">"low"</span>,
+  <span class="json-key">"issue"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"confidence"</span>: <span class="json-number">0.95</span>,
+  <span class="json-key">"parsed_at"</span>: <span class="json-string">"2026-03-06T09:15:01Z"</span>,
+  <span class="json-key">"llm_provider"</span>: <span class="json-string">"minimax"</span>,
+  <span class="json-key">"prompt_version"</span>: <span class="json-string">"v1"</span>
+}</code></pre>
+
+<h3>4.3 Структура таблицы PostgreSQL <span class="inline-code">parsed_messages</span></h3>
+
+<pre><code><span class="sql-keyword">CREATE TABLE</span> parsed_messages (
+  id <span class="sql-type">SERIAL</span> <span class="sql-keyword">PRIMARY KEY</span>,
+  message_id <span class="sql-type">UUID</span> <span class="sql-keyword">NOT NULL UNIQUE</span>,
+  chat_id <span class="sql-type">BIGINT</span> <span class="sql-keyword">NOT NULL</span>,
+  chat_name <span class="sql-type">VARCHAR(255)</span>,
+  sender_id <span class="sql-type">BIGINT</span>,
+  sender_name <span class="sql-type">VARCHAR(255)</span>,
+  original_text <span class="sql-type">TEXT</span> <span class="sql-keyword">NOT NULL</span>,
+
+  <span class="sql-comment">-- Parsed fields</span>
+  trip_id <span class="sql-type">VARCHAR(50)</span>,
+  route_from <span class="sql-type">VARCHAR(100)</span>,
+  route_to <span class="sql-type">VARCHAR(100)</span>,
+  slot_time <span class="sql-type">TIME</span>,
+  status <span class="sql-type">VARCHAR(50)</span>,
+  customer <span class="sql-type">VARCHAR(50)</span>,
+  urgency <span class="sql-type">VARCHAR(20)</span>,
+  issue <span class="sql-type">TEXT</span>,
+  confidence <span class="sql-type">DECIMAL(3, 2)</span>,
+
+  <span class="sql-comment">-- Metadata</span>
+  parsed_at <span class="sql-type">TIMESTAMP</span> <span class="sql-keyword">DEFAULT CURRENT_TIMESTAMP</span>,
+  llm_provider <span class="sql-type">VARCHAR(20)</span>,
+  prompt_version <span class="sql-type">VARCHAR(10)</span>,
+  is_deduped <span class="sql-type">BOOLEAN</span> <span class="sql-keyword">DEFAULT FALSE</span>,
+  needs_review <span class="sql-type">BOOLEAN</span> <span class="sql-keyword">DEFAULT FALSE</span>,
+
+  <span class="sql-keyword">FOREIGN KEY</span> (chat_id) <span class="sql-keyword">REFERENCES</span> chats(chat_id),
+  <span class="sql-keyword">INDEX</span> idx_trip_id (trip_id),
+  <span class="sql-keyword">INDEX</span> idx_customer (customer),
+  <span class="sql-keyword">INDEX</span> idx_parsed_at (parsed_at),
+  <span class="sql-keyword">INDEX</span> idx_confidence (confidence)
+);</code></pre>
+
+<!-- ===== 4.4 LLM Промпт ===== -->
+<h3>4.4 LLM Промпт (полный шаблон на русском)</h3>
+<p>Это основной промпт, отправляемый в MiniMax M2.5 и Groq при обработке каждого сообщения.</p>
+
+<div class="prompt-block"><code><span class="prompt-heading">=== ПРОМПТ ДЛЯ ПАРСЕРА ЛОГИСТИЧЕСКИХ СООБЩЕНИЙ ===</span>
+
+Ты помощник для парсинга диспетчерских сообщений в логистике. Твоя задача —
+извлечь структурированные данные из сырого текста сообщений о рейсах.
+
+<span class="prompt-heading">## ВХОДНЫЕ ДАННЫЕ</span>
+
+Сообщение: "<span class="prompt-var">{message_text}</span>"
+Отправитель: <span class="prompt-var">{sender_name}</span>
+Чат: <span class="prompt-var">{chat_name}</span>
+Время: <span class="prompt-var">{timestamp}</span>
+
+Контекст предыдущих сообщений (если есть):
+<span class="prompt-var">{chat_history}</span>
+
+<span class="prompt-heading">## СПРАВОЧНИК ЗАКАЗЧИКОВ И ПРАВИЛА</span>
+
+1. <span class="prompt-keyword">Тандер (Yandex Go):</span>
+   - Требование: предохлаждение рефрижератора до +2..+4°C
+   - Обязательно: термописец, медицинская книжка
+   - Штраф за нарушение температуры, опоздание на слот
+   - Триггер HIGH urgency: температура не в диапазоне, опоздание &gt;30 мин
+
+2. <span class="prompt-keyword">WB (Wildberries):</span>
+   - Требование: регистрация в WB Drive
+   - Строгие временные слоты (±15 мин)
+   - Штраф за опоздание на слот (начинается с 15% за каждые 30 мин)
+   - Триггер HIGH urgency: опоздание &gt;30 мин на слот
+
+3. <span class="prompt-keyword">X5 Retail Group:</span>
+   - Требование: НЕЛЬЗЯ стоять на территории грузоотправителя (только на внешней парковке)
+   - Штраф за несанкционированный простой на территории
+   - Триггер HIGH urgency: простой на территории &gt;30 мин
+
+4. <span class="prompt-keyword">Магнит:</span>
+   - Требование: МОЖНО стоять на территории (отличие от X5!)
+   - Менее жёсткие слоты
+   - Триггер MEDIUM urgency: опоздание &gt;1 часа
+
+5. <span class="prompt-keyword">Сельта:</span>
+   - Требование: техника безопасности (каска, жилет, ботинки с железным носком)
+   - Штраф за нарушение ОТ
+   - Триггер HIGH urgency: упоминание о нарушении техники безопасности
+
+6. <span class="prompt-keyword">Сибур:</span>
+   - Требование: особые условия безопасности (опасные грузы)
+   - Свои правила в зависимости от груза
+   - Триггер HIGH urgency: упоминание о проблеме с безопасностью
+
+<span class="prompt-heading">## ИЗВЛЕКАЕМЫЕ ПОЛЯ</span>
+
+Верни JSON с точно этой структурой:
+
+{
+  <span class="prompt-field">"trip_id"</span>: "&lt;строка или null&gt;",
+  <span class="prompt-field">"route_from"</span>: "&lt;город или null&gt;",
+  <span class="prompt-field">"route_to"</span>: "&lt;город или null&gt;",
+  <span class="prompt-field">"slot_time"</span>: "&lt;HH:MM или null&gt;",
+  <span class="prompt-field">"status"</span>: "&lt;assigned|loading|in_transit|unloading|completed|problem или null&gt;",
+  <span class="prompt-field">"customer"</span>: "&lt;Тандер|WB|X5|Магнит|Сельта|Сибур|other или null&gt;",
+  <span class="prompt-field">"urgency"</span>: "&lt;low|medium|high&gt;",
+  <span class="prompt-field">"issue"</span>: "&lt;строка до 150 символов или null&gt;",
+  <span class="prompt-field">"confidence"</span>: &lt;число от 0.0 до 1.0&gt;
+}
+
+<span class="prompt-heading">## ПРАВИЛА ПАРСИНГА</span>
+
+<span class="prompt-keyword">### trip_id</span>
+- Ищи в начале сообщения ("Рейс 4521", "4521,", "Рейс №4521")
+- Может быть число (4521) или строка с буквами (ТР-4521)
+- Если явно нет, но в контексте предыдущего сообщения есть — используй контекст
+- Не парси цены, координаты, другие числа как trip_id
+- Если неуверен — confidence ↓
+
+<span class="prompt-keyword">### route_from и route_to</span>
+- Ищи названия городов (Москва, Краснодар, Ростов, СПб, Казань и т.д.)
+- Формат может быть "Москва-Краснодар", "из Москвы в Краснодар", "МСК → КРД"
+- Если маршрут не упоминается явно — поля = null
+- Опечатки не исправляй (это снижает confidence)
+
+<span class="prompt-keyword">### slot_time</span>
+- Ищи время в формате HH:MM (14:00, 09:30, 23:59)
+- Контекст: "слот", "выезжаю", "буду в", "прибуду", "погрузка начнётся"
+- Если диапазон (14:00-15:00) — возьми начало
+- Время без контекста — если очень вероятно слот, то берём
+
+<span class="prompt-keyword">### status (важно!)</span>
+- "Рейс назначен", "Водитель подтверждает" → <span class="prompt-status">assigned</span>
+- "На месте", "Приехал на погрузку", "На складе" → <span class="prompt-status">loading</span>
+- "Выехал", "В пути", "Выезжаю", "На дороге" → <span class="prompt-status">in_transit</span>
+- "Выгрузка", "Разгружаем" → <span class="prompt-status">unloading</span>
+- "Прибыл", "Завершен", "Рейс закрыт" → <span class="prompt-status">completed</span>
+- "Проблема", "Сломалось", "Опаздываю", "ДТП", "Простой" → <span class="prompt-status">problem</span>
+
+<span class="prompt-keyword">### customer</span>
+- Явное упоминание: "WB", "Тандер", "X5", "Магнит", "Сельта", "Сибур"
+- Может быть аббревиатура: "ВБ" = WB, "Х5" = X5
+- Если в контексте упоминался — попытка использовать контекст
+
+<span class="prompt-keyword">### urgency (логика)</span>
+- <span class="prompt-status">HIGH:</span> status=problem + (поломка ИЛИ опоздание &gt;4ч ИЛИ ДТП ИЛИ ОТ-нарушение ИЛИ срыв слота WB/Тандер &gt;30мин)
+- <span class="prompt-status">MEDIUM:</span> status=problem + (опоздание 40 мин - 4ч ИЛИ простой &gt;1ч ИЛИ предупреждение)
+- <span class="prompt-status">LOW:</span> status != problem ИЛИ информационное сообщение
+
+<span class="prompt-keyword">### issue</span>
+- Краткое описание проблемы, если есть (≤150 символов)
+- Примеры:
+  - "Пробка на МКАД, опоздание ~40 мин"
+  - "Поломка рефрижератора, температура +8 вместо +3"
+  - "Простой на X5 60 мин, не разгружают"
+  - null если проблемы нет
+
+<span class="prompt-keyword">### confidence</span>
+- 0.95–1.0: trip_id явный, маршрут ясен, заказчик явный, статус ясен
+- 0.85–0.94: trip_id явный, маршрут ясен, заказчик определён из контекста
+- 0.70–0.84: trip_id из контекста, есть неоднозначность в маршруте
+- 0.50–0.69: очень неуверен, много пропусков данных
+- &lt; 0.50: сообщение может вообще не быть о логистике
+
+<span class="prompt-heading">## ФИНАЛЬНЫЕ ИНСТРУКЦИИ</span>
+
+1. Верни ТОЛЬКО JSON, без дополнительного текста
+2. Все поля обязательны
+3. Если поле неизвестно — используй null (не пустую строку)
+4. Confidence всегда число от 0.0 до 1.0
+5. urgency всегда одно из: low, medium, high (по умолчанию = low если status != problem)
+6. Дважды проверь trip_id и customer, это критично для Alert Engine
+
+Приступай к парсингу!</code></div>
+
+<!-- ===== 4.5 Интеграция с LLM API ===== -->
+<h3>4.5 Интеграция с LLM API</h3>
+
+<p><strong>MiniMax M2.5:</strong></p>
+<pre><code><span class="py-comment"># Псевдокод</span>
+response = minimax_api.<span class="py-func">call</span>(
+    model=<span class="py-string">"gpt-3.5-turbo"</span>,  <span class="py-comment"># или minimax-text-03</span>
+    prompt=PARSER_PROMPT.<span class="py-func">format</span>(
+        message_text=raw_text,
+        sender_name=sender_name,
+        chat_name=chat_name,
+        timestamp=timestamp,
+        chat_history=json.<span class="py-func">dumps</span>(history)
+    ),
+    max_tokens=<span class="py-number">500</span>,
+    temperature=<span class="py-number">0.3</span>,  <span class="py-comment"># низкая температура для консистентности</span>
+    timeout=<span class="py-number">5</span>
+)</code></pre>
+
+<p><strong>Groq fallback:</strong></p>
+<pre><code><span class="py-comment"># Псевдокод, если MiniMax упал</span>
+response = groq_api.<span class="py-func">call</span>(
+    model=<span class="py-string">"llama-3.3-70b-versatile"</span>,
+    messages=[
+        {<span class="py-string">"role"</span>: <span class="py-string">"user"</span>, <span class="py-string">"content"</span>: PARSER_PROMPT.<span class="py-func">format</span>(...)}
+    ],
+    max_tokens=<span class="py-number">500</span>,
+    temperature=<span class="py-number">0.3</span>,
+    timeout=<span class="py-number">5</span>
+)</code></pre>
+
+<!-- ===== Fallback Chain Diagram ===== -->
+<h3>Fallback chain (диаграмма)</h3>
+
+<div class="diagram-box" style="text-align: center; padding: 32px;">
+    <div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 12px;">
+        <span class="node node-active" style="min-width: 180px;">MiniMax M2.5<br><small style="font-weight:400;opacity:.8">timeout = 5 сек</small></span>
+        <span class="arrow" style="font-size: 1.5rem;">&rarr;</span>
+        <span style="font-size: .8rem; color: var(--danger); font-weight: 600;">ошибка / timeout</span>
+        <span class="arrow" style="font-size: 1.5rem;">&rarr;</span>
+        <span class="node node-fallback" style="min-width: 180px;">Groq Llama 3.3 70B<br><small style="font-weight:400;opacity:.8">timeout = 5 сек</small></span>
+        <span class="arrow" style="font-size: 1.5rem;">&rarr;</span>
+        <span style="font-size: .8rem; color: var(--danger); font-weight: 600;">ошибка / timeout</span>
+        <span class="arrow" style="font-size: 1.5rem;">&rarr;</span>
+        <span class="node node-last" style="min-width: 180px;">Regex-парсинг<br><small style="font-weight:400;opacity:.8">базовое распознавание</small></span>
+    </div>
+    <div style="margin-top: 16px; font-size: .85rem; color: var(--text-muted);">
+        При каждом fallback: confidence <strong>-0.25</strong> | Каждый шаг логируется
+    </div>
+</div>
+
+<!-- ===== 5. Критерии приёмки ===== -->
+<h2>5. Критерии приёмки</h2>
+
+<table>
+    <thead>
+        <tr><th>ID</th><th>REQ</th><th>Given / When / Then</th><th>Тест</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><span class="badge badge-primary">AC-AP-001</span></td>
+            <td>REQ-AP-001</td>
+            <td><strong>Given:</strong> 100 сообщений из 3 тестовых чатов<br><strong>When:</strong> Парсер обрабатывает с промптом v1<br><strong>Then:</strong> trip_id распознан в &ge;85, ложных &lt;5%</td>
+            <td><span class="inline-code">test_parser_accuracy.py</span></td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">AC-AP-002</span></td>
+            <td>REQ-AP-002</td>
+            <td><strong>Given:</strong> Варианты маршрутов (МСК-КРД, Москва-Краснодар, из МСК в КРД)<br><strong>When:</strong> Парсер обрабатывает<br><strong>Then:</strong> route_from/route_to корректны, опечатки не исправлены</td>
+            <td><span class="inline-code">test_parser_routes.py</span></td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">AC-AP-003</span></td>
+            <td>REQ-AP-003</td>
+            <td><strong>Given:</strong> Сообщение с ясным статусом<br><strong>When:</strong> Парсер обрабатывает<br><strong>Then:</strong> status одно из 6 допустимых значений, не null и не произвольный текст</td>
+            <td><span class="inline-code">test_parser_status.py</span></td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">AC-AP-004</span></td>
+            <td>REQ-AP-004</td>
+            <td><strong>Given:</strong> Сообщение со временем слота<br><strong>When:</strong> Парсер обрабатывает<br><strong>Then:</strong> slot_time в формате HH:MM или null; диапазон &rarr; начало</td>
+            <td><span class="inline-code">test_parser_slot_time.py</span></td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">AC-AP-005</span></td>
+            <td>REQ-AP-005</td>
+            <td><strong>Given:</strong> Сообщение с заказчиком<br><strong>When:</strong> Парсер обрабатывает<br><strong>Then:</strong> customer допустимое значение или null; аббревиатуры нормализованы (ВБ &rarr; WB)</td>
+            <td><span class="inline-code">test_parser_customer.py</span></td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">AC-AP-006</span></td>
+            <td>REQ-AP-006</td>
+            <td><strong>Given:</strong> Сообщения разной критичности<br><strong>When:</strong> Парсер обрабатывает<br><strong>Then:</strong> urgency = high/medium/low по правилам</td>
+            <td><span class="inline-code">test_parser_urgency.py</span></td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">AC-AP-007</span></td>
+            <td>REQ-AP-007</td>
+            <td><strong>Given:</strong> Сообщение с проблемой<br><strong>When:</strong> Парсер обрабатывает<br><strong>Then:</strong> issue &le;150 символов, без имён/телефонов, или null</td>
+            <td><span class="inline-code">test_parser_issue.py</span></td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">AC-AP-008</span></td>
+            <td>REQ-AP-008</td>
+            <td><strong>Given:</strong> Любое сообщение<br><strong>When:</strong> Парсер обрабатывает<br><strong>Then:</strong> confidence 0.0-1.0; полная &ge;0.90, частичная 0.70-0.89, неопределённо 0.50-0.69, не логистика &lt;0.50</td>
+            <td><span class="inline-code">test_parser_confidence.py</span></td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">AC-AP-009</span></td>
+            <td>REQ-AP-009</td>
+            <td><strong>Given:</strong> Сообщение без trip_id + история с trip_id<br><strong>When:</strong> Парсер обрабатывает с chat_history<br><strong>Then:</strong> trip_id из контекста, confidence -0.15</td>
+            <td><span class="inline-code">test_parser_context.py</span></td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">AC-AP-010</span></td>
+            <td>REQ-AP-010</td>
+            <td><strong>Given:</strong> Два идентичных сообщения &lt;5 мин<br><strong>When:</strong> Парсер обрабатывает оба<br><strong>Then:</strong> Первое парсится, второе skip (dedup)</td>
+            <td><span class="inline-code">test_parser_dedup.py</span></td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">AC-AP-011</span></td>
+            <td>REQ-AP-011</td>
+            <td><strong>Given:</strong> MiniMax timeout<br><strong>When:</strong> Парсер обрабатывает<br><strong>Then:</strong> Fallback Groq, confidence -0.25. Если оба &mdash; regex, confidence &lt;0.50</td>
+            <td><span class="inline-code">test_parser_fallback.py</span></td>
+        </tr>
+        <tr>
+            <td><span class="badge badge-primary">AC-AP-012</span></td>
+            <td>REQ-AP-012</td>
+            <td><strong>Given:</strong> 150 msg/min (лимит 100)<br><strong>When:</strong> Парсер обрабатывает<br><strong>Then:</strong> 100 сразу, 50 в очередь, 0 потерянных</td>
+            <td><span class="inline-code">test_parser_rate_limit.py</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- ===== 6. Стратегия тестирования ===== -->
+<h2>6. Стратегия тестирования</h2>
+
+<h3>6.1 Unit-тесты (локальные, без LLM API)</h3>
+<p><strong>Фокус:</strong> Парсинг JSON, обработка ошибок, логика confidence, дедупликация.</p>
+
+<table>
+    <thead>
+        <tr><th>Тест</th><th>Файл</th><th>Примеры</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Парсинг полного сообщения</td><td><span class="inline-code">test_parser_parse_full.py</span></td><td>"Рейс 4521, МСК-КРД, слот WB 14:00"</td></tr>
+        <tr><td>Парсинг неполного сообщения</td><td><span class="inline-code">test_parser_parse_partial.py</span></td><td>"Стою в пробке, опаздываю 40 мин" (контекст нужен)</td></tr>
+        <tr><td>Парсинг нелогистического текста</td><td><span class="inline-code">test_parser_non_logistics.py</span></td><td>"Привет, как дела?" &rarr; confidence &lt;0.5</td></tr>
+        <tr><td>Confidence логика</td><td><span class="inline-code">test_parser_confidence_logic.py</span></td><td>Полная &rarr; 0.95, частичная &rarr; 0.80, неуверен &rarr; 0.60</td></tr>
+        <tr><td>Дедупликация</td><td><span class="inline-code">test_parser_dedup.py</span></td><td>Два идентичных сообщения &rarr; второе skip</td></tr>
+        <tr><td>Контекст использование</td><td><span class="inline-code">test_parser_context.py</span></td><td>trip_id из истории чата</td></tr>
+        <tr><td>JSON структура</td><td><span class="inline-code">test_parser_json_schema.py</span></td><td>Все поля есть, типы верные</td></tr>
+    </tbody>
+</table>
+
+<h3>6.2 Integration-тесты (с реальными LLM API)</h3>
+<p><strong>Фокус:</strong> Точность парсинга на реальных данных.</p>
+
+<table>
+    <thead>
+        <tr><th>Тест</th><th>Примеры данных</th><th>Метрика</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Точность trip_id</td><td>100 реальных сообщений из 3 чатов</td><td>&ge;85% распознаны верно</td></tr>
+        <tr><td>Точность маршрутов</td><td>Варианты маршрутов (МСК-КРД, Москва-Краснодар)</td><td>100% нормализированы</td></tr>
+        <tr><td>Точность статусов</td><td>30 сообщений для каждого статуса</td><td>100% верное определение</td></tr>
+        <tr><td>Точность urgency</td><td>HIGH/MEDIUM/LOW сценарии</td><td>95% верные</td></tr>
+        <tr><td>Fallback Groq</td><td>Отключить MiniMax, обработать 50 сообщений Groq'ом</td><td>Результаты совпадают с MiniMax на 80%+</td></tr>
+        <tr><td>Fallback Regex</td><td>Отключить оба LLM, обработать 20 сообщений</td><td>trip_id найдены в 70%+</td></tr>
+    </tbody>
+</table>
+
+<h3>6.3 Performance-тесты</h3>
+
+<table>
+    <thead>
+        <tr><th>Тест</th><th>Нагрузка</th><th>Критерий</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Latency</td><td>1 сообщение</td><td>&le;5 сек (P95)</td></tr>
+        <tr><td>Throughput</td><td>30 msg/sec</td><td>Ни один не потеряется, очередь работает</td></tr>
+        <tr><td>Rate limiting</td><td>100 msg/min вызовов к MiniMax</td><td>Не превышается лимит API</td></tr>
+        <tr><td>Токены/день</td><td>Реальная нагрузка</td><td>&le;50K токенов/день</td></tr>
+    </tbody>
+</table>
+
+<h3>6.4 Regression-тесты</h3>
+<div class="card card-warning">
+    <p>При каждом обновлении промпта (v1 &rarr; v2):</p>
+    <ul>
+        <li>Запустить <span class="inline-code">test_parser_accuracy.py</span> на старом наборе (100 сообщений)</li>
+        <li>Сравнить результаты (старый промпт vs новый)</li>
+        <li>Если accuracy &darr; &rarr; не менять, найти ошибку в новом промпте</li>
+    </ul>
+</div>
+
+<!-- ===== 7. Зависимости ===== -->
+<h2>7. Зависимости</h2>
+
+<h3>7.1 Внешние сервисы</h3>
+<table>
+    <thead>
+        <tr><th>Сервис</th><th>Роль</th><th>Fallback</th><th>Критичность</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>MiniMax API</strong></td><td>Основной LLM для парсинга</td>
+            <td>Groq Llama 3.3 70B</td><td><span class="badge badge-high">HIGH</span></td>
+        </tr>
+        <tr>
+            <td><strong>Groq API</strong></td><td>Резервный LLM</td>
+            <td>Regex-парсинг (базовый)</td><td><span class="badge badge-medium">MEDIUM</span></td>
+        </tr>
+        <tr>
+            <td><strong>PostgreSQL 15+</strong></td><td>Сохранение результатов парсинга</td>
+            <td>Буферизация в памяти (Redis) на &lt;1 часа</td><td><span class="badge badge-high">HIGH</span></td>
+        </tr>
+        <tr>
+            <td><strong>Redis / RabbitMQ</strong></td><td>Очередь сообщений</td>
+            <td>In-memory queue (рестарт &rarr; потеря)</td><td><span class="badge badge-medium">MEDIUM</span></td>
+        </tr>
+        <tr>
+            <td><strong>Chat Listener (S0-F01)</strong></td><td>Источник сообщений</td>
+            <td>Mock-данные для тестирования</td><td><span class="badge badge-high">HIGH</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>7.2 Зависимости модулей Sprint 0</h3>
+<div class="diagram-box">
+    <span class="node node-active">AI Parser (S0-F02)</span><br>
+    <div style="margin-top: 8px; text-align: left; display: inline-block;">
+        &larr; <span class="node" style="font-size: .85rem; padding: 4px 12px;">Chat Listener (S0-F01)</span> — входящие сообщения<br>
+        &rarr; <span class="node" style="font-size: .85rem; padding: 4px 12px;">Alert Engine (S0-F03)</span> — выходящие parsed_data<br>
+        &rarr; <span class="node" style="font-size: .85rem; padding: 4px 12px;">PostgreSQL</span> — таблица parsed_messages<br>
+        &larr; <span class="node" style="font-size: .85rem; padding: 4px 12px;">LLM API (MiniMax, Groq)</span>
+    </div>
+</div>
+
+<h3>7.3 Python-зависимости</h3>
+<pre><code>python &gt;= 3.11
+httpx &gt;= 0.24       <span class="py-comment"># asyncio HTTP для LLM API</span>
+pydantic &gt;= 2.0     <span class="py-comment"># валидация JSON моделей</span>
+redis &gt;= 4.5         <span class="py-comment"># дедупликация, очередь</span>
+psycopg[binary] &gt;= 3.1  <span class="py-comment"># драйвер PostgreSQL</span>
+python-json-logger &gt;= 2.0  <span class="py-comment"># структурированное логирование</span>
+pytest &gt;= 7.0        <span class="py-comment"># unit-тесты</span>
+pytest-asyncio &gt;= 0.21  <span class="py-comment"># async-тесты</span>
+python-dotenv &gt;= 1.0 <span class="py-comment"># .env конфиг</span></code></pre>
+
+<h3>7.4 .env переменные</h3>
+<pre><code><span class="py-comment"># LLM API</span>
+MINIMAX_API_KEY=sk_xxxxx
+MINIMAX_API_URL=https://api.minimax.chat/v1/text/chatcompletion
+GROQ_API_KEY=gsk_xxxxx
+
+<span class="py-comment"># Rate limiting</span>
+PARSER_RATE_LIMIT=<span class="py-number">100</span>  <span class="py-comment"># msg/min</span>
+PARSER_LLM_TIMEOUT=<span class="py-number">5</span>   <span class="py-comment"># сек</span>
+
+<span class="py-comment"># Redis/RabbitMQ</span>
+QUEUE_URL=redis://localhost:6379/0
+QUEUE_BROKER=redis  <span class="py-comment"># или rabbitmq</span>
+
+<span class="py-comment"># PostgreSQL</span>
+DB_URL=postgresql://user:pass@localhost:5432/marshall
+
+<span class="py-comment"># Парсер</span>
+PARSER_PROMPT_VERSION=v1
+PARSER_DEDUP_TTL=<span class="py-number">300</span>  <span class="py-comment"># 5 мин</span>
+
+<span class="py-comment"># Логирование</span>
+LOG_LEVEL=INFO
+LOG_FORMAT=json</code></pre>
+
+<!-- ===== 8. Примеры и граничные случаи ===== -->
+<h2>8. Примеры и граничные случаи</h2>
+
+<h3>8.1 Синтетические примеры</h3>
+
+<!-- Пример 1 -->
+<div class="example-block">
+    <h4>Пример 1: Полное назначение рейса (WB, высокая уверенность)</h4>
+    <p class="example-label">Входное сообщение:</p>
+    <pre><code>"Рейс 4521, Москва-Краснодар, слот на погрузку WB 14:00, реф охладить до +2"</code></pre>
+    <p class="example-label">Ожидаемый вывод:</p>
+    <pre><code>{
+  <span class="json-key">"trip_id"</span>: <span class="json-string">"4521"</span>,
+  <span class="json-key">"route_from"</span>: <span class="json-string">"Москва"</span>,
+  <span class="json-key">"route_to"</span>: <span class="json-string">"Краснодар"</span>,
+  <span class="json-key">"slot_time"</span>: <span class="json-string">"14:00"</span>,
+  <span class="json-key">"status"</span>: <span class="json-string">"assigned"</span>,
+  <span class="json-key">"customer"</span>: <span class="json-string">"WB"</span>,
+  <span class="json-key">"urgency"</span>: <span class="json-string">"low"</span>,
+  <span class="json-key">"issue"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"confidence"</span>: <span class="json-number">0.95</span>
+}</code></pre>
+    <p><span class="test-check">trip_id: "4521"</span> | <span class="test-check">customer: "WB"</span> | <span class="test-check">urgency: low</span> | <span class="test-check">confidence: 0.95</span></p>
+</div>
+
+<!-- Пример 2 -->
+<div class="example-block">
+    <h4>Пример 2: Проблема — пробка, опоздание (контекст нужен)</h4>
+    <p class="example-label">Входное сообщение:</p>
+    <pre><code>"Стою в пробке на МКАД, опаздываю минут на 40"</code></pre>
+    <p class="example-label">Chat history (контекст):</p>
+    <pre><code>[
+  {
+    <span class="json-key">"sender_name"</span>: <span class="json-string">"Диспетчер Алексей"</span>,
+    <span class="json-key">"text"</span>: <span class="json-string">"Рейс 4521, WB, слот 14:00"</span>,
+    <span class="json-key">"timestamp"</span>: <span class="json-string">"09:10"</span>
+  },
+  {
+    <span class="json-key">"sender_name"</span>: <span class="json-string">"Водитель Иван"</span>,
+    <span class="json-key">"text"</span>: <span class="json-string">"Выехал на погрузку"</span>,
+    <span class="json-key">"timestamp"</span>: <span class="json-string">"09:45"</span>
+  }
+]</code></pre>
+    <p class="example-label">Ожидаемый вывод:</p>
+    <pre><code>{
+  <span class="json-key">"trip_id"</span>: <span class="json-string">"4521"</span>,
+  <span class="json-key">"route_from"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"route_to"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"slot_time"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"status"</span>: <span class="json-string">"problem"</span>,
+  <span class="json-key">"customer"</span>: <span class="json-string">"WB"</span>,
+  <span class="json-key">"urgency"</span>: <span class="json-string">"medium"</span>,
+  <span class="json-key">"issue"</span>: <span class="json-string">"Пробка на МКАД, опоздание ~40 мин на слот 14:00"</span>,
+  <span class="json-key">"confidence"</span>: <span class="json-number">0.80</span>
+}</code></pre>
+    <p><span class="test-check">trip_id: из контекста ("4521")</span> | <span class="test-check">urgency: medium (опоздание 40 мин WB)</span> | <span class="test-check">confidence: 0.80 (-0.15 контекст)</span></p>
+</div>
+
+<!-- Пример 3 -->
+<div class="example-block">
+    <h4>Пример 3: Критическая проблема — поломка рефрижератора (Тандер)</h4>
+    <p class="example-label">Входное сообщение:</p>
+    <pre><code>"у меня проблема — реф не выходит на температуру, показывает +8. Мастер смотрит."</code></pre>
+    <p class="example-label">Chat history (контекст):</p>
+    <pre><code>[
+  {
+    <span class="json-key">"sender_name"</span>: <span class="json-string">"Диспетчер Мария"</span>,
+    <span class="json-key">"text"</span>: <span class="json-string">"Олег, рейс 7803, Краснодар-Сочи, Тандер, слот 15:00. Охлаждение +2..+4 обязательно!"</span>,
+    <span class="json-key">"timestamp"</span>: <span class="json-string">"07:20"</span>
+  }
+]</code></pre>
+    <p class="example-label">Ожидаемый вывод:</p>
+    <pre><code>{
+  <span class="json-key">"trip_id"</span>: <span class="json-string">"7803"</span>,
+  <span class="json-key">"route_from"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"route_to"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"slot_time"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"status"</span>: <span class="json-string">"problem"</span>,
+  <span class="json-key">"customer"</span>: <span class="json-string">"Тандер"</span>,
+  <span class="json-key">"urgency"</span>: <span class="json-string">"high"</span>,
+  <span class="json-key">"issue"</span>: <span class="json-string">"Поломка рефрижератора, температура +8 вместо нормы +2..+4"</span>,
+  <span class="json-key">"confidence"</span>: <span class="json-number">0.92</span>
+}</code></pre>
+    <p><span class="test-check">urgency: high (поломка рефа для Тандер)</span> | <span class="test-check">issue: температура +8</span> | <span class="test-check">confidence: 0.92</span></p>
+</div>
+
+<!-- Пример 4 -->
+<div class="example-block">
+    <h4>Пример 4: ДТП — информационное сообщение (без явного trip_id)</h4>
+    <p class="example-label">Входное сообщение:</p>
+    <pre><code>"ДТП на М4 Дон км 680. Наш водитель НЕ участвует, но пробка — рейсы 4521 и 4525 могут опоздать."</code></pre>
+    <p class="example-label">Ожидаемый вывод:</p>
+    <pre><code>{
+  <span class="json-key">"trip_id"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"route_from"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"route_to"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"slot_time"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"status"</span>: <span class="json-string">"problem"</span>,
+  <span class="json-key">"customer"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"urgency"</span>: <span class="json-string">"high"</span>,
+  <span class="json-key">"issue"</span>: <span class="json-string">"ДТП на М4 км 680, пробка, возможные задержки для рейсов 4521 и 4525"</span>,
+  <span class="json-key">"confidence"</span>: <span class="json-number">0.88</span>
+}</code></pre>
+    <p><span class="test-check">trip_id: null (информационное)</span> | <span class="test-check">urgency: high (ДТП)</span> | <span class="test-check">confidence: 0.88</span></p>
+</div>
+
+<!-- ===== 8.2 Граничные случаи ===== -->
+<h3>8.2 Граничные случаи</h3>
+
+<!-- Случай 1 -->
+<div class="example-block">
+    <h4>Случай 1: Очень короткое сообщение (неполная информация)</h4>
+    <p class="example-label">Входное сообщение:</p>
+    <pre><code>"На месте"</code></pre>
+    <p><strong>Контекст:</strong> отсутствует</p>
+    <p class="example-label">Ожидаемый вывод:</p>
+    <pre><code>{
+  <span class="json-key">"trip_id"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"route_from"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"route_to"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"slot_time"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"status"</span>: <span class="json-string">"loading"</span>,
+  <span class="json-key">"customer"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"urgency"</span>: <span class="json-string">"low"</span>,
+  <span class="json-key">"issue"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"confidence"</span>: <span class="json-number">0.40</span>
+}</code></pre>
+    <p><strong>Обоснование:</strong> status определён ("На месте" &rarr; loading), но всё остальное неизвестно &rarr; low confidence.</p>
+</div>
+
+<!-- Случай 2 -->
+<div class="example-block">
+    <h4>Случай 2: Сообщение с опечатками и неправильной грамматикой</h4>
+    <p class="example-label">Входное сообщение:</p>
+    <pre><code>"Рейс 4521, Москва-Краснодра, слот ВБ 14::00, реф охлодить"</code></pre>
+    <p class="example-label">Ожидаемый вывод:</p>
+    <pre><code>{
+  <span class="json-key">"trip_id"</span>: <span class="json-string">"4521"</span>,
+  <span class="json-key">"route_from"</span>: <span class="json-string">"Москва"</span>,
+  <span class="json-key">"route_to"</span>: <span class="json-string">"Краснодра"</span>,  <span class="json-comment">// опечатка НЕ исправляется</span>
+  <span class="json-key">"slot_time"</span>: <span class="json-null">null</span>,  <span class="json-comment">// "14::00" не валидно, не парсим</span>
+  <span class="json-key">"status"</span>: <span class="json-string">"assigned"</span>,
+  <span class="json-key">"customer"</span>: <span class="json-string">"WB"</span>,  <span class="json-comment">// "ВБ" нормализуется в "WB"</span>
+  <span class="json-key">"urgency"</span>: <span class="json-string">"low"</span>,
+  <span class="json-key">"issue"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"confidence"</span>: <span class="json-number">0.75</span>  <span class="json-comment">// lower из-за ошибок</span>
+}</code></pre>
+    <p><strong>Обоснование:</strong> trip_id, customer ясны, но маршрут с опечаткой, время невалидно &rarr; confidence ниже.</p>
+</div>
+
+<!-- Случай 3 -->
+<div class="example-block">
+    <h4>Случай 3: Дублированное сообщение (дедупликация)</h4>
+    <p><strong>Первое поступление в 09:15:00:</strong></p>
+    <pre><code>"Выехал на погрузку"</code></pre>
+    <p>&rarr; Парсится, записывается в БД, LLM вызван</p>
+    <p><strong>Второе поступление в 09:16:30 (в окне 5 мин):</strong></p>
+    <pre><code>"Выехал на погрузку"</code></pre>
+    <p>(тот же текст, тот же sender)</p>
+    <p>&rarr; Дедупликация срабатывает, сообщение <strong>НЕ парсится</strong> повторно</p>
+    <p><strong>Логирование:</strong> <span class="inline-code">"Message dedup: hash=abc123... skipped (5min window)"</span></p>
+</div>
+
+<!-- Случай 4 -->
+<div class="example-block">
+    <h4>Случай 4: Сообщение на английском (не русском)</h4>
+    <p class="example-label">Входное сообщение:</p>
+    <pre><code>"Trip 4521, Moscow-Krasnodar, WB slot 14:00, cool reefer to +2"</code></pre>
+    <p class="example-label">Ожидаемый вывод:</p>
+    <pre><code>{
+  <span class="json-key">"trip_id"</span>: <span class="json-string">"4521"</span>,
+  <span class="json-key">"route_from"</span>: <span class="json-string">"Moscow"</span>,
+  <span class="json-key">"route_to"</span>: <span class="json-string">"Krasnodar"</span>,
+  <span class="json-key">"slot_time"</span>: <span class="json-string">"14:00"</span>,
+  <span class="json-key">"status"</span>: <span class="json-string">"assigned"</span>,
+  <span class="json-key">"customer"</span>: <span class="json-string">"WB"</span>,
+  <span class="json-key">"urgency"</span>: <span class="json-string">"low"</span>,
+  <span class="json-key">"issue"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"confidence"</span>: <span class="json-number">0.85</span>  <span class="json-comment">// slightly lower, non-Russian</span>
+}</code></pre>
+    <p><strong>Обоснование:</strong> LLM понимает английский, парсит корректно, но confidence немного ниже из-за языка.</p>
+</div>
+
+<!-- Случай 5 -->
+<div class="example-block">
+    <h4>Случай 5: Очень длинное сообщение с множеством информации</h4>
+    <p class="example-label">Входное сообщение:</p>
+    <pre><code>"Рейс 4521, Москва-Краснодар, WB, слот 14:00.
+Водитель Иванов. Реф включён, температура +3, норма.
+Выехал в 09:30. Навигатор показывает 2.5 часа.
+На М4 пробка, опаздываю минут на 20-30.
+Буду на месте в 13:45, успею.
+Груз: 18 паллет, вес 12000 кг."</code></pre>
+    <p class="example-label">Ожидаемый вывод:</p>
+    <pre><code>{
+  <span class="json-key">"trip_id"</span>: <span class="json-string">"4521"</span>,
+  <span class="json-key">"route_from"</span>: <span class="json-string">"Москва"</span>,
+  <span class="json-key">"route_to"</span>: <span class="json-string">"Краснодар"</span>,
+  <span class="json-key">"slot_time"</span>: <span class="json-string">"14:00"</span>,
+  <span class="json-key">"status"</span>: <span class="json-string">"in_transit"</span>,
+  <span class="json-key">"customer"</span>: <span class="json-string">"WB"</span>,
+  <span class="json-key">"urgency"</span>: <span class="json-string">"low"</span>,
+  <span class="json-key">"issue"</span>: <span class="json-string">"Пробка на М4, опоздание ~20-30 мин"</span>,
+  <span class="json-key">"confidence"</span>: <span class="json-number">0.92</span>
+}</code></pre>
+    <p><strong>Обоснование:</strong> Много информации, парсер должен сфокусироваться на критичном (trip_id, маршрут, слот, проблема) и не "потеряться" в деталях (вес, число паллет).</p>
+</div>
+
+<!-- Случай 6 -->
+<div class="example-block">
+    <h4>Случай 6: Сообщение может быть про несколько рейсов</h4>
+    <p class="example-label">Входное сообщение:</p>
+    <pre><code>"Рейсы 4521 и 4525 оба в пути, на М4 пробка, могут опоздать."</code></pre>
+    <p class="example-label">Ожидаемый вывод:</p>
+    <pre><code>{
+  <span class="json-key">"trip_id"</span>: <span class="json-null">null</span>,  <span class="json-comment">// две trip_id, не ясно которая</span>
+  <span class="json-key">"route_from"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"route_to"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"slot_time"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"status"</span>: <span class="json-string">"problem"</span>,
+  <span class="json-key">"customer"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"urgency"</span>: <span class="json-string">"medium"</span>,
+  <span class="json-key">"issue"</span>: <span class="json-string">"Рейсы 4521 и 4525 могут опоздать из-за пробки на М4"</span>,
+  <span class="json-key">"confidence"</span>: <span class="json-number">0.65</span>
+}</code></pre>
+    <p><strong>Обоснование:</strong> Парсер не должен гадать, какой из двух рейсов главный &rarr; trip_id = null, issue содержит оба номера.</p>
+</div>
+
+<!-- Случай 7 -->
+<div class="example-block">
+    <h4>Случай 7: Текст не о логистике (false positive)</h4>
+    <p class="example-label">Входное сообщение:</p>
+    <pre><code>"Привет, как дела? Погода сегодня хорошая."</code></pre>
+    <p class="example-label">Ожидаемый вывод:</p>
+    <pre><code>{
+  <span class="json-key">"trip_id"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"route_from"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"route_to"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"slot_time"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"status"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"customer"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"urgency"</span>: <span class="json-string">"low"</span>,
+  <span class="json-key">"issue"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"confidence"</span>: <span class="json-number">0.0</span>
+}</code></pre>
+    <p><strong>Обоснование:</strong> Это не логистическое сообщение &rarr; confidence = 0.0, все поля null. Alert Engine не создаст алерт (confidence &lt; 0.50).</p>
+</div>
+
+<!-- Случай 8 -->
+<div class="example-block">
+    <h4>Случай 8: Отключение MiniMax, падение на Groq fallback</h4>
+    <p><strong>Сценарий:</strong> MiniMax API недоступен (timeout 5 сек)</p>
+    <p class="example-label">Логирование:</p>
+    <pre><code>[09:15:00] Parsing message msg_123: "Рейс 4521, МСК-КРД, WB 14:00"
+[09:15:01] MiniMax request started
+[09:15:06] MiniMax timeout after 5 sec, fallback to Groq
+[09:15:08] Groq request completed: trip_id=4521, confidence=0.70 (fallback penalty)
+[09:15:08] Parsed result written to PostgreSQL</code></pre>
+    <p><strong>Ожидаемый результат:</strong></p>
+    <ul>
+        <li>Сообщение обработано (не потеряно)</li>
+        <li>confidence -0.25 (fallback штраф)</li>
+        <li>Alert Engine всё равно получит результат</li>
+    </ul>
+</div>
+
+<!-- ===== 8.3 Performance-граничные случаи ===== -->
+<h3>8.3 Performance-граничные случаи</h3>
+
+<!-- Performance случай 1 -->
+<div class="example-block">
+    <h4>Случай 1: Пик нагрузки — 60 сообщений за 30 сек</h4>
+    <p><strong>Сценарий:</strong> Диспетчер создал сообщения в группе, все приходят пачкой.</p>
+    <p><strong>Ожидание:</strong></p>
+    <ul>
+        <li>Первые 30 msg (в течение первых 30 сек) обрабатываются сразу</li>
+        <li>Оставшиеся 30 встают в очередь Redis</li>
+        <li>Очередь обрабатывается со скоростью 30/сек (после разгрузки)</li>
+        <li>Максимальная задержка: &lt;2 мин</li>
+        <li>Все сообщения в итоге обработаны</li>
+    </ul>
+    <p class="example-label">Метрики:</p>
+    <pre><code>Queue depth: 30 (max)
+Processing time: ~40 sec total
+Rate limit violations: 0
+Messages lost: 0</code></pre>
+</div>
+
+<!-- Performance случай 2 -->
+<div class="example-block">
+    <h4>Случай 2: Недостаточно бюджета токенов (&gt;50K/день)</h4>
+    <p><strong>Сценарий:</strong> День идёт к концу, уже использовано 48K токенов из 50K.</p>
+    <p><strong>Поступает новое сообщение:</strong></p>
+    <ul>
+        <li>MiniMax может потребовать ~500 токенов</li>
+        <li>Остаток: 50K - 48K = 2K токенов</li>
+    </ul>
+    <p><strong>Ожидание:</strong></p>
+    <ul>
+        <li>Парсер видит что будет превышение</li>
+        <li>Fallback на Groq (бесплатные 100K токенов/день имеют отдельную квоту)</li>
+        <li>Groq обрабатывает сообщение</li>
+        <li>Log alert: <span class="inline-code">"Token budget MiniMax exceeded, using Groq"</span></li>
+    </ul>
+</div>
+
+<!-- ===== Резюме ===== -->
+<h2>Резюме спецификации</h2>
+
+<div class="card card-success">
+    <p><strong>AI Parser (S0-F02)</strong> — критический компонент, преобразующий текстовые сообщения диспетчеров в структурированные логистические данные через LLM. Требуется:</p>
+    <ol style="padding-left: 20px; margin-top: 12px;">
+        <li><strong>12 REQ</strong> (функциональные) + <strong>6 CON</strong> (ограничения)</li>
+        <li><strong>Критичные метрики:</strong> точность trip_id &ge;85%, latency &le;5 сек, confidence для каждого результата</li>
+        <li><strong>Fallback chain:</strong> MiniMax &rarr; Groq &rarr; Regex</li>
+        <li><strong>Дедупликация:</strong> 5-мин окно</li>
+        <li><strong>Промпт:</strong> полный шаблон на русском (секция 4.4)</li>
+        <li><strong>Тестирование:</strong> unit + integration + performance</li>
+        <li><strong>Интеграция:</strong> Chat Listener (входящие) &rarr; Parser &rarr; Alert Engine + PostgreSQL</li>
+    </ol>
+</div>
+
+<div class="metric-grid" style="margin-top: 24px;">
+    <div class="metric-card">
+        <div class="value">12</div>
+        <div class="label">Функциональных требований (REQ)</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">6</div>
+        <div class="label">Ограничений (CON)</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">12</div>
+        <div class="label">Критериев приёмки (AC)</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">8+</div>
+        <div class="label">Граничных случаев</div>
+    </div>
+</div>
+
+</div>
+</body>
+</html>

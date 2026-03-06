@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marshall AI Listener — Продуктовый бриф</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --accent: #f59e0b;
+            --accent-light: #fef3c7;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+        .nav {
+            position: sticky; top: 0; z-index: 100;
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            padding: 12px 24px;
+            display: flex; align-items: center; gap: 16px;
+            overflow-x: auto; white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        }
+        .nav a {
+            color: rgba(255,255,255,.85); text-decoration: none;
+            font-size: 13px; padding: 6px 12px; border-radius: 6px;
+            transition: all .2s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,.2); color: #fff; }
+        .nav .brand { font-weight: 700; font-size: 15px; color: #fff; margin-right: 8px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+        h1 { font-size: 2rem; margin-bottom: 8px; color: var(--primary); }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 32px; }
+        h2 {
+            font-size: 1.4rem; margin: 40px 0 16px;
+            padding-bottom: 8px; border-bottom: 2px solid var(--primary-light);
+            color: var(--primary);
+        }
+        h3 { font-size: 1.15rem; margin: 24px 0 12px; color: var(--text); }
+        p { margin-bottom: 12px; }
+        .card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .card-accent { border-left: 4px solid var(--primary); }
+        .card-success { border-left: 4px solid var(--success); background: var(--success-light); }
+        .card-warning { border-left: 4px solid var(--warning); background: var(--accent-light); }
+        .card-danger { border-left: 4px solid var(--danger); background: var(--danger-light); }
+        .vision {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white; border-radius: 16px; padding: 32px;
+            margin-bottom: 32px; font-size: 1.2rem; text-align: center;
+        }
+        .jtbd { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+        .jtbd-card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); }
+        .jtbd-card .role { font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+        .jtbd-card .when { color: var(--text-muted); font-style: italic; }
+        .jtbd-card .want { font-weight: 600; margin: 8px 0; }
+        .jtbd-card .so { color: var(--success); }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 20px; }
+        .feature-card {
+            background: var(--card); border-radius: 12px; padding: 24px;
+            border: 1px solid var(--border);
+        }
+        .feature-card .tag {
+            display: inline-block; background: var(--primary-light); color: var(--primary);
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .feature-card h3 { margin-top: 4px; }
+        .in-scope li { color: var(--success); }
+        .in-scope li span { color: var(--text); }
+        .out-scope li { color: var(--danger); }
+        .out-scope li span { color: var(--text-muted); }
+        ul { padding-left: 20px; margin-bottom: 12px; }
+        li { margin-bottom: 6px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: .95rem; }
+        th { background: var(--primary); color: white; padding: 10px 14px; text-align: left; }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) { background: #f8fafc; }
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 8px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+        }
+        .badge-must { background: var(--danger-light); color: var(--danger); }
+        .badge-high { background: #fee2e2; color: #dc2626; }
+        .badge-medium { background: var(--accent-light); color: #d97706; }
+        .badge-low { background: var(--success-light); color: var(--success); }
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        .metric-card {
+            background: var(--card); border-radius: 12px; padding: 20px;
+            border: 1px solid var(--border); text-align: center;
+        }
+        .metric-card .value { font-size: 2rem; font-weight: 800; color: var(--primary); }
+        .metric-card .label { font-size: .85rem; color: var(--text-muted); margin-top: 4px; }
+        .scenario-list { counter-reset: scenario; }
+        .scenario {
+            display: flex; gap: 16px; margin-bottom: 16px;
+            background: var(--card); border-radius: 12px; padding: 16px;
+            border: 1px solid var(--border);
+        }
+        .scenario-num {
+            flex-shrink: 0; width: 40px; height: 40px;
+            background: var(--primary); color: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 1.1rem;
+        }
+        .money-path {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+        }
+        .money-card {
+            background: var(--card); border-radius: 12px; padding: 20px;
+            border: 1px solid var(--border); text-align: center;
+        }
+        .money-card .price { font-size: 1.8rem; font-weight: 800; }
+        .money-card .free { color: var(--success); }
+        .money-card .paid { color: var(--primary); }
+        .money-card .recurring { color: #7c3aed; }
+        .risk-row { display: flex; align-items: center; gap: 8px; }
+        pre {
+            background: #1e293b; color: #e2e8f0; padding: 16px;
+            border-radius: 8px; overflow-x: auto; font-size: .85rem;
+            margin-bottom: 16px;
+        }
+        code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+        @media (max-width: 768px) {
+            .feature-grid, .money-path { grid-template-columns: 1fr; }
+            .metric-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <span class="brand">Marshall SDD</span>
+    <a href="master_brief.html">Мастер-бриф</a>
+    <a href="product_brief.html" class="active">Продукт</a>
+    <a href="sdd_orchestration.html">Оркестрация</a>
+    <a href="spec-tool-chat-listener.html">Listener</a>
+    <a href="spec-tool-ai-parser.html">Parser</a>
+    <a href="spec-tool-alert-engine.html">Alerts</a>
+    <a href="spec-data-schema.html">Schema</a>
+    <a href="spec-tool-dashboard-api.html">API</a>
+    <a href="spec-design-dashboard.html">Dashboard</a>
+    <a href="spec-architecture-overview.html">Архитектура</a>
+    <a href="spec-process-sprint0-plan.html">План</a>
+</nav>
+
+<div class="container">
+
+<h1>Продуктовый бриф</h1>
+<p class="subtitle">Marshall AI Listener — Sprint 0 MVP</p>
+
+<!-- Vision -->
+<div class="vision">
+    Пассивная AI-система, которая слушает диспетчерские чаты, структурирует данные через LLM и показывает менеджерам критические события в реальном времени — для снижения штрафов и хаоса в логистике.
+</div>
+
+<!-- JTBD -->
+<h2>Jobs-to-be-Done</h2>
+<div class="jtbd">
+    <div class="jtbd-card">
+        <div class="role">Диспетчер (косвенный)</div>
+        <div class="when">Когда я координирую рейсы через 4+ мессенджера одновременно,</div>
+        <div class="want">я хочу продолжать работать как обычно,</div>
+        <div class="so">чтобы система сама помогала менеджеру видеть проблемы.</div>
+    </div>
+    <div class="jtbd-card">
+        <div class="role">Менеджер (прямой)</div>
+        <div class="when">Когда случается проблема с рейсом (опоздание, поломка, простой),</div>
+        <div class="want">я хочу увидеть её в дашборде за секунды,</div>
+        <div class="so">чтобы оперативно связаться с диспетчером и избежать штрафа.</div>
+    </div>
+    <div class="jtbd-card">
+        <div class="role">Руководство Marshall</div>
+        <div class="when">Когда заканчивается рабочий день,</div>
+        <div class="want">я хочу посмотреть аналитику: рейсы, проблемы, штрафы,</div>
+        <div class="so">чтобы оценить операционную эффективность.</div>
+    </div>
+</div>
+
+<!-- MVP Scope -->
+<h2>MVP-скоуп Sprint 0</h2>
+<p><strong>Sprint 0 — БЕСПЛАТНЫЙ пилот.</strong> Цель: показать ценность, зацепить клиента для платных спринтов ($250/час).</p>
+
+<div class="feature-grid">
+    <div class="feature-card">
+        <span class="tag">S0-F01</span>
+        <h3>Chat Listener</h3>
+        <p>Подключение к 3 Telegram-чатам через Telethon (MTProto). Чтение всех текстовых сообщений + DM в реальном времени.</p>
+        <h4>Входит:</h4>
+        <ul class="in-scope">
+            <li><span>Telethon MTProto как pluggable-адаптер</span></li>
+            <li><span>3 групповых чата + DM</span></li>
+            <li><span>Asyncio event listener</span></li>
+            <li><span>Graceful shutdown + JSON logging</span></li>
+            <li><span>Rate limiting 30 сообщений/сек</span></li>
+        </ul>
+        <h4>Не входит:</h4>
+        <ul class="out-scope">
+            <li><span>Bot API (Sprint 1)</span></li>
+            <li><span>Голос/STT (Sprint 1)</span></li>
+            <li><span>Max, WhatsApp, Viber</span></li>
+        </ul>
+    </div>
+
+    <div class="feature-card">
+        <span class="tag">S0-F02</span>
+        <h3>AI Parser</h3>
+        <p>LLM-парсинг сообщений: извлечение trip_id, маршрута, статуса, заказчика, urgency. MiniMax M2.5 + Groq fallback.</p>
+        <h4>Входит:</h4>
+        <ul class="in-scope">
+            <li><span>5-слойный промпт-пайплайн</span></li>
+            <li><span>9 извлекаемых полей + confidence</span></li>
+            <li><span>Fallback: MiniMax → Groq</span></li>
+            <li><span>Дедупликация (5 мин окно)</span></li>
+            <li><span>confidence=0 при ошибке парсинга</span></li>
+        </ul>
+        <h4>Не входит:</h4>
+        <ul class="out-scope">
+            <li><span>STT (голос в текст)</span></li>
+            <li><span>Фото/документы</span></li>
+        </ul>
+    </div>
+
+    <div class="feature-card">
+        <span class="tag">S0-F03</span>
+        <h3>Alert Engine</h3>
+        <p>Детекция критических событий на основе правил 6 заказчиков. 5 типов алертов, 3 уровня severity. Только дашборд.</p>
+        <h4>Входит:</h4>
+        <ul class="in-scope">
+            <li><span>Правила 6 заказчиков (Тандер, WB, X5...)</span></li>
+            <li><span>5 типов: delay, failure, downtime, safety, docs</span></li>
+            <li><span>HIGH / MEDIUM / LOW severity</span></li>
+            <li><span>Reviewed / Resolved статусы</span></li>
+        </ul>
+        <h4>Не входит:</h4>
+        <ul class="out-scope">
+            <li><span>Отправка в Telegram (Sprint 1)</span></li>
+            <li><span>Автоэскалация (Sprint 1)</span></li>
+            <li><span>SMS / push</span></li>
+        </ul>
+    </div>
+
+    <div class="feature-card">
+        <span class="tag">S0-F04</span>
+        <h3>Dashboard</h3>
+        <p>Одностраничный веб-дашборд: активные рейсы (таблица) + алерты (лента). FastAPI + Chart.js, обновление каждые 3 сек.</p>
+        <h4>Входит:</h4>
+        <ul class="in-scope">
+            <li><span>REST API: /trips, /alerts, /stats, /chats</span></li>
+            <li><span>Базовая авторизация (пароль в .env)</span></li>
+            <li><span>3 графика: рейсы, время, алерты</span></li>
+            <li><span>Фильтры: заказчик, дата, статус</span></li>
+        </ul>
+        <h4>Не входит:</h4>
+        <ul class="out-scope">
+            <li><span>Мобильная версия</span></li>
+            <li><span>Экспорт Excel</span></li>
+            <li><span>OAuth/SSO</span></li>
+        </ul>
+    </div>
+</div>
+
+<!-- Metrics -->
+<h2>Метрики успеха</h2>
+<div class="metric-grid">
+    <div class="metric-card">
+        <div class="value">&ge;85%</div>
+        <div class="label">Точность парсинга trip_id</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">&le;5 сек</div>
+        <div class="label">Latency (сообщение → дашборд)</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">&ge;99%</div>
+        <div class="label">Uptime за 7 дней</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">5-15</div>
+        <div class="label">HIGH-алертов / день</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">&le;50K</div>
+        <div class="label">LLM токенов / день</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">6/6</div>
+        <div class="label">Покрытие заказчиков</div>
+    </div>
+    <div class="metric-card">
+        <div class="value">&ge;90%</div>
+        <div class="label">User-test: Николя понимает алерт</div>
+    </div>
+</div>
+
+<!-- RICE -->
+<h2>Приоритеты (RICE)</h2>
+<table>
+    <thead>
+        <tr><th>Ранг</th><th>Фича</th><th>Impact</th><th>RICE</th><th>Статус</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1</td><td><strong>S0-F02: AI Parser</strong></td>
+            <td>Без парсинга — нет алертов</td><td>900</td>
+            <td><span class="badge badge-must">MUST</span></td>
+        </tr>
+        <tr>
+            <td>2</td><td><strong>S0-F03: Alert Engine</strong></td>
+            <td>Основная бизнес-ценность</td><td>1200</td>
+            <td><span class="badge badge-must">MUST</span></td>
+        </tr>
+        <tr>
+            <td>3</td><td><strong>S0-F01: Chat Listener</strong></td>
+            <td>Без Listener нет данных</td><td>400</td>
+            <td><span class="badge badge-must">MUST</span></td>
+        </tr>
+        <tr>
+            <td>4</td><td><strong>S0-F04: Dashboard</strong></td>
+            <td>Визуализация = решение проблем</td><td>1200</td>
+            <td><span class="badge badge-must">MUST</span></td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- Out of scope -->
+<h2>Что НЕ делаем (Out of Scope)</h2>
+<div class="card card-danger">
+    <div style="columns: 2; column-gap: 32px;">
+        <ul>
+            <li>Голос и Whisper STT</li>
+            <li>Интерактивный бот с ответами</li>
+            <li>Кнопки статусов</li>
+            <li>Мультиплатформа (Max, WhatsApp, Viber)</li>
+            <li>Интеграция с АРМ/ТМС</li>
+            <li>Контроль документов</li>
+            <li>МОВИЗОР интеграция</li>
+        </ul>
+        <ul>
+            <li>Алерты в Telegram</li>
+            <li>Расписание смен</li>
+            <li>SMS/Email уведомления</li>
+            <li>OAuth/LDAP авторизация</li>
+            <li>Экспорт Excel</li>
+            <li>Мобильное приложение</li>
+            <li>История >30 дней</li>
+        </ul>
+    </div>
+</div>
+
+<!-- Risks -->
+<h2>Риски и допущения</h2>
+<table>
+    <thead>
+        <tr><th>Риск</th><th>P</th><th>Impact</th><th>Митигация</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Блокировка Telegram (1 апр 2026)</td>
+            <td><span class="badge badge-high">HIGH</span></td>
+            <td><span class="badge badge-high">CRIT</span></td>
+            <td>Адаптер для Max за &lt;7 дней</td>
+        </tr>
+        <tr>
+            <td>Качество парсинга &lt;70%</td>
+            <td><span class="badge badge-medium">MED</span></td>
+            <td><span class="badge badge-high">HIGH</span></td>
+            <td>User-test на 100 сообщениях, итерация промпта</td>
+        </tr>
+        <tr>
+            <td>Объём &gt;30 сообщений/сек</td>
+            <td><span class="badge badge-low">LOW</span></td>
+            <td><span class="badge badge-medium">MED</span></td>
+            <td>Rate limit + очередь на диске</td>
+        </tr>
+        <tr>
+            <td>Бан аккаунта Telegram</td>
+            <td><span class="badge badge-low">LOW</span></td>
+            <td><span class="badge badge-high">HIGH</span></td>
+            <td>Сервисный аккаунт, не личный</td>
+        </tr>
+        <tr>
+            <td>API MiniMax недоступен</td>
+            <td><span class="badge badge-medium">MED</span></td>
+            <td><span class="badge badge-medium">MED</span></td>
+            <td>Fallback: MiniMax → Groq → regex</td>
+        </tr>
+        <tr>
+            <td>"Это бесполезно" от Николы</td>
+            <td><span class="badge badge-medium">MED</span></td>
+            <td><span class="badge badge-high">CRIT</span></td>
+            <td>Демо на 5 реальных сценариях с ROI</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- Demo scenarios -->
+<h2>Демо для Николы — 5 сценариев</h2>
+<div class="scenario-list">
+    <div class="scenario">
+        <div class="scenario-num">1</div>
+        <div>
+            <strong>Опоздание на слот WB</strong><br>
+            Alert за 40 мин до слота: "Possible delay on WB trip 4521"<br>
+            <span class="badge badge-high">HIGH</span>
+        </div>
+    </div>
+    <div class="scenario">
+        <div class="scenario-num">2</div>
+        <div>
+            <strong>Поломка рефрижератора</strong><br>
+            Alert: "CRITICAL: Refrigerator down on trip 7803, temp +8"<br>
+            <span class="badge badge-high">HIGH</span>
+        </div>
+    </div>
+    <div class="scenario">
+        <div class="scenario-num">3</div>
+        <div>
+            <strong>Простой на территории X5</strong><br>
+            Alert: "Downtime on X5 territory (not allowed)" — система знает правила<br>
+            <span class="badge badge-high">HIGH</span>
+        </div>
+    </div>
+    <div class="scenario">
+        <div class="scenario-num">4</div>
+        <div>
+            <strong>ДТП на трассе (информационный)</strong><br>
+            Alert: "Traffic incident on M4, delays expected"<br>
+            <span class="badge badge-low">LOW</span>
+        </div>
+    </div>
+    <div class="scenario">
+        <div class="scenario-num">5</div>
+        <div>
+            <strong>Успешный рейс</strong><br>
+            GREEN статус, no alerts, рейс завершён<br>
+            <span class="badge badge-low" style="background:#d1fae5;color:#10b981;">OK</span>
+        </div>
+    </div>
+</div>
+
+<!-- Monetization -->
+<h2>Путь к монетизации</h2>
+<div class="money-path">
+    <div class="money-card">
+        <div class="price free">$0</div>
+        <p><strong>Sprint 0 — Пилот</strong></p>
+        <p style="font-size:.85rem;color:var(--text-muted)">Показать ценность. 3 чата, дашборд, алерты. ROI: "Сэкономили бы ~$15K за неделю"</p>
+    </div>
+    <div class="money-card">
+        <div class="price paid">$10-15K</div>
+        <p><strong>Sprint 1 — Production</strong></p>
+        <p style="font-size:.85rem;color:var(--text-muted)">$250/ч, 40-60 часов. Bot API, алерты в TG, STT, контроль документов</p>
+    </div>
+    <div class="money-card">
+        <div class="price recurring">$500-1K/мес</div>
+        <p><strong>Sprint 2+ — SaaS</strong></p>
+        <p style="font-size:.85rem;color:var(--text-muted)">Подписка. АРМ интеграция, МОВИЗОР, мультиплатформа, аналитика</p>
+    </div>
+</div>
+
+<!-- Success criteria -->
+<h2>Критерии успеха Sprint 0</h2>
+<div class="card card-success">
+    <ol style="padding-left: 20px;">
+        <li>Система работает автономно — 7 дней без критических ошибок (uptime &ge;99%)</li>
+        <li>Parser парсит точно — &ge;85% trip_id распознано правильно (проверка на 100 сообщениях)</li>
+        <li>Alert Engine обнаруживает проблемы — алерт за &lt;5 сек при опоздании &gt;40 мин</li>
+        <li>Dashboard работает — менеджер видит 12 рейсов, 2 HIGH-алерта, фильтры по заказчику</li>
+        <li>Демо Николе впечатляет — 5 сценариев, "wow, это сэкономило бы нам $$$ в штрафах"</li>
+        <li>Код готов — полная спецификация 4 модулей, тесты, архитектура</li>
+    </ol>
+</div>
+
+</div>
+</body>
+</html>

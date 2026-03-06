@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marshall AI Listener — Дизайн дашборда</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --accent: #f59e0b;
+            --accent-light: #fef3c7;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+        .nav {
+            position: sticky; top: 0; z-index: 100;
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            padding: 12px 24px;
+            display: flex; align-items: center; gap: 16px;
+            overflow-x: auto; white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        }
+        .nav a {
+            color: rgba(255,255,255,.85); text-decoration: none;
+            font-size: 13px; padding: 6px 12px; border-radius: 6px;
+            transition: all .2s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,.2); color: #fff; }
+        .nav .brand { font-weight: 700; font-size: 15px; color: #fff; margin-right: 8px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+        h1 { font-size: 2rem; margin-bottom: 8px; color: var(--primary); }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 32px; }
+        h2 {
+            font-size: 1.4rem; margin: 40px 0 16px;
+            padding-bottom: 8px; border-bottom: 2px solid var(--primary-light);
+            color: var(--primary);
+        }
+        h3 { font-size: 1.15rem; margin: 24px 0 12px; color: var(--text); }
+        h4 { font-size: 1rem; margin: 20px 0 10px; color: var(--text); }
+        p { margin-bottom: 12px; }
+        .card {
+            background: var(--card); border-radius: 12px;
+            padding: 24px; margin-bottom: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .card-accent { border-left: 4px solid var(--primary); }
+        .card-success { border-left: 4px solid var(--success); background: var(--success-light); }
+        .card-warning { border-left: 4px solid var(--warning); background: var(--accent-light); }
+        .card-danger { border-left: 4px solid var(--danger); background: var(--danger-light); }
+        ul { padding-left: 20px; margin-bottom: 12px; }
+        li { margin-bottom: 6px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: .95rem; }
+        th { background: var(--primary); color: white; padding: 10px 14px; text-align: left; }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) { background: #f8fafc; }
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 8px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+        }
+        .badge-must { background: var(--danger-light); color: var(--danger); }
+        .badge-should { background: var(--accent-light); color: #d97706; }
+        pre, code { font-family: 'Courier New', monospace; }
+        pre {
+            background: #f1f5f9;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            line-height: 1.4;
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.88em;
+        }
+        pre code { background: none; padding: 0; }
+        .mermaid { background: white; padding: 16px; border-radius: 8px; }
+        .jtbd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .jtbd-card {
+            background: var(--card); border-radius: 12px; padding: 20px;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+        }
+        .jtbd-card .screen-label {
+            font-weight: 700; color: var(--primary); font-size: 13px;
+            text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;
+        }
+        .jtbd-card p { margin-bottom: 6px; font-size: 0.95rem; }
+        .principle-card {
+            background: var(--card); border-radius: 12px; padding: 20px;
+            border: 1px solid var(--border); margin-bottom: 16px;
+            display: flex; gap: 16px; align-items: flex-start;
+        }
+        .principle-num {
+            flex-shrink: 0; width: 36px; height: 36px;
+            background: var(--primary); color: white;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 16px;
+        }
+        .color-swatch {
+            display: inline-block; width: 20px; height: 20px;
+            border-radius: 4px; vertical-align: middle;
+            margin-right: 6px; border: 1px solid rgba(0,0,0,.1);
+        }
+        .wireframe-wrap {
+            background: #f1f5f9; border-radius: 8px; padding: 16px;
+            margin-bottom: 20px; overflow-x: auto;
+        }
+        .wireframe-wrap pre {
+            background: none; padding: 0; margin: 0;
+            font-size: 0.82rem; line-height: 1.3;
+        }
+        .flow-box {
+            background: var(--card); border-radius: 8px; padding: 16px;
+            border: 1px solid var(--border); margin-bottom: 16px;
+            overflow-x: auto;
+        }
+        .flow-box pre {
+            background: none; padding: 0; margin: 0;
+            font-size: 0.88rem;
+        }
+        .component-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+        .component-item {
+            background: var(--primary-light); border-radius: 8px; padding: 12px;
+            border-left: 3px solid var(--primary);
+        }
+        .component-item .comp-name { font-weight: 700; color: var(--primary); font-size: 14px; }
+        .component-item .comp-desc { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <span class="brand">Marshall SDD</span>
+    <a href="index.html">Обзор</a>
+    <a href="master_brief.html">Контекст</a>
+    <a href="product_brief.html">Продукт</a>
+    <a href="spec-tool-chat-listener.html">Chat Listener</a>
+    <a href="spec-tool-ai-parser.html">AI Parser</a>
+    <a href="spec-tool-alert-engine.html">Alert Engine</a>
+    <a href="spec-data-schema.html">Схема БД</a>
+    <a href="spec-tool-dashboard-api.html">Dashboard API</a>
+    <a href="spec-design-dashboard.html" class="active">Дизайн</a>
+    <a href="spec-architecture-overview.html">Архитектура</a>
+    <a href="spec-process-sprint0-plan.html">План</a>
+    <a href="sdd_orchestration.html">SDD</a>
+</nav>
+
+<div class="container">
+    <h1>Marshall AI Listener — Спецификация дизайна дашборда</h1>
+    <p class="subtitle">version 1.0 &nbsp;|&nbsp; Sprint 0 (Спринт 5) &nbsp;|&nbsp; module: S0-F04 Dashboard Design &nbsp;|&nbsp; 2026-03-06</p>
+    <p>Данный документ определяет полный дизайн веб-дашборда системы Marshall AI Listener: пользовательский опыт, вайрфреймы всех экранов, формальные требования к интерфейсу и компонентную модель.</p>
+
+    <!-- ================================================================ -->
+    <h2>1. Назначение и область применения</h2>
+
+    <h3>1.1 Цель документа</h3>
+    <ul>
+        <li>Пользовательские сценарии (JTBD) для каждого из 5 экранов дашборда</li>
+        <li>Информационная архитектура и иерархия элементов интерфейса</li>
+        <li>ASCII-вайрфреймы всех экранов</li>
+        <li>Формальные требования (REQ-DD) и критерии приёмки (AC-DD)</li>
+        <li>Компонентная модель, цветовая система и типографика</li>
+    </ul>
+
+    <h3>1.2 Аудитория документа</h3>
+    <table>
+        <thead><tr><th>Аудитория</th><th>Роль</th></tr></thead>
+        <tbody>
+            <tr><td>Frontend-разработчик Sprint 0</td><td>Основная аудитория, реализует интерфейс</td></tr>
+            <tr><td>Тим Зинин (Zinin Corp)</td><td>Владелец продукта, принимает дизайн</td></tr>
+            <tr><td>Николя Бобров (Marshall)</td><td>Конечный пользователь уровня руководства</td></tr>
+        </tbody>
+    </table>
+
+    <h3>1.3 Границы области применения</h3>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div class="card card-success">
+            <h4>В области применения</h4>
+            <ul>
+                <li>Веб-дашборд (HTML + vanilla JS + Chart.js)</li>
+                <li>5 экранов: Login, Active Trips, Alerts Feed, Trip Details, Statistics</li>
+                <li>3 роли: admin, manager, viewer</li>
+                <li>Polling каждые 3 секунды</li>
+            </ul>
+        </div>
+        <div class="card card-warning">
+            <h4>За пределами области применения</h4>
+            <ul>
+                <li>Мобильное приложение</li>
+                <li>Интерфейс диспетчера (работает в Telegram)</li>
+                <li>Административная панель управления LLM-агентом</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <h2>2. Определения</h2>
+    <table>
+        <thead><tr><th>Термин</th><th>Определение</th></tr></thead>
+        <tbody>
+            <tr><td><strong>JTBD</strong></td><td>Jobs To Be Done — методология описания задач пользователя через формат «Когда [ситуация], я хочу [мотив], чтобы [результат]»</td></tr>
+            <tr><td><strong>Рейс (Trip)</strong></td><td>Единица грузоперевозки: маршрут из точки А в точку Б, привязанный к конкретному заказчику и водителю</td></tr>
+            <tr><td><strong>Алерт (Alert)</strong></td><td>Автоматически сгенерированное AI-системой уведомление о проблемной ситуации в рейсе</td></tr>
+            <tr><td><strong>Severity</strong></td><td>Уровень критичности алерта: HIGH / MEDIUM / LOW</td></tr>
+            <tr><td><strong>Trip ID</strong></td><td>Уникальный идентификатор рейса, извлекаемый из Telegram-чатов</td></tr>
+            <tr><td><strong>Polling</strong></td><td>Периодические HTTP-запросы к API для обновления данных (интервал: 3 сек)</td></tr>
+            <tr><td><strong>JWT</strong></td><td>JSON Web Token — механизм авторизации в дашборде</td></tr>
+            <tr><td><strong>Заказчик (Customer)</strong></td><td>Клиент Marshall: Тандер, WB, X5, Магнит, Сельта, Сибур</td></tr>
+            <tr><td><strong>Диспетчер</strong></td><td>Сотрудник, работающий в Telegram-чатах; НЕ пользователь дашборда</td></tr>
+            <tr><td><strong>Менеджер</strong></td><td>Прямой пользователь дашборда; отслеживает активные рейсы и алерты</td></tr>
+            <tr><td><strong>Viewer</strong></td><td>Роль только для просмотра (без возможности изменять статусы алертов)</td></tr>
+            <tr><td><strong>KPI</strong></td><td>Key Performance Indicator — ключевой показатель эффективности</td></tr>
+            <tr><td><strong>SPA</strong></td><td>Single Page Application — одностраничное веб-приложение</td></tr>
+            <tr><td><strong>Chart.js</strong></td><td>Библиотека для построения графиков на HTML Canvas</td></tr>
+            <tr><td><strong>Latency</strong></td><td>Задержка между событием в чате и появлением данных в дашборде</td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>3. Часть 1: UX-анализ</h2>
+
+    <h3>3.1 JTBD для каждого экрана</h3>
+
+    <div class="jtbd-grid">
+        <div class="jtbd-card">
+            <div class="screen-label">Экран Login</div>
+            <p><strong>Основное JTBD:</strong> Когда я открываю дашборд утром или после перерыва, я хочу быстро войти под своим логином, чтобы получить доступ только к данным, соответствующим моей роли.</p>
+            <p><strong>Доп. JTBD:</strong> При ошибке входа — понять причину. При работе на чужом ПК — сессия не оставалась активной после закрытия вкладки.</p>
+        </div>
+        <div class="jtbd-card">
+            <div class="screen-label">Active Trips</div>
+            <p><strong>Основное JTBD:</strong> Когда я начинаю рабочий день, я хочу за 10 секунд увидеть все рейсы в движении и какие из них требуют внимания, чтобы расставить приоритеты на ближайший час.</p>
+            <p><strong>Доп. JTBD:</strong> Фильтрация по заказчику. Переход к деталям по HIGH-алерту. Автообновление без F5.</p>
+        </div>
+        <div class="jtbd-card">
+            <div class="screen-label">Alerts Feed</div>
+            <p><strong>Основное JTBD:</strong> Когда поступает новый HIGH-алерт, я хочу сразу увидеть что произошло, в каком рейсе и что нужно сделать, чтобы принять решение в течение 1 минуты.</p>
+            <p><strong>Доп. JTBD:</strong> Отметить алерт как reviewed / resolved. Фильтрация по рейсу, заказчику, дате.</p>
+        </div>
+        <div class="jtbd-card">
+            <div class="screen-label">Trip Details</div>
+            <p><strong>Основное JTBD:</strong> Когда у рейса есть активный алерт, я хочу увидеть полную историю сообщений из чата диспетчеров по этому рейсу, чтобы понять контекст ситуации и принять правильное решение.</p>
+            <p><strong>Доп. JTBD:</strong> Хронологический список алертов. Копирование сообщений для отчёта.</p>
+        </div>
+        <div class="jtbd-card">
+            <div class="screen-label">Statistics</div>
+            <p><strong>Основное JTBD:</strong> Когда Николя Бобров подводит итоги дня или недели, он хочет за 30 секунд увидеть: сколько рейсов было, сколько алертов, какой процент решён вовремя.</p>
+            <p><strong>Доп. JTBD:</strong> Сравнить текущую неделю с прошлой. Провалиться в ленту алертов за конкретный день.</p>
+        </div>
+    </div>
+
+    <h4>Роли и права доступа</h4>
+    <table>
+        <thead><tr><th>Роль</th><th>Экраны доступны</th><th>Изменение данных</th></tr></thead>
+        <tbody>
+            <tr><td>admin</td><td>Все 5 экранов</td><td>Все операции</td></tr>
+            <tr><td>manager</td><td>Active Trips, Alerts Feed, Trip Details, Statistics</td><td>PATCH /api/alerts/{id}</td></tr>
+            <tr><td>viewer</td><td>Active Trips, Alerts Feed, Trip Details, Statistics</td><td>Только чтение</td></tr>
+        </tbody>
+    </table>
+
+    <h3>3.2 Пользовательские флоу</h3>
+
+    <h4>Флоу 1: Утренняя проверка менеджера</h4>
+    <div class="flow-box">
+<pre>[Открытие браузера]
+        |
+        v
+[Экран Login]
+  Email + Password
+        |
+  (успешная аутентификация)
+        |
+        v
+[Экран Active Trips]
+  Таблица рейсов обновляется каждые 3 сек
+        |
+  (менеджер видит рейс с HIGH-badge)
+        |
+        v
+[Клик на строку рейса]
+        |
+        v
+[Экран Trip Details]
+  История чата + список алертов по рейсу
+        |
+  (решение принято, переход к алертам)
+        |
+        v
+[Экран Alerts Feed]
+  PATCH alert → reviewed
+        |
+  (ситуация взята в работу)
+        |
+        v
+[Продолжение мониторинга Active Trips]</pre>
+    </div>
+
+    <h4>Флоу 2: Реакция на HIGH-алерт</h4>
+    <div class="flow-box">
+<pre>[Polling 3 сек]
+        |
+  (новый HIGH-алерт появился в ленте)
+        |
+        v
+[Alerts Feed — карточка с HIGH badge]
+  Тип: delay / equipment_failure / safety_violation
+  Описание: текст извлечённый LLM
+  Рейс: trip_id с ссылкой
+        |
+  (менеджер читает описание)
+        |
+  +-----+------+
+  |            |
+  v            v
+[Нужен       [Всё понятно,
+ контекст]    нет вопросов]
+  |            |
+  v            v
+[Trip Details] [PATCH → reviewed]
+  История       |
+  чата          v
+  |         [Мониторинг]
+  v
+[PATCH → reviewed]
+        |
+  (после решения проблемы)
+        |
+        v
+[PATCH → resolved]</pre>
+    </div>
+
+    <h4>Флоу 3: Просмотр истории рейса</h4>
+    <div class="flow-box">
+<pre>[Active Trips или Alerts Feed]
+        |
+  (клик на trip_id)
+        |
+        v
+[Trip Details]
+  +----------------+------------------+
+  | Инфо о рейсе  | История чата     |
+  | trip_id        | сообщение 1 ...  |
+  | маршрут        | сообщение 2 ...  |
+  | заказчик       | сообщение N ...  |
+  | статус         |                  |
+  | время старта   | (скролл вниз)    |
+  +----------------+------------------+
+  | Алерты по рейсу                  |
+  | [HIGH] delay 14:32               |
+  | [MED] docs_missing 09:15         |
+  +----------------------------------+
+        |
+  (возврат через breadcrumb или Nav)
+        |
+        v
+[Active Trips / Alerts Feed]</pre>
+    </div>
+
+    <h4>Флоу 4: Вечерняя сводка руководства</h4>
+    <div class="flow-box">
+<pre>[Николя открывает дашборд]
+        |
+        v
+[Login — роль viewer или manager]
+        |
+        v
+[Навигация → Statistics]
+        |
+        v
+[Statistics — период: сегодня]
+  KPI-карточки:
+    - Активных рейсов: 47
+    - Всего алертов: 12
+    - HIGH-алертов: 3
+    - Resolved rate: 91%
+        |
+  (переключение периода: эта неделя)
+        |
+        v
+[Графики обновляются]
+  - Рейсы/день: линейный
+  - Задержки: bar chart
+  - Алерты по severity: stacked bar
+        |
+  (Николя видит аномалию в среду)
+        |
+        v
+[Alerts Feed — фильтр по дате: среда]
+  Изучение инцидентов среды</pre>
+    </div>
+
+    <h3>3.3 Информационная архитектура</h3>
+
+    <h4>3.3.1 Глобальная навигация</h4>
+    <div class="card card-accent">
+        <pre>Логотип Marshall AI | Active Trips | Alerts Feed | Statistics | [Пользователь: email] [Выйти]</pre>
+        <p>Навигация присутствует на всех экранах кроме Login. Расположена сверху (top navigation bar). Активный пункт меню подсвечивается визуально.</p>
+    </div>
+
+    <h4>3.3.2 Иерархия экранов</h4>
+    <pre><code>Дашборд
+├── Login (нет nav)
+├── Active Trips (основной экран после входа)
+│   └── Trip Details (дочерний экран)
+├── Alerts Feed
+│   └── Trip Details (дочерний экран, тот же компонент)
+└── Statistics</code></pre>
+
+    <h4>3.3.3 Информационная иерархия по экранам</h4>
+    <table>
+        <thead><tr><th>Экран</th><th>Иерархия элементов</th></tr></thead>
+        <tbody>
+            <tr><td><strong>Login</strong></td><td>Заголовок системы → Email → Password → Кнопка Login → Сообщение об ошибке (условно)</td></tr>
+            <tr><td><strong>Active Trips</strong></td><td>Заголовок + счётчик → Панель фильтров → Таблица рейсов (trip_id | маршрут | заказчик | статус | время | алерты) → Индикатор обновления</td></tr>
+            <tr><td><strong>Alerts Feed</strong></td><td>Заголовок + счётчик → Панель фильтров → Карточки алертов (severity badge | тип | trip_id | описание | время | действия) → Пагинация</td></tr>
+            <tr><td><strong>Trip Details</strong></td><td>Breadcrumb → Карточка информации (левая колонка) → История сообщений (правая, скроллируемая) → Список алертов (нижняя секция)</td></tr>
+            <tr><td><strong>Statistics</strong></td><td>Выбор периода → 4 KPI-карточки → Рейсы по дням (line chart) → Задержки (bar chart) → Алерты по severity (stacked bar)</td></tr>
+        </tbody>
+    </table>
+
+    <h3>3.4 Пять UX-принципов</h3>
+
+    <div class="principle-card">
+        <div class="principle-num">1</div>
+        <div>
+            <h4>Критичное — всегда на виду</h4>
+            <p>HIGH-алерты никогда не должны быть скрыты. На любом экране элементы с severity=HIGH отображаются с красным визуальным маркером (#ef4444). Таблицы рейсов сортируются так, чтобы рейсы с HIGH-алертами стояли первыми.</p>
+            <p><em>Обоснование:</em> Метрика M7 требует, чтобы Николя понимал алерт и знал что делать в 90% случаев.</p>
+        </div>
+    </div>
+    <div class="principle-card">
+        <div class="principle-num">2</div>
+        <div>
+            <h4>Актуальность без действия пользователя</h4>
+            <p>Данные обновляются автоматически (polling 3 сек). Пользователь не должен нажимать F5. Индикатор последнего обновления показывает время последнего успешного запроса. При потере соединения отображается предупреждение.</p>
+            <p><em>Обоснование:</em> Метрика M2 требует latency ≤5 сек.</p>
+        </div>
+    </div>
+    <div class="principle-card">
+        <div class="principle-num">3</div>
+        <div>
+            <h4>Контекст всегда рядом с алертом</h4>
+            <p>Каждый алерт содержит достаточно информации для первичного понимания: тип события, описание (текст от LLM), trip_id, заказчик, время. Переход к полному контексту (Trip Details) требует одного клика. Не более 2 кликов от алерта до истории чата.</p>
+            <p><em>Обоснование:</em> Метрика M7 — Николя видит алерт и понимает что делать.</p>
+        </div>
+    </div>
+    <div class="principle-card">
+        <div class="principle-num">4</div>
+        <div>
+            <h4>Статус-ориентированная модель данных</h4>
+            <p>Каждый алерт имеет явный статус (new → reviewed → resolved), отражённый визуально. Пользователь понимает: «кто-то уже взял это в работу?» без переговоров в Telegram. Смена статуса — одна кнопка без многоуровневых диалогов.</p>
+            <p><em>Обоснование:</em> В команде несколько менеджеров — без явного статуса возможны дублирование или пропуск реакции.</p>
+        </div>
+    </div>
+    <div class="principle-card">
+        <div class="principle-num">5</div>
+        <div>
+            <h4>Минимальный когнитивный груз</h4>
+            <p>Дашборд используется в стрессовых ситуациях. Цвет = severity (красный = HIGH, оранжевый = MEDIUM, зелёный = LOW). Иконки дублируют цвет (доступность). Тексты алертов — конкретные и actionable. Фильтры с понятными подписями, сбрасываемые одной кнопкой.</p>
+            <p><em>Обоснование:</em> Cognitive overload в критической ситуации увеличивает время реакции.</p>
+        </div>
+    </div>
+
+    <h3>3.5 Маппинг API → экраны</h3>
+    <table>
+        <thead><tr><th>Endpoint</th><th>Метод</th><th>Экран</th><th>Назначение</th><th>Частота</th></tr></thead>
+        <tbody>
+            <tr><td>/api/auth/login</td><td>POST</td><td>Login</td><td>Аутентификация, получение JWT</td><td>При входе</td></tr>
+            <tr><td>/api/trips</td><td>GET</td><td>Active Trips</td><td>Список рейсов с фильтрами</td><td>Polling 3 сек</td></tr>
+            <tr><td>/api/trips/{trip_id}</td><td>GET</td><td>Trip Details</td><td>Детальная информация о рейсе</td><td>При открытии, polling 3 сек</td></tr>
+            <tr><td>/api/alerts</td><td>GET</td><td>Alerts Feed</td><td>Лента алертов с фильтрами</td><td>Polling 3 сек</td></tr>
+            <tr><td>/api/alerts/{alert_id}</td><td>PATCH</td><td>Alerts Feed, Trip Details</td><td>Смена статуса reviewed/resolved</td><td>По действию пользователя</td></tr>
+            <tr><td>/api/stats</td><td>GET</td><td>Statistics</td><td>KPI-карточки</td><td>Polling 30 сек</td></tr>
+            <tr><td>/api/stats/chart</td><td>GET</td><td>Statistics</td><td>Данные для графиков Chart.js</td><td>При смене периода</td></tr>
+            <tr><td>/api/chats/{trip_id}</td><td>GET</td><td>Trip Details</td><td>История чатовых сообщений</td><td>При открытии + polling 10 сек</td></tr>
+            <tr><td>/api/health</td><td>GET</td><td>Любой экран</td><td>Индикатор соединения</td><td>Polling 10 сек</td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>4. Часть 2: ASCII-вайрфреймы</h2>
+
+    <h3>4.1 Экран 1: Login</h3>
+    <div class="wireframe-wrap">
+<pre>+================================================================+
+|                                                                |
+|                    MARSHALL AI LISTENER                        |
+|               Система мониторинга диспетчерских чатов         |
+|                                                                |
++================================================================+
+|                                                                |
+|                  +---------------------------+                 |
+|                  |                           |                 |
+|                  |   Войти в систему         |                 |
+|                  |                           |                 |
+|                  |   Email                   |                 |
+|                  |   +---------------------+ |                 |
+|                  |   | manager@marshall.ru | |                 |
+|                  |   +---------------------+ |                 |
+|                  |                           |                 |
+|                  |   Пароль                  |                 |
+|                  |   +---------------------+ |                 |
+|                  |   | ••••••••••••••••••• | |                 |
+|                  |   +---------------------+ |                 |
+|                  |                           |                 |
+|                  |   [ Показать пароль ]     |                 |
+|                  |                           |                 |
+|                  |  +---------------------+  |                 |
+|                  |  |      ВОЙТИ          |  |                 |
+|                  |  +---------------------+  |                 |
+|                  |                           |                 |
+|                  |  ! Неверный email или      |                 |
+|                  |    пароль. Попробуйте     |                 |
+|                  |    ещё раз.               |                 |
+|                  |    (отображается при ошибке)|               |
+|                  |                           |                 |
+|                  +---------------------------+                 |
+|                                                                |
+|          Marshall Logistics © 2026 | v1.0.0-sprint0           |
+|                                                                |
++================================================================+</pre>
+    </div>
+    <div class="card card-accent">
+        <strong>Состояния формы:</strong>
+        <ul>
+            <li><strong>Idle:</strong> поля пустые, кнопка неактивна (disabled)</li>
+            <li><strong>Typing:</strong> кнопка активна когда оба поля заполнены</li>
+            <li><strong>Loading:</strong> кнопка показывает спиннер «Вход...»</li>
+            <li><strong>Error:</strong> красное сообщение под кнопкой</li>
+            <li><strong>Success:</strong> редирект на Active Trips</li>
+        </ul>
+    </div>
+
+    <h3>4.2 Экран 2: Active Trips</h3>
+    <div class="wireframe-wrap">
+<pre>+================================================================+
+|  [M] MARSHALL AI  | Active Trips | Alerts | Statistics |       |
+|                                         manager@m.ru [Выйти] |
++================================================================+
+|  Активные рейсы                              [●] Обновлено 3с |
+|  47 рейсов в движении                                         |
++----------------------------------------------------------------+
+|  Фильтры:                                                      |
+|  Заказчик: [Все ▼] [Тандер] [WB] [X5] [Магнит] [Сельта] [Сибур]|
+|  Статус:   [Все ▼] [В пути] [Задержка] [Ожидание] [Завершён]  |
+|  Алерты:   [Все ▼] [Только с HIGH] [Только с алертами]        |
+|                                                  [Сбросить]   |
++----------------------------------------------------------------+
+|                                                                |
+| TRIP ID    | МАРШРУТ         | ЗАКАЗЧИК | СТАТУС    |ВРЕМЯ  |АЛЕРТЫ|
+|------------|-----------------|----------|-----------|-------|------|
+|●TRP-2026-  | Москва →        | WB       | Задержка  |+2:15  |[H]2  |
+| 00412      | Новосибирск     |          |           |       |[M]1  |
+|------------|-----------------|----------|-----------|-------|------|
+|●TRP-2026-  | СПб →           | Тандер   | В пути    |09:45  |[H]1  |
+| 00398      | Казань          |          |           |       |      |
+|------------|-----------------|----------|-----------|-------|------|
+| TRP-2026-  | Екатеринбург →  | X5       | В пути    |07:20  |[M]1  |
+| 00401      | Пермь           |          |           |       |      |
+|------------|-----------------|----------|-----------|-------|------|
+| TRP-2026-  | Москва →        | Магнит   | Ожидание  |--:--  |      |
+| 00389      | Ростов          |          |           |       |      |
+|------------|-----------------|----------|-----------|-------|------|
+| TRP-2026-  | Новосибирск →   | Сибур    | В пути    |11:02  |[L]1  |
+| 00376      | Омск            |          |           |       |      |
+|------------|-----------------|----------|-----------|-------|------|
+| ...        | ...             | ...      | ...       |...    |...   |
++----------------------------------------------------------------+
+|  Показано 5 из 47 | [&lt; Пред] [1] [2] [3] ... [10] [Далее &gt;]   |
++================================================================+
+
+Легенда: ● = есть HIGH-алерт  [H] = HIGH  [M] = MEDIUM  [L] = LOW</pre>
+    </div>
+    <div class="card card-accent">
+        <strong>Поведение таблицы:</strong>
+        <ul>
+            <li>Строки с HIGH-алертами: фон строки #fef2f2 (светло-красный), маркер ● в первой колонке</li>
+            <li>Клик на строку → переход на Trip Details</li>
+            <li>Сортировка по умолчанию: HIGH-алерты первые, затем MEDIUM, затем без алертов</li>
+            <li>При polling каждые 3 сек: строки обновляются без перезагрузки страницы</li>
+        </ul>
+    </div>
+
+    <h3>4.3 Экран 3: Alerts Feed</h3>
+    <div class="wireframe-wrap">
+<pre>+================================================================+
+|  [M] MARSHALL AI  | Active Trips | Alerts | Statistics |       |
+|                                         manager@m.ru [Выйти] |
++================================================================+
+|  Лента алертов                               [●] Обновлено 2с |
+|  12 активных алертов (3 HIGH, 7 MEDIUM, 2 LOW)                |
++----------------------------------------------------------------+
+|  Фильтры:                                                      |
+|  Severity: [Все] [HIGH] [MEDIUM] [LOW]                        |
+|  Статус:   [Все] [Новые] [В работе] [Решены]                  |
+|  Заказчик: [Все ▼]         Дата: [Сегодня ▼]                  |
+|                                                  [Сбросить]   |
++----------------------------------------------------------------+
+|                                                                |
+| +----------------------------------------------------------+  |
+| | [HIGH] equipment_failure          14:32  TRP-2026-00412  |  |
+| |                                                          |  |
+| | Водитель сообщил о поломке рефрижераторной установки.    |  |
+| | Температура в кузове поднялась выше нормы. Заказчик:     |  |
+| | Тандер (требование: +2..+4°C)                            |  |
+| |                                                          |  |
+| | [→ Рейс TRP-2026-00412]   [ Взять в работу ] [ Решено ] |  |
+| +----------------------------------------------------------+  |
+|                                                                |
+| +----------------------------------------------------------+  |
+| | [HIGH] delay                      13:58  TRP-2026-00398  |  |
+| |                                                          |  |
+| | Рейс задержан на 2 часа 15 минут. Водитель стоит на      |  |
+| | М-7 из-за аварии. Ожидаемое прибытие сдвинуто с 16:00   |  |
+| | на 18:15.                                                |  |
+| |                                                          |  |
+| | [→ Рейс TRP-2026-00398]   [ Взять в работу ] [ Решено ] |  |
+| +----------------------------------------------------------+  |
+|                                                                |
+| +----------------------------------------------------------+  |
+| | [MED] docs_missing    В работе    11:20  TRP-2026-00401  |  |
+| |                                                          |  |
+| | Диспетчер отмечает отсутствие накладной ТТН-2026-0412    |  |
+| | для рейса по маршруту Екатеринбург → Пермь.              |  |
+| |                                                          |  |
+| | [→ Рейс TRP-2026-00401]              [ Решено ]          |  |
+| +----------------------------------------------------------+  |
+|                                                                |
+| +----------------------------------------------------------+  |
+| | [LOW] downtime        Решено      09:15  TRP-2026-00389  |  |
+| |                                                          |  |
+| | Водитель совершил плановую остановку 45 минут. Заказчик  |  |
+| | Магнит разрешает остановки без ограничений.              |  |
+| |                                                          |  |
+| | [→ Рейс TRP-2026-00389]                                  |  |
+| +----------------------------------------------------------+  |
+|                                                                |
+|  [Загрузить ещё]  (показано 4 из 12)                          |
++================================================================+
+
+Цвет badge: HIGH=#ef4444 | MEDIUM=#f59e0b | LOW=#10b981
+Статус "В работе": синий badge #3b82f6
+Статус "Решено": серый badge #6b7280, карточка затемнена</pre>
+    </div>
+    <div class="card card-accent">
+        <strong>Поведение карточек:</strong>
+        <ul>
+            <li>Новые (new): полная яркость карточки, обе кнопки активны</li>
+            <li>В работе (reviewed): синий статус-badge, кнопка «Взять в работу» скрыта</li>
+            <li>Решённые (resolved): карточка серая (opacity: 0.6), кнопки скрыты, только ссылка на рейс</li>
+            <li>«Взять в работу» → PATCH status: reviewed</li>
+            <li>«Решено» → PATCH status: resolved (с диалогом подтверждения)</li>
+        </ul>
+    </div>
+
+    <h3>4.4 Экран 4: Trip Details</h3>
+    <div class="wireframe-wrap">
+<pre>+================================================================+
+|  [M] MARSHALL AI  | Active Trips | Alerts | Statistics |       |
+|                                         manager@m.ru [Выйти] |
++================================================================+
+|  Active Trips &gt; TRP-2026-00412                                 |
++================================================================+
+|                         |                                      |
+|  ИНФОРМАЦИЯ О РЕЙСЕ     |  ИСТОРИЯ ЧАТА                        |
+|                         |                                      |
+|  Trip ID:               |  +--------------------------------+  |
+|  TRP-2026-00412         |  | Чат: Marshall_TRP_00412        |  |
+|                         |  | 47 сообщений                   |  |
+|  Маршрут:               |  +--------------------------------+  |
+|  Москва → Новосибирск   |                                      |
+|                         |  [09:12] Диспетчер_1:              |  |
+|  Заказчик:              |  Рейс TRP-00412 выехал, груз WB    |  |
+|  Тандер                 |  принят, документы в порядке       |  |
+|                         |                                      |
+|  Статус:                |  [11:45] Водитель_Иванов:          |  |
+|  [!] Задержка           |  Стою на М-7, авария впереди       |  |
+|                         |                                      |
+|  Старт:                 |  [12:03] Диспетчер_1:              |  |
+|  06.03.2026 09:00       |  Понял, жди. Сообщи когда           |  |
+|                         |  рассосётся                        |  |
+|  Водитель:              |                                      |
+|  Иванов А.П.            |  [13:48] Водитель_Иванов:          |  |
+|                         |  Поехали! Задержка ~2ч 15мин       |  |
+|  Температурный режим:   |                                      |
+|  +2..+4°C (Тандер)      |  [14:29] Водитель_Иванов:          |  |
+|                         |  ПРОБЛЕМА: рефрижератор пищит,     |  |
+|  Номер ТС:              |  температура растёт                |  |
+|  А777ВВ799              |  [!] AI-алерт: equipment_failure   |  |
+|                         |                                      |
+|                         |  [14:35] Диспетчер_2:              |  |
+|                         |  Вызываем мастера. Тормози на      |  |
+|                         |  ближайшей СТО                     |  |
+|                         |                                      |
+|                         |  [▼ Прокрутить вниз]               |  |
+|                         |                                      |
++-------------------------+--------------------------------------+
+|                                                                |
+|  АЛЕРТЫ ПО РЕЙСУ                                              |
+|                                                                |
+| [HIGH] equipment_failure  14:32  Поломка рефрижератора   [H/R]|
+| [HIGH] delay              13:58  Задержка 2ч 15мин  В работе  |
+| [MED]  docs_missing       09:15  Отсутствует ТТН      Решено  |
+|                                                                |
++================================================================+
+
+[H/R] = кнопки Взять в работу / Решено</pre>
+    </div>
+    <div class="card card-accent">
+        <strong>Особенности экрана:</strong>
+        <ul>
+            <li>Левая колонка: фиксированная ширина (300px), не скроллируется</li>
+            <li>Правая колонка: скроллируемая история чата, автоскролл вниз при загрузке</li>
+            <li>Сообщения с AI-алертами отмечены маркером [!] и подсвечены</li>
+            <li>Секция алертов внизу: та же функциональность что и в Alerts Feed</li>
+        </ul>
+    </div>
+
+    <h3>4.5 Экран 5: Statistics</h3>
+    <div class="wireframe-wrap">
+<pre>+================================================================+
+|  [M] MARSHALL AI  | Active Trips | Alerts | Statistics |       |
+|                                         manager@m.ru [Выйти] |
++================================================================+
+|  Статистика                                                    |
+|  Период: [Сегодня] [Эта неделя] [Прошлая неделя] [Свой...]   |
++----------------------------------------------------------------+
+|                                                                |
+|  +------------------+ +------------------+                    |
+|  | Активных рейсов  | | Всего алертов    |                    |
+|  |                  | |                  |                    |
+|  |       47         | |       12         |                    |
+|  |                  | |                  |                    |
+|  | ▲ +3 к вчера     | | ▼ -2 к вчера     |                    |
+|  +------------------+ +------------------+                    |
+|                                                                |
+|  +------------------+ +------------------+                    |
+|  | HIGH-алертов     | | Решено вовремя   |                    |
+|  |                  | |                  |                    |
+|  |        3         | |      91%         |                    |
+|  |  (норма: 5–15)   | |   (цель: &gt;85%)   |                    |
+|  |                  | |                  |                    |
+|  | ✓ В норме        | | ✓ Цель достигнута|                    |
+|  +------------------+ +------------------+                    |
+|                                                                |
++----------------------------------------------------------------+
+|                                                                |
+|  Рейсы по дням                    Алерты по severity          |
+|  (line chart)                     (stacked bar chart)         |
+|                                                                |
+|  50 |        *                    15 |  [L]                   |
+|     |      *   *                     |  [M]   [L]             |
+|  40 |    *       *                10 |  [H]   [M] [L]         |
+|     |  *           *                 |        [H] [M]         |
+|  30 | *              *             5 |            [H]         |
+|     |                  *            |                *        |
+|  20 +--+--+--+--+--+--+--          0 +--+--+--+--+--+--+--   |
+|     пн вт ср чт пт сб вс            пн вт ср чт пт сб вс      |
+|                                                                |
++----------------------------------------------------------------+
+|                                                                |
+|  Средняя задержка рейсов (часы)                               |
+|  (bar chart)                                                   |
+|                                                                |
+|   3 |        ##                                               |
+|     |     ## ##                                               |
+|   2 |  ## ## ##  ##                                           |
+|     |  ## ## ##  ## ##                                        |
+|   1 |  ## ## ##  ## ##  ##                                    |
+|     |  ## ## ##  ## ##  ## ##                                 |
+|   0 +--+--+--+--+--+--+--                                     |
+|        пн вт ср чт пт сб вс                                    |
+|                                                                |
++================================================================+</pre>
+    </div>
+    <div class="card card-accent">
+        <strong>KPI-карточки — условная окраска:</strong>
+        <ul>
+            <li>Активные рейсы: нейтральная (синяя рамка)</li>
+            <li>Всего алертов: нейтральная</li>
+            <li>HIGH-алерты: зелёная рамка если ≤15, красная если &gt;15</li>
+            <li>Resolved rate: зелёная если ≥85%, красная если &lt;85%</li>
+        </ul>
+    </div>
+
+    <!-- ================================================================ -->
+    <h2>5. Часть 3: Формальные требования</h2>
+
+    <h3>5.1 Требования к экрану Login</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Категория</th><th>Описание</th><th>Приоритет</th></tr></thead>
+        <tbody>
+            <tr><td>REQ-DD-001</td><td>Функциональность</td><td>Экран Login MUST отображать поля ввода email и password.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-002</td><td>Безопасность</td><td>Поле password MUST использовать type="password" (символы скрыты).</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-003</td><td>Функциональность</td><td>Кнопка «Войти» MUST быть неактивна (disabled) пока оба поля не заполнены.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-004</td><td>Обратная связь</td><td>При ошибке аутентификации (HTTP 401) MUST отображаться текстовое сообщение рядом с формой.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-005</td><td>Безопасность</td><td>После успешного входа JWT MUST сохраняться в localStorage и использоваться во всех последующих API-запросах в заголовке Authorization: Bearer {token}.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-006</td><td>Навигация</td><td>После успешного входа пользователь MUST автоматически перенаправляться на экран Active Trips.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-007</td><td>Безопасность</td><td>При нажатии «Выйти» на любом экране localStorage MUST очищаться и пользователь перенаправляется на Login.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-008</td><td>Доступность</td><td>Экран Login MUST быть доступен без авторизации. Все остальные экраны MUST требовать валидный JWT.</td><td><span class="badge badge-must">MUST</span></td></tr>
+        </tbody>
+    </table>
+
+    <h3>5.2 Требования к экрану Active Trips</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Категория</th><th>Описание</th><th>Приоритет</th></tr></thead>
+        <tbody>
+            <tr><td>REQ-DD-009</td><td>Данные</td><td>Таблица рейсов MUST загружаться через GET /api/trips при открытии экрана.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-010</td><td>Обновление</td><td>Таблица MUST обновляться автоматически каждые 3 секунды через polling GET /api/trips.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-011</td><td>Визуализация</td><td>Строки рейсов с активными HIGH-алертами MUST отображаться с красным фоном (#fef2f2) и маркером ●.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-012</td><td>Сортировка</td><td>По умолчанию таблица MUST быть отсортирована: HIGH-алерты первые, затем MEDIUM, затем без алертов.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-013</td><td>Фильтрация</td><td>Таблица MUST поддерживать фильтрацию по заказчику (customer) и статусу рейса.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-014</td><td>Навигация</td><td>Клик на строку рейса MUST открывать экран Trip Details для данного trip_id.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-015</td><td>Индикатор</td><td>Экран MUST показывать время последнего успешного polling-обновления.</td><td><span class="badge badge-should">SHOULD</span></td></tr>
+            <tr><td>REQ-DD-016</td><td>Счётчик</td><td>Заголовок экрана MUST показывать общее количество рейсов, соответствующих текущим фильтрам.</td><td><span class="badge badge-must">MUST</span></td></tr>
+        </tbody>
+    </table>
+
+    <h3>5.3 Требования к экрану Alerts Feed</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Категория</th><th>Описание</th><th>Приоритет</th></tr></thead>
+        <tbody>
+            <tr><td>REQ-DD-017</td><td>Данные</td><td>Лента алертов MUST загружаться через GET /api/alerts при открытии экрана.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-018</td><td>Обновление</td><td>Лента MUST обновляться автоматически каждые 3 секунды.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-019</td><td>Визуализация</td><td>Каждый алерт MUST отображаться карточкой с severity badge: HIGH=#ef4444, MEDIUM=#f59e0b, LOW=#10b981.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-020</td><td>Действия</td><td>Для алертов со статусом new MUST быть доступна кнопка «Взять в работу» (PATCH status: reviewed).</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-021</td><td>Действия</td><td>Для алертов со статусом new или reviewed MUST быть доступна кнопка «Решено» (PATCH status: resolved).</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-022</td><td>Права</td><td>Кнопки изменения статуса MUST быть скрыты для роли viewer.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-023</td><td>Фильтрация</td><td>Лента MUST поддерживать фильтрацию по severity, status, заказчику и дате.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-024</td><td>Контекст</td><td>Карточка алерта MUST содержать: тип алерта, описание (от LLM), trip_id как ссылку, время создания.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-025</td><td>Сортировка</td><td>По умолчанию алерты MUST сортироваться по времени создания (новые первые) с группировкой new+reviewed перед resolved.</td><td><span class="badge badge-must">MUST</span></td></tr>
+        </tbody>
+    </table>
+
+    <h3>5.4 Требования к экрану Trip Details</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Категория</th><th>Описание</th><th>Приоритет</th></tr></thead>
+        <tbody>
+            <tr><td>REQ-DD-026</td><td>Данные</td><td>Экран MUST загружать данные рейса через GET /api/trips/{trip_id}.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-027</td><td>Данные</td><td>Экран MUST загружать историю чата через GET /api/chats/{trip_id}.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-028</td><td>Данные</td><td>Экран MUST отображать список алертов по рейсу через GET /api/alerts?trip_id={id}.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-029</td><td>Навигация</td><td>Экран MUST содержать breadcrumb-навигацию для возврата на предыдущий экран.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-030</td><td>Визуализация</td><td>Сообщения из чата, связанные с AI-алертами, MUST быть визуально выделены.</td><td><span class="badge badge-should">SHOULD</span></td></tr>
+            <tr><td>REQ-DD-031</td><td>Обновление</td><td>История чата MUST обновляться каждые 10 секунд.</td><td><span class="badge badge-should">SHOULD</span></td></tr>
+            <tr><td>REQ-DD-032</td><td>Действия</td><td>Изменение статуса алертов MUST быть доступно напрямую из секции алертов экрана Trip Details.</td><td><span class="badge badge-must">MUST</span></td></tr>
+        </tbody>
+    </table>
+
+    <h3>5.5 Требования к экрану Statistics</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Категория</th><th>Описание</th><th>Приоритет</th></tr></thead>
+        <tbody>
+            <tr><td>REQ-DD-033</td><td>Данные</td><td>KPI-карточки MUST загружаться через GET /api/stats.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-034</td><td>Данные</td><td>Графики MUST загружаться через GET /api/stats/chart с параметром периода.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-035</td><td>Визуализация</td><td>MUST быть представлены 4 KPI-карточки: активные рейсы, всего алертов, HIGH-алерты, resolved rate.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-036</td><td>Визуализация</td><td>MUST быть представлены минимум 2 графика Chart.js: рейсы по дням (line), алерты по severity (stacked bar).</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-037</td><td>Фильтрация</td><td>MUST поддерживаться выбор периода: сегодня, эта неделя, прошлая неделя.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-038</td><td>Условная окраска</td><td>KPI resolved rate MUST быть зелёным если ≥85%, красным если &lt;85%.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-039</td><td>Обновление</td><td>KPI-карточки SHOULD обновляться каждые 30 секунд.</td><td><span class="badge badge-should">SHOULD</span></td></tr>
+        </tbody>
+    </table>
+
+    <h3>5.6 Общесистемные требования</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Категория</th><th>Описание</th><th>Приоритет</th></tr></thead>
+        <tbody>
+            <tr><td>REQ-DD-040</td><td>Соединение</td><td>При потере соединения с API MUST отображаться предупреждающий баннер. Polling MUST продолжаться до восстановления.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-041</td><td>Навигация</td><td>Глобальная навигация (top nav bar) MUST присутствовать на всех экранах кроме Login.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-042</td><td>Адаптивность</td><td>Дашборд MUST корректно отображаться при ширине экрана ≥1280px.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-043</td><td>Производительность</td><td>Polling 3 сек MUST не приводить к визуальному «дёрганью» или полной перезагрузке страницы.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-044</td><td>Авторизация</td><td>Все API-запросы MUST включать заголовок Authorization: Bearer {jwt}.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-DD-045</td><td>Авторизация</td><td>При получении HTTP 401 от API MUST выполняться автоматический logout и редирект на Login.</td><td><span class="badge badge-must">MUST</span></td></tr>
+        </tbody>
+    </table>
+
+    <h3>5.7 Критерии приёмки</h3>
+    <table>
+        <thead><tr><th>ID</th><th>REQ</th><th>Критерий</th><th>Метод проверки</th></tr></thead>
+        <tbody>
+            <tr><td>AC-DD-001</td><td>REQ-DD-001</td><td>Given пользователь открывает дашборд, When он не авторизован, Then отображается экран с двумя полями: email и password</td><td>Ручное тестирование</td></tr>
+            <tr><td>AC-DD-002</td><td>REQ-DD-003</td><td>Given поля email и password пусты, When пользователь смотрит на кнопку входа, Then кнопка имеет атрибут disabled и не реагирует на клик</td><td>Проверка DOM</td></tr>
+            <tr><td>AC-DD-003</td><td>REQ-DD-004</td><td>Given пользователь ввёл неверный пароль и нажал войти, When API вернул HTTP 401, Then под формой появляется текст об ошибке без перезагрузки страницы</td><td>Ручное тестирование с mock API</td></tr>
+            <tr><td>AC-DD-004</td><td>REQ-DD-005</td><td>Given успешная аутентификация, When пользователь открывает DevTools → Application → LocalStorage, Then присутствует ключ с JWT-токеном</td><td>Инструменты разработчика</td></tr>
+            <tr><td>AC-DD-005</td><td>REQ-DD-006</td><td>Given успешный вход, When редирект произошёл, Then URL браузера содержит /trips и отображается таблица рейсов</td><td>Ручное тестирование</td></tr>
+            <tr><td>AC-DD-006</td><td>REQ-DD-010</td><td>Given экран Active Trips открыт, When проходит 3 секунды, Then в Network DevTools видна новая транзакция GET /api/trips</td><td>Инструменты разработчика</td></tr>
+            <tr><td>AC-DD-007</td><td>REQ-DD-011</td><td>Given рейс TRP-001 имеет active HIGH-алерт, When таблица отрисована, Then строка TRP-001 имеет фон #fef2f2 и символ ● в первой колонке</td><td>Визуальная проверка + CSS audit</td></tr>
+            <tr><td>AC-DD-008</td><td>REQ-DD-012</td><td>Given таблица загружена без фильтров, When просматривается порядок строк, Then рейсы с HIGH-алертами стоят выше рейсов с MEDIUM, а MEDIUM выше рейсов без алертов</td><td>Ручное тестирование</td></tr>
+            <tr><td>AC-DD-009</td><td>REQ-DD-013</td><td>Given в фильтре выбран заказчик «WB», When таблица обновилась, Then в ней отображаются только рейсы с customer=WB</td><td>Ручное тестирование</td></tr>
+            <tr><td>AC-DD-010</td><td>REQ-DD-014</td><td>Given таблица рейсов отображена, When пользователь кликает на строку рейса TRP-2026-00412, Then происходит переход на /trips/TRP-2026-00412</td><td>Ручное тестирование</td></tr>
+            <tr><td>AC-DD-011</td><td>REQ-DD-019</td><td>Given алерт с severity=HIGH отображён в ленте, When смотрим на badge, Then badge имеет красный фон (#ef4444) и белый текст «HIGH»</td><td>CSS audit + визуальная проверка</td></tr>
+            <tr><td>AC-DD-012</td><td>REQ-DD-020</td><td>Given алерт со статусом new и роль manager, When нажата кнопка «Взять в работу», Then выполняется PATCH /api/alerts/{id} с body {status: "reviewed"} и карточка обновляется</td><td>Ручное тестирование + Network audit</td></tr>
+            <tr><td>AC-DD-013</td><td>REQ-DD-022</td><td>Given пользователь вошёл с ролью viewer, When смотрим на карточки алертов, Then кнопки «Взять в работу» и «Решено» отсутствуют</td><td>Ручное тестирование с viewer-аккаунтом</td></tr>
+            <tr><td>AC-DD-014</td><td>REQ-DD-027</td><td>Given открыт экран Trip Details для TRP-2026-00412, When страница загрузилась, Then в Network DevTools видна транзакция GET /api/chats/TRP-2026-00412</td><td>Инструменты разработчика</td></tr>
+            <tr><td>AC-DD-015</td><td>REQ-DD-029</td><td>Given пользователь на экране Trip Details (открытом из Active Trips), When просматривает верхнюю часть экрана, Then присутствует breadcrumb «Active Trips &gt; TRP-2026-00412» с рабочей ссылкой</td><td>Ручное тестирование</td></tr>
+            <tr><td>AC-DD-016</td><td>REQ-DD-033</td><td>Given открыт экран Statistics, When страница загрузилась, Then отображаются 4 карточки с числовыми значениями из /api/stats</td><td>Ручное тестирование + Network audit</td></tr>
+            <tr><td>AC-DD-017</td><td>REQ-DD-037</td><td>Given экран Statistics, When пользователь выбирает период «Эта неделя», Then выполняется новый запрос GET /api/stats/chart с параметром week и графики перерисовываются</td><td>Ручное тестирование + Network audit</td></tr>
+            <tr><td>AC-DD-018</td><td>REQ-DD-038</td><td>Given resolved rate = 78% (меньше 85%), When KPI-карточка отрисована, Then карточка имеет красную цветовую схему</td><td>Ручное тестирование с mock данными</td></tr>
+            <tr><td>AC-DD-019</td><td>REQ-DD-040</td><td>Given polling запущен, When API недоступен (симуляция через DevTools → Network → Offline), Then появляется предупреждающий баннер «Нет соединения с сервером» и polling продолжает попытки</td><td>Ручное тестирование</td></tr>
+            <tr><td>AC-DD-020</td><td>REQ-DD-045</td><td>Given пользователь авторизован и смотрит Active Trips, When API возвращает HTTP 401, Then пользователь перенаправляется на Login и localStorage очищен</td><td>Ручное тестирование с mock API</td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>6. Часть 4: Компонентная модель</h2>
+
+    <h3>6.1 Реестр компонентов</h3>
+    <table>
+        <thead><tr><th>Компонент</th><th>Назначение</th><th>API Dependency</th><th>Входные данные (props)</th></tr></thead>
+        <tbody>
+            <tr><td><code>LoginForm</code></td><td>Форма аутентификации</td><td>POST /api/auth/login</td><td>—</td></tr>
+            <tr><td><code>TopNav</code></td><td>Глобальная навигация</td><td>—</td><td>currentUser: {email, role}, activePage: string</td></tr>
+            <tr><td><code>ConnectionIndicator</code></td><td>Индикатор соединения и времени обновления</td><td>GET /api/health</td><td>lastUpdated: Date, isConnected: boolean</td></tr>
+            <tr><td><code>TripTable</code></td><td>Таблица активных рейсов</td><td>GET /api/trips</td><td>trips: Trip[], onRowClick: function</td></tr>
+            <tr><td><code>TripTableRow</code></td><td>Строка таблицы рейса</td><td>—</td><td>trip: Trip, alerts: Alert[]</td></tr>
+            <tr><td><code>TripFilters</code></td><td>Панель фильтров для таблицы рейсов</td><td>—</td><td>onFilterChange: function, customers: string[]</td></tr>
+            <tr><td><code>AlertCard</code></td><td>Карточка алерта</td><td>PATCH /api/alerts/{id}</td><td>alert: Alert, userRole: string, onStatusChange: function</td></tr>
+            <tr><td><code>SeverityBadge</code></td><td>Цветной badge уровня критичности</td><td>—</td><td>severity: "HIGH" | "MEDIUM" | "LOW"</td></tr>
+            <tr><td><code>StatusBadge</code></td><td>Цветной badge статуса алерта</td><td>—</td><td>status: "new" | "reviewed" | "resolved"</td></tr>
+            <tr><td><code>AlertFilters</code></td><td>Панель фильтров для ленты алертов</td><td>—</td><td>onFilterChange: function</td></tr>
+            <tr><td><code>TripInfoCard</code></td><td>Карточка информации о рейсе</td><td>GET /api/trips/{id}</td><td>trip: Trip</td></tr>
+            <tr><td><code>ChatHistory</code></td><td>История сообщений из чата</td><td>GET /api/chats/{trip_id}</td><td>tripId: string, messages: ChatMessage[]</td></tr>
+            <tr><td><code>ChatMessage</code></td><td>Одно сообщение из чата</td><td>—</td><td>message: ChatMessage, hasAlert: boolean</td></tr>
+            <tr><td><code>AlertList</code></td><td>Список алертов по рейсу</td><td>GET /api/alerts</td><td>tripId: string, alerts: Alert[], userRole: string</td></tr>
+            <tr><td><code>Breadcrumb</code></td><td>Навигационная цепочка</td><td>—</td><td>items: {label: string, href: string}[]</td></tr>
+            <tr><td><code>KpiCard</code></td><td>Карточка ключевого показателя</td><td>GET /api/stats</td><td>title: string, value: number|string, delta: number, status: "ok"|"warn"|"crit"</td></tr>
+            <tr><td><code>PeriodSelector</code></td><td>Выбор временного периода</td><td>—</td><td>selectedPeriod: string, onChange: function</td></tr>
+            <tr><td><code>LineChart</code></td><td>Линейный график (Chart.js)</td><td>GET /api/stats/chart</td><td>data: ChartData, title: string</td></tr>
+            <tr><td><code>StackedBarChart</code></td><td>Составной столбчатый график (Chart.js)</td><td>GET /api/stats/chart</td><td>data: ChartData, title: string</td></tr>
+            <tr><td><code>BarChart</code></td><td>Простой столбчатый график (Chart.js)</td><td>GET /api/stats/chart</td><td>data: ChartData, title: string</td></tr>
+            <tr><td><code>OfflineBanner</code></td><td>Предупреждение о потере соединения</td><td>GET /api/health</td><td>isVisible: boolean</td></tr>
+            <tr><td><code>LoadingSpinner</code></td><td>Индикатор загрузки</td><td>—</td><td>size: "sm"|"md"|"lg"</td></tr>
+            <tr><td><code>ErrorMessage</code></td><td>Отображение ошибки</td><td>—</td><td>message: string</td></tr>
+            <tr><td><code>Pagination</code></td><td>Пагинация таблицы</td><td>—</td><td>currentPage: number, totalPages: number, onChange: function</td></tr>
+        </tbody>
+    </table>
+
+    <h3>6.2 Цветовая система</h3>
+
+    <h4>6.2.1 Severity palette</h4>
+    <table>
+        <thead><tr><th>Severity</th><th>Фон badge</th><th>Текст badge</th><th>Фон строки/карточки</th><th>Граница</th></tr></thead>
+        <tbody>
+            <tr>
+                <td>HIGH</td>
+                <td><span class="color-swatch" style="background:#ef4444;"></span>#ef4444</td>
+                <td>#ffffff</td>
+                <td><span class="color-swatch" style="background:#fef2f2;"></span>#fef2f2</td>
+                <td>#fca5a5</td>
+            </tr>
+            <tr>
+                <td>MEDIUM</td>
+                <td><span class="color-swatch" style="background:#f59e0b;"></span>#f59e0b</td>
+                <td>#ffffff</td>
+                <td><span class="color-swatch" style="background:#fffbeb;"></span>#fffbeb</td>
+                <td>#fcd34d</td>
+            </tr>
+            <tr>
+                <td>LOW</td>
+                <td><span class="color-swatch" style="background:#10b981;"></span>#10b981</td>
+                <td>#ffffff</td>
+                <td><span class="color-swatch" style="background:#ecfdf5;"></span>#ecfdf5</td>
+                <td>#6ee7b7</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>6.2.2 Status palette</h4>
+    <table>
+        <thead><tr><th>Статус</th><th>Цвет badge</th><th>Фон badge</th><th>Описание</th></tr></thead>
+        <tbody>
+            <tr><td>new</td><td>#1e40af</td><td><span class="color-swatch" style="background:#dbeafe;"></span>#dbeafe</td><td>Новый, не взят в работу</td></tr>
+            <tr><td>reviewed</td><td>#1d4ed8</td><td><span class="color-swatch" style="background:#bfdbfe;"></span>#bfdbfe</td><td>Взят в работу</td></tr>
+            <tr><td>resolved</td><td>#6b7280</td><td><span class="color-swatch" style="background:#f3f4f6;"></span>#f3f4f6</td><td>Решён, неактивен</td></tr>
+        </tbody>
+    </table>
+
+    <h4>6.2.3 KPI Cards palette</h4>
+    <table>
+        <thead><tr><th>Состояние</th><th>Граница карточки</th><th>Иконка/акцент</th><th>Условие</th></tr></thead>
+        <tbody>
+            <tr><td>neutral</td><td>#e5e7eb</td><td>#6b7280</td><td>Нет условий</td></tr>
+            <tr><td>ok</td><td><span class="color-swatch" style="background:#10b981;"></span>#10b981</td><td>#065f46</td><td>Метрика в норме</td></tr>
+            <tr><td>warning</td><td><span class="color-swatch" style="background:#f59e0b;"></span>#f59e0b</td><td>#92400e</td><td>Метрика близка к границе</td></tr>
+            <tr><td>critical</td><td><span class="color-swatch" style="background:#ef4444;"></span>#ef4444</td><td>#991b1b</td><td>Метрика за пределами нормы</td></tr>
+        </tbody>
+    </table>
+
+    <h4>6.2.4 Базовые цвета интерфейса</h4>
+    <table>
+        <thead><tr><th>Назначение</th><th>Цвет</th></tr></thead>
+        <tbody>
+            <tr><td>Фон страницы</td><td><span class="color-swatch" style="background:#f9fafb;border:1px solid #ccc;"></span>#f9fafb</td></tr>
+            <tr><td>Фон карточек/панелей</td><td><span class="color-swatch" style="background:#ffffff;border:1px solid #ccc;"></span>#ffffff</td></tr>
+            <tr><td>Основной текст</td><td><span class="color-swatch" style="background:#111827;"></span>#111827</td></tr>
+            <tr><td>Вторичный текст</td><td><span class="color-swatch" style="background:#6b7280;"></span>#6b7280</td></tr>
+            <tr><td>Граница элементов</td><td><span class="color-swatch" style="background:#e5e7eb;border:1px solid #ccc;"></span>#e5e7eb</td></tr>
+            <tr><td>Фон nav bar</td><td><span class="color-swatch" style="background:#1e3a5f;"></span>#1e3a5f (тёмно-синий)</td></tr>
+            <tr><td>Кнопка Primary</td><td><span class="color-swatch" style="background:#1d4ed8;"></span>#1d4ed8</td></tr>
+            <tr><td>Кнопка Secondary</td><td><span class="color-swatch" style="background:#6b7280;"></span>#6b7280</td></tr>
+            <tr><td>Кнопка Danger</td><td><span class="color-swatch" style="background:#ef4444;"></span>#ef4444</td></tr>
+        </tbody>
+    </table>
+
+    <h3>6.3 Типографика</h3>
+
+    <h4>6.3.1 Шрифтовая пара</h4>
+    <table>
+        <thead><tr><th>Назначение</th><th>Семейство</th><th>Источник</th></tr></thead>
+        <tbody>
+            <tr><td>Основной интерфейс</td><td>Inter</td><td>Google Fonts (CDN)</td></tr>
+            <tr><td>Моноширинный (chat, trip_id)</td><td>JetBrains Mono</td><td>Google Fonts (CDN)</td></tr>
+        </tbody>
+    </table>
+
+    <h4>6.3.2 Типографическая шкала</h4>
+    <table>
+        <thead><tr><th>Роль</th><th>Семейство</th><th>Размер</th><th>Насыщенность</th><th>Применение</th></tr></thead>
+        <tbody>
+            <tr><td>Display</td><td>Inter</td><td>24px</td><td>700</td><td>Заголовок страницы, большие KPI-цифры</td></tr>
+            <tr><td>H1</td><td>Inter</td><td>20px</td><td>600</td><td>Заголовки секций</td></tr>
+            <tr><td>H2</td><td>Inter</td><td>16px</td><td>600</td><td>Заголовки подсекций, заголовки карточек</td></tr>
+            <tr><td>Body</td><td>Inter</td><td>14px</td><td>400</td><td>Основной текст, описания алертов</td></tr>
+            <tr><td>Small</td><td>Inter</td><td>12px</td><td>400</td><td>Метки, временные метки, вспомогательная информация</td></tr>
+            <tr><td>Mono</td><td>JetBrains Mono</td><td>13px</td><td>400</td><td>Trip ID, номера ТС, сообщения чата</td></tr>
+            <tr><td>Badge</td><td>Inter</td><td>11px</td><td>600</td><td>Текст в severity/status badge</td></tr>
+            <tr><td>Button</td><td>Inter</td><td>14px</td><td>500</td><td>Тексты кнопок</td></tr>
+        </tbody>
+    </table>
+
+    <h4>6.3.3 Правила применения типографики</h4>
+    <ul>
+        <li><strong>REQ-TYP-001:</strong> Числовые KPI отображаются шрифтом Inter 32px 700 для мгновенного считывания.</li>
+        <li><strong>REQ-TYP-002:</strong> Trip ID в таблицах и карточках MUST отображаться моноширинным шрифтом JetBrains Mono.</li>
+        <li><strong>REQ-TYP-003:</strong> Временные метки MUST отображаться шрифтом Small 12px #6b7280.</li>
+        <li><strong>REQ-TYP-004:</strong> Описания алертов MUST отображаться Body 14px, максимум 3 строки с многоточием в свёрнутом состоянии карточки.</li>
+        <li><strong>REQ-TYP-005:</strong> Сообщения в истории чата MUST отображаться JetBrains Mono 13px для сохранения оригинального форматирования.</li>
+    </ul>
+
+    <h3>6.4 Компоновка и сетка</h3>
+
+    <h4>6.4.1 Глобальная компоновка</h4>
+    <pre><code>+--------------------------------------------+
+| TOP NAV BAR (60px высота, фиксированный)   |
++--------------------------------------------+
+| PAGE HEADER (48px)                         |
+| (заголовок + счётчик + индикатор обновления)|
++--------------------------------------------+
+| FILTERS PANEL (56px, collapsible)          |
++--------------------------------------------+
+|                                            |
+| MAIN CONTENT AREA                          |
+| (flex grow, scroll)                        |
+|                                            |
++--------------------------------------------+</code></pre>
+
+    <h4>6.4.2 Отступы и размеры</h4>
+    <table>
+        <thead><tr><th>Параметр</th><th>Значение</th></tr></thead>
+        <tbody>
+            <tr><td>Горизонтальные поля страницы</td><td>24px</td></tr>
+            <tr><td>Вертикальные отступы между секциями</td><td>20px</td></tr>
+            <tr><td>Padding карточки алерта</td><td>16px</td></tr>
+            <tr><td>Padding ячейки таблицы</td><td>12px 16px</td></tr>
+            <tr><td>Высота строки таблицы</td><td>56px min</td></tr>
+            <tr><td>Радиус скругления карточек</td><td>8px</td></tr>
+            <tr><td>Радиус скругления badge</td><td>4px</td></tr>
+            <tr><td>Тень карточек</td><td>0 1px 3px rgba(0,0,0,0.1)</td></tr>
+        </tbody>
+    </table>
+
+    <h4>6.4.3 Сетка Statistics (4 KPI-карточки)</h4>
+    <pre><code>+----------+ +----------+ +----------+ +----------+
+| Рейсы    | | Алерты   | | HIGH     | | Resolved |
+| 47       | | 12       | | 3        | | 91%      |
++----------+ +----------+ +----------+ +----------+
+
+CSS: grid-template-columns: repeat(4, 1fr); gap: 16px;</code></pre>
+
+    <h4>6.4.4 Сетка Trip Details (2 колонки)</h4>
+    <pre><code>+---------------------+----------------------------------+
+| Инфо о рейсе        | История чата                     |
+| (300px фиксированная)| (flex grow, overflow-y: scroll) |
++---------------------+----------------------------------+
+Нижняя секция алертов — полная ширина: width: 100%</code></pre>
+
+    <!-- ================================================================ -->
+    <h2>7. Требования к доступности (Accessibility)</h2>
+    <table>
+        <thead><tr><th>ID</th><th>Требование</th><th>Приоритет</th></tr></thead>
+        <tbody>
+            <tr><td>REQ-ACC-001</td><td>Все интерактивные элементы (кнопки, ссылки, поля ввода) MUST иметь aria-label или видимый текст.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-ACC-002</td><td>SeverityBadge MUST содержать не только цвет, но и текстовую метку (HIGH/MEDIUM/LOW) для поддержки нарушений цветовосприятия.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-ACC-003</td><td>Цветовые пары (фон/текст) MUST соответствовать WCAG AA контрастности (минимум 4.5:1 для текста).</td><td><span class="badge badge-should">SHOULD</span></td></tr>
+            <tr><td>REQ-ACC-004</td><td>Таблица рейсов MUST использовать семантические теги thead, tbody, th с атрибутом scope.</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-ACC-005</td><td>Сообщения об ошибках MUST аннонсироваться через aria-live для скринридеров.</td><td><span class="badge badge-should">SHOULD</span></td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>8. Требования к производительности</h2>
+    <table>
+        <thead><tr><th>ID</th><th>Требование</th><th>Метрика</th><th>Приоритет</th></tr></thead>
+        <tbody>
+            <tr><td>REQ-PERF-001</td><td>Первоначальная загрузка дашборда (LCP) MUST происходить не более чем за 2 секунды на сети 50Мбит/с.</td><td>LCP ≤ 2000ms</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-PERF-002</td><td>Polling 3 сек MUST не приводить к заметному мерцанию (layout shift). Только изменённые данные обновляются в DOM.</td><td>CLS ≈ 0</td><td><span class="badge badge-must">MUST</span></td></tr>
+            <tr><td>REQ-PERF-003</td><td>Суммарный размер JS/CSS ассетов MUST быть менее 500KB (gzip).</td><td>Bundle ≤ 500KB gzip</td><td><span class="badge badge-should">SHOULD</span></td></tr>
+            <tr><td>REQ-PERF-004</td><td>Рендеринг таблицы с 100 рейсами MUST занимать менее 100ms.</td><td>Render ≤ 100ms</td><td><span class="badge badge-should">SHOULD</span></td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>9. Требования к состояниям загрузки и ошибок</h2>
+    <table>
+        <thead><tr><th>Состояние</th><th>Визуализация</th><th>Применяется к</th></tr></thead>
+        <tbody>
+            <tr><td>Loading (первичная загрузка)</td><td>Скелетон-заглушка (серые блоки нужного размера)</td><td>TripTable, AlertCard (список), KpiCard</td></tr>
+            <tr><td>Loading (polling обновление)</td><td>Тихое обновление данных без индикатора загрузки</td><td>Все данные при polling</td></tr>
+            <tr><td>Empty (нет данных)</td><td>Текстовое сообщение «Нет рейсов» / «Нет алертов» с иконкой</td><td>TripTable, AlertCard (список)</td></tr>
+            <tr><td>Error (API ошибка)</td><td>Текстовое сообщение с кнопкой «Повторить»</td><td>Все данные-компоненты</td></tr>
+            <tr><td>Offline (нет соединения)</td><td>OfflineBanner на весь экран (не модальный)</td><td>Глобально</td></tr>
+            <tr><td>Optimistic Update</td><td>Немедленное визуальное обновление при PATCH, откат при ошибке</td><td>AlertCard (смена статуса)</td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>10. Требования к состоянию клиента</h2>
+    <pre><code>// Глобальное состояние приложения (vanilla JS объект)
+const appState = {
+  // Авторизация
+  auth: {
+    token: null,          // JWT из localStorage
+    user: null,           // { email, role }
+    isAuthenticated: false
+  },
+
+  // Соединение
+  connection: {
+    isOnline: true,
+    lastUpdated: null     // Date последнего успешного poll
+  },
+
+  // Active Trips
+  trips: {
+    data: [],             // Trip[]
+    loading: false,
+    error: null,
+    filters: {
+      customer: null,
+      status: null,
+      hasAlerts: null
+    }
+  },
+
+  // Alerts Feed
+  alerts: {
+    data: [],             // Alert[]
+    loading: false,
+    error: null,
+    filters: {
+      severity: null,
+      status: null,
+      customer: null,
+      dateFrom: null,
+      dateTo: null
+    }
+  },
+
+  // Trip Details
+  tripDetails: {
+    trip: null,           // Trip
+    chatMessages: [],     // ChatMessage[]
+    tripAlerts: [],       // Alert[]
+    loading: false,
+    error: null
+  },
+
+  // Statistics
+  stats: {
+    kpi: null,            // StatsResponse
+    chart: null,          // ChartData
+    period: 'today',      // 'today' | 'week' | 'last_week'
+    loading: false,
+    error: null
+  }
+};</code></pre>
+
+    <!-- ================================================================ -->
+    <h2>11. Схема маршрутизации</h2>
+    <table>
+        <thead><tr><th>URL</th><th>Экран</th><th>Компоненты</th><th>Доступ</th></tr></thead>
+        <tbody>
+            <tr><td>/</td><td>Редирект → /login или /trips</td><td>—</td><td>Публичный</td></tr>
+            <tr><td>/login</td><td>Login</td><td>LoginForm</td><td>Только неавторизованные</td></tr>
+            <tr><td>/trips</td><td>Active Trips</td><td>TopNav, TripTable, TripFilters, ConnectionIndicator</td><td>Авторизованные</td></tr>
+            <tr><td>/trips/:trip_id</td><td>Trip Details</td><td>TopNav, Breadcrumb, TripInfoCard, ChatHistory, AlertList</td><td>Авторизованные</td></tr>
+            <tr><td>/alerts</td><td>Alerts Feed</td><td>TopNav, AlertCard(×N), AlertFilters, ConnectionIndicator</td><td>Авторизованные</td></tr>
+            <tr><td>/stats</td><td>Statistics</td><td>TopNav, KpiCard(×4), PeriodSelector, LineChart, BarChart, StackedBarChart</td><td>Авторизованные</td></tr>
+        </tbody>
+    </table>
+    <p>Маршрутизация реализуется через History API (pushState) или hash-роутинг (#/trips) без серверного рендеринга.</p>
+
+    <!-- ================================================================ -->
+    <h2>12. Граничные случаи</h2>
+
+    <h3>12.1 Таблица рейсов</h3>
+    <pre><code>Случай 1: Рейс без алертов
+- Строка: нормальный белый фон, нет badge-а, нет маркера ●
+- Ячейка алертов: пустая или прочерк
+
+Случай 2: Рейс с 0 active + 5 resolved алертами
+- Алерты resolved не считаются «активными»
+- Строка без красного фона
+- Ячейка алертов: может показывать (5 решено) серым цветом
+
+Случай 3: Рейс одновременно с HIGH и LOW
+- Строка: HIGH-стиль (красный фон), badge HIGH первый
+- Сортировка: данный рейс входит в HIGH-группу
+
+Случай 4: trip_id не распознан системой (null)
+- Отображается «ID не извлечён» в ячейке trip_id
+- Строка кликабельна, Trip Details показывает что известно</code></pre>
+
+    <h3>12.2 Алерты</h3>
+    <pre><code>Случай 1: Алерт без описания от LLM (пустой текст)
+- Карточка показывает тип алерта (delay, equipment_failure и т.д.)
+- Вместо описания: «Подробности не извлечены системой»
+
+Случай 2: Одновременный PATCH от двух менеджеров
+- Второй PATCH получает ответ с актуальным статусом
+- Polling обновит карточку через ≤3 сек
+- Оптимистичное обновление откатывается если статус изменился
+
+Случай 3: Более 100 алертов за день
+- Пагинация или «Загрузить ещё» (инкрементальный скролл)
+- Первые 20 алертов загружаются при открытии</code></pre>
+
+    <h3>12.3 Statistics</h3>
+    <pre><code>Случай 1: Нет данных за выбранный период
+- KPI-карточки показывают 0
+- Графики показывают пустую область с надписью «Нет данных за период»
+
+Случай 2: resolved_rate = 0% (все алерты open)
+- KPI-карточка: красная, значение «0%»
+- Не скрывать — это важный сигнал
+
+Случай 3: HIGH-алертов = 0 за период
+- KPI-карточка: зелёная (ниже нормы = хорошо)
+
+Случай 4: Chart.js получил пустой dataset
+- График отрисовывается с пустыми осями
+- Нет JavaScript ошибки</code></pre>
+
+    <!-- ================================================================ -->
+    <h2>13. Критерии соответствия метрикам продукта</h2>
+    <table>
+        <thead><tr><th>Метрика</th><th>ID метрики</th><th>Как проверить через дашборд</th></tr></thead>
+        <tbody>
+            <tr><td>Точность парсинга trip_id ≥85%</td><td>М1</td><td>Statistics → % рейсов с распознанным trip_id</td></tr>
+            <tr><td>Latency ≤5 сек</td><td>М2</td><td>Время от сообщения в чате до появления данных в polling-обновлении дашборда</td></tr>
+            <tr><td>Uptime ≥99%</td><td>М3</td><td>OfflineBanner не появлялся более 7.2 мин/сутки</td></tr>
+            <tr><td>HIGH-алерты 5–15/день</td><td>М4</td><td>Statistics → KPI HIGH-алертов</td></tr>
+            <tr><td>Николя понимает алерт в ≥90%</td><td>М7</td><td>Карточка алерта содержит все 4 обязательных поля: тип, описание, рейс, время</td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>14. Зависимости</h2>
+
+    <h3>14.1 Внешние зависимости (CDN)</h3>
+    <table>
+        <thead><tr><th>Ресурс</th><th>Тип</th><th>Версия</th><th>Назначение</th></tr></thead>
+        <tbody>
+            <tr><td>Chart.js</td><td>JS библиотека</td><td>≥4.0</td><td>Графики на экране Statistics</td></tr>
+            <tr><td>Inter (Google Fonts)</td><td>CSS шрифт</td><td>—</td><td>Основной интерфейсный шрифт</td></tr>
+            <tr><td>JetBrains Mono (Google Fonts)</td><td>CSS шрифт</td><td>—</td><td>Моноширинный шрифт для ID и чата</td></tr>
+        </tbody>
+    </table>
+
+    <!-- ================================================================ -->
+    <h2>15. Проверочные критерии (Validation)</h2>
+    <p>Спецификация считается выполненной когда:</p>
+    <ul>
+        <li>Все 5 экранов реализованы согласно ASCII-вайрфреймам</li>
+        <li>Все REQ-DD с приоритетом MUST реализованы (45 требований)</li>
+        <li>Все 20 AC-DD прошли ручную проверку</li>
+        <li>Polling работает на всех экранах с указанными интервалами</li>
+        <li>SeverityBadge использует точные цвета: HIGH=#ef4444, MEDIUM=#f59e0b, LOW=#10b981</li>
+        <li>Роль viewer не видит кнопок изменения статуса</li>
+        <li>OfflineBanner появляется при потере соединения</li>
+        <li>Автоматический logout при HTTP 401</li>
+        <li>KPI-карточки resolved_rate цветовая индикация работает корректно</li>
+        <li>Trip Details корректно загружает /api/chats/{trip_id}</li>
+        <li>Breadcrumb навигация работает для обоих сценариев (из Trips и из Alerts)</li>
+        <li>Экран Statistics перерисовывает графики при смене периода</li>
+    </ul>
+
+    <!-- ================================================================ -->
+    <h2>16. Связанные документы</h2>
+    <ul>
+        <li><a href="spec-tool-dashboard-api.html">spec-tool-dashboard-api.html</a> — API-контракт (endpoints, форматы, авторизация)</li>
+        <li><a href="spec-data-schema.html">spec-data-schema.html</a> — схемы данных (Trip, Alert, ChatMessage)</li>
+        <li><a href="product_brief.html">product_brief.html</a> — продуктовый бриф, заказчики, бизнес-контекст</li>
+        <li>Chart.js Documentation: <a href="https://www.chartjs.org/docs/latest/" target="_blank">https://www.chartjs.org/docs/latest/</a></li>
+        <li>Inter Font: <a href="https://fonts.google.com/specimen/Inter" target="_blank">https://fonts.google.com/specimen/Inter</a></li>
+        <li>JetBrains Mono: <a href="https://fonts.google.com/specimen/JetBrains+Mono" target="_blank">https://fonts.google.com/specimen/JetBrains+Mono</a></li>
+        <li>WCAG 2.1 AA: <a href="https://www.w3.org/TR/WCAG21/" target="_blank">https://www.w3.org/TR/WCAG21/</a></li>
+    </ul>
+
+</div>
+</body>
+</html>
