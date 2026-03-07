@@ -747,8 +747,8 @@ async function loadAlerts() {
       </div>
       ${userRole !== 'viewer' && a.status !== 'resolved' ? `
         <div class="alert-actions">
-          ${a.status === 'new' ? '<button class="btn btn-outline" onclick="patchAlert('+a.id+\',\'reviewed\')">Взять в работу</button>' : ''}
-          ${a.status !== 'resolved' ? '<button class="btn btn-success" onclick="patchAlert('+a.id+\',\'resolved\')">Решено</button>' : ''}
+          ${a.status === 'new' ? '<button class="btn btn-outline" onclick="patchAlert('+a.id+',\'reviewed\')">Взять в работу</button>' : ''}
+          ${a.status !== 'resolved' ? '<button class="btn btn-success" onclick="patchAlert('+a.id+',\'resolved\')">Решено</button>' : ''}
         </div>
       ` : ''}
     </div>
