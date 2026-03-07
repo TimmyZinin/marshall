@@ -533,12 +533,14 @@ tbody tr:last-child td { border-bottom: none; }
 
       <!-- ═══ TRIP DETAIL ═══ -->
       <div id="page-detail" class="page">
-        <div style="margin-bottom:16px">
-          <button class="btn btn-ghost" onclick="navigate('trips')">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
-            Назад к рейсам
-          </button>
-        </div>
+        <nav style="margin-bottom:16px;display:flex;align-items:center;gap:6px;font-size:13px">
+          <a style="color:var(--blue);cursor:pointer;font-weight:500" onclick="navigate(window._detailSource||'trips')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:-2px;margin-right:2px"><path d="M15 19l-7-7 7-7"/></svg>
+            <span id="breadcrumb-back">Рейсы</span>
+          </a>
+          <span style="color:var(--text-muted)">/</span>
+          <span style="color:var(--text);font-weight:600" id="breadcrumb-trip">Рейс #—</span>
+        </nav>
         <div class="detail-grid">
           <div>
             <div class="card" style="margin-bottom:16px">
@@ -649,6 +651,10 @@ function navigate(page, param) {
   const link = document.querySelector(`.sidebar-link[data-page="${page}"]`);
   if (link) link.classList.add('active');
   document.getElementById('topbar-title').textContent = pageTitles[page] || '';
+  if (page === 'detail' && window._currentPage && window._currentPage !== 'detail') {
+    window._detailSource = window._currentPage;
+    document.getElementById('breadcrumb-back').textContent = pageTitles[window._currentPage] || 'Рейсы';
+  }
   if (page === 'trips') loadTrips();
   else if (page === 'alerts') loadAlerts();
   else if (page === 'stats') loadStats();
@@ -661,6 +667,7 @@ function refreshCurrentPage() {
   if (window._currentPage === 'trips') loadTrips();
   else if (window._currentPage === 'alerts') loadAlerts();
   else if (window._currentPage === 'stats') loadStats();
+  else if (window._currentPage === 'detail') loadTripDetail();
 }
 
 // ═══ Trips ═══
@@ -762,10 +769,14 @@ async function patchAlert(id, status) {
 
 // ═══ Trip Detail ═══
 async function loadTripDetail(tripId) {
+  if (tripId) window._detailTripId = tripId;
+  else tripId = window._detailTripId;
+  if (!tripId) return;
   const data = await apiFetch('/api/trips/' + tripId);
   if (!data) return;
   const t = data.trip;
   document.getElementById('topbar-title').textContent = 'Рейс ' + t.trip_id;
+  document.getElementById('breadcrumb-trip').textContent = 'Рейс #' + t.trip_id;
   document.getElementById('detail-info').innerHTML = `
     <dt>Номер рейса</dt><dd>${t.trip_id}</dd>
     <dt>Маршрут</dt><dd>${t.route_from || '—'} &rarr; ${t.route_to || '—'}</dd>
@@ -787,6 +798,12 @@ async function loadTripDetail(tripId) {
         </div>
         <div class="alert-feed-body">${escHtml(a.message)}</div>
         <div class="alert-feed-meta"><span>${fmtTime(a.created_at)}</span></div>
+        ${userRole !== 'viewer' && a.status !== 'resolved' ? `
+          <div class="alert-actions">
+            ${a.status === 'new' ? '<button class="btn btn-outline" onclick="patchAlertDetail('+a.id+',\'reviewed\')">Взять в работу</button>' : ''}
+            ${a.status !== 'resolved' ? '<button class="btn btn-success" onclick="patchAlertDetail('+a.id+',\'resolved\')">Решено</button>' : ''}
+          </div>
+        ` : ''}
       </div>
     `).join('');
   document.getElementById('detail-chat').innerHTML = data.messages.length === 0
@@ -798,6 +815,11 @@ async function loadTripDetail(tripId) {
         <div class="text">${escHtml(m.raw_text)}</div>
       </div>
     `).join('');
+}
+
+async function patchAlertDetail(id, status) {
+  await apiFetch('/api/alerts/' + id, { method: 'PATCH', body: JSON.stringify({status}) });
+  loadTripDetail();
 }
 
 // ═══ Stats ═══

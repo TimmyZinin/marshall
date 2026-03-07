@@ -16,24 +16,37 @@ async def list_trips(
 ):
     pool = await get_pool()
     conditions = []
+    t_conditions = []
     params = []
     idx = 1
 
     if customer:
         conditions.append(f"customer = ${idx}")
+        t_conditions.append(f"t.customer = ${idx}")
         params.append(customer)
         idx += 1
     if status:
         conditions.append(f"status = ${idx}")
+        t_conditions.append(f"t.status = ${idx}")
         params.append(status)
         idx += 1
 
     where = "WHERE " + " AND ".join(conditions) if conditions else ""
+    t_where = "WHERE " + " AND ".join(t_conditions) if t_conditions else ""
     offset = (page - 1) * limit
 
     total = await pool.fetchval(f"SELECT COUNT(*) FROM trips {where}", *params)
     rows = await pool.fetch(
-        f"SELECT * FROM trips {where} ORDER BY updated_at DESC LIMIT ${idx} OFFSET ${idx+1}",
+        f"""SELECT t.*, COALESCE(ha.high_count, 0) as high_alert_count
+            FROM trips t
+            LEFT JOIN (
+                SELECT trip_id, COUNT(*) as high_count
+                FROM alerts WHERE severity = 'high' AND status != 'resolved'
+                GROUP BY trip_id
+            ) ha ON t.trip_id = ha.trip_id
+            {t_where}
+            ORDER BY COALESCE(ha.high_count, 0) DESC, t.alert_count DESC, t.updated_at DESC
+            LIMIT ${idx} OFFSET ${idx+1}""",
         *params, limit, offset,
     )
     return {
