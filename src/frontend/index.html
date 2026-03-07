@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marshall AI Listener</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+:root {
+  --primary: #2563eb; --primary-dark: #1d4ed8; --primary-light: #dbeafe;
+  --success: #10b981; --success-light: #d1fae5;
+  --warning: #f59e0b; --warning-light: #fef3c7;
+  --danger: #ef4444; --danger-light: #fee2e2;
+  --bg: #f1f5f9; --card: #fff; --text: #1e293b; --muted: #64748b; --border: #e2e8f0;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+
+/* Nav */
+.nav { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); padding: 0 24px; display: flex; align-items: center; height: 56px; box-shadow: 0 2px 8px rgba(0,0,0,.15); position: sticky; top: 0; z-index: 100; }
+.nav-brand { color: #fff; font-weight: 700; font-size: 18px; margin-right: 32px; cursor: pointer; }
+.nav-links { display: flex; gap: 4px; flex: 1; }
+.nav-link { color: rgba(255,255,255,.8); text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all .2s; }
+.nav-link:hover, .nav-link.active { background: rgba(255,255,255,.2); color: #fff; }
+.nav-right { display: flex; align-items: center; gap: 12px; }
+.nav-user { color: rgba(255,255,255,.8); font-size: 13px; }
+.nav-btn { background: rgba(255,255,255,.15); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.nav-btn:hover { background: rgba(255,255,255,.3); }
+.demo-badge { background: var(--warning); color: #000; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+
+/* Layout */
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.page { display: none; }
+.page.active { display: block; }
+
+/* Cards */
+.card { background: var(--card); border-radius: 12px; padding: 24px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 20px; }
+
+/* KPI row */
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.kpi-card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); text-align: center; }
+.kpi-value { font-size: 2rem; font-weight: 700; color: var(--primary); }
+.kpi-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.kpi-card.danger .kpi-value { color: var(--danger); }
+.kpi-card.success .kpi-value { color: var(--success); }
+.kpi-card.warning .kpi-value { color: var(--warning); }
+
+/* Table */
+table { width: 100%; border-collapse: collapse; }
+th { background: var(--bg); color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--border); }
+td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+tr:hover { background: var(--primary-light); cursor: pointer; }
+tr.no-hover:hover { background: transparent; cursor: default; }
+
+/* Badges */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.badge-high { background: var(--danger-light); color: var(--danger); }
+.badge-medium { background: var(--warning-light); color: #b45309; }
+.badge-low { background: var(--primary-light); color: var(--primary); }
+.badge-new { background: var(--danger-light); color: var(--danger); }
+.badge-reviewed { background: var(--warning-light); color: #b45309; }
+.badge-resolved { background: var(--success-light); color: var(--success); }
+.badge-status { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.status-assigned { background: var(--primary-light); color: var(--primary); }
+.status-in_transit { background: #dbeafe; color: #1d4ed8; }
+.status-loading { background: var(--warning-light); color: #b45309; }
+.status-unloading { background: #fef3c7; color: #92400e; }
+.status-completed { background: var(--success-light); color: var(--success); }
+.status-problem { background: var(--danger-light); color: var(--danger); }
+.status-cancelled { background: #f1f5f9; color: var(--muted); }
+
+/* Filters */
+.filters { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+.filters select, .filters input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #fff; }
+
+/* Alert cards */
+.alert-card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); margin-bottom: 12px; border-left: 4px solid var(--border); }
+.alert-card.high { border-left-color: var(--danger); }
+.alert-card.medium { border-left-color: var(--warning); }
+.alert-card.low { border-left-color: var(--primary); }
+.alert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.alert-meta { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.alert-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+/* Buttons */
+.btn { padding: 6px 16px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer; font-weight: 500; transition: all .2s; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-outline:hover { background: var(--bg); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Login */
+.login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #1e293b, #0f172a); }
+.login-card { background: #fff; border-radius: 16px; padding: 48px; width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.login-card h1 { font-size: 24px; margin-bottom: 8px; }
+.login-card p { color: var(--muted); margin-bottom: 24px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.form-group input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
+.login-btn { width: 100%; padding: 12px; font-size: 15px; margin-top: 8px; }
+.login-error { color: var(--danger); font-size: 13px; margin-top: 8px; display: none; }
+
+/* Trip detail */
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.detail-info dt { font-size: 12px; color: var(--muted); text-transform: uppercase; }
+.detail-info dd { font-size: 15px; font-weight: 500; margin-bottom: 12px; }
+.chat-msg { padding: 10px 14px; border-radius: 10px; background: var(--bg); margin-bottom: 8px; }
+.chat-msg .sender { font-size: 12px; font-weight: 600; color: var(--primary); }
+.chat-msg .time { font-size: 11px; color: var(--muted); float: right; }
+.chat-msg .text { font-size: 14px; margin-top: 4px; }
+
+/* Charts */
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 768px) { .chart-grid, .detail-grid { grid-template-columns: 1fr; } }
+
+/* Pagination */
+.pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="login-page" class="login-page">
+  <div class="login-card">
+    <h1>Marshall AI Listener</h1>
+    <p>Система мониторинга диспетчерских чатов</p>
+    <div class="form-group">
+      <label>Логин</label>
+      <input type="text" id="login-user" placeholder="username" value="manager">
+    </div>
+    <div class="form-group">
+      <label>Пароль</label>
+      <input type="password" id="login-pass" placeholder="password" value="manager123">
+    </div>
+    <button class="btn btn-primary login-btn" onclick="doLogin()">Войти</button>
+    <div id="login-error" class="login-error"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+  <div class="nav">
+    <span class="nav-brand" onclick="navigate('trips')">Marshall</span>
+    <div class="nav-links">
+      <a class="nav-link active" data-page="trips" onclick="navigate('trips')">Рейсы</a>
+      <a class="nav-link" data-page="alerts" onclick="navigate('alerts')">Алерты</a>
+      <a class="nav-link" data-page="stats" onclick="navigate('stats')">Статистика</a>
+    </div>
+    <div class="nav-right">
+      <span id="demo-badge" class="demo-badge" style="display:none">DEMO</span>
+      <span class="nav-user" id="nav-user"></span>
+      <button class="nav-btn" onclick="doLogout()">Выйти</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- TRIPS PAGE -->
+    <div id="page-trips" class="page active">
+      <h2 style="margin-bottom:16px">Активные рейсы</h2>
+      <div class="filters">
+        <select id="filter-customer" onchange="loadTrips()">
+          <option value="">Все заказчики</option>
+          <option>Тандер</option><option>WB</option><option>X5</option>
+          <option>Магнит</option><option>Сельта</option><option>Сибур</option>
+        </select>
+        <select id="filter-status" onchange="loadTrips()">
+          <option value="">Все статусы</option>
+          <option value="assigned">Назначен</option>
+          <option value="in_transit">В пути</option>
+          <option value="loading">Погрузка</option>
+          <option value="unloading">Выгрузка</option>
+          <option value="completed">Завершён</option>
+          <option value="problem">Проблема</option>
+        </select>
+      </div>
+      <div class="card" style="padding:0;overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>Рейс</th><th>Маршрут</th><th>Заказчик</th><th>Водитель</th>
+            <th>Статус</th><th>Алерты</th><th>Обновлён</th>
+          </tr></thead>
+          <tbody id="trips-tbody"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="trips-pagination"></div>
+    </div>
+
+    <!-- ALERTS PAGE -->
+    <div id="page-alerts" class="page">
+      <h2 style="margin-bottom:16px">Лента алертов</h2>
+      <div class="filters">
+        <select id="alert-severity" onchange="loadAlerts()">
+          <option value="">Все уровни</option>
+          <option value="high">HIGH</option><option value="medium">MEDIUM</option><option value="low">LOW</option>
+        </select>
+        <select id="alert-status" onchange="loadAlerts()">
+          <option value="">Все статусы</option>
+          <option value="new">Новые</option><option value="reviewed">В работе</option><option value="resolved">Решено</option>
+        </select>
+        <select id="alert-customer" onchange="loadAlerts()">
+          <option value="">Все заказчики</option>
+          <option>Тандер</option><option>WB</option><option>X5</option>
+          <option>Магнит</option><option>Сельта</option><option>Сибур</option>
+        </select>
+      </div>
+      <div id="alerts-list"></div>
+      <div class="pagination" id="alerts-pagination"></div>
+    </div>
+
+    <!-- TRIP DETAIL PAGE -->
+    <div id="page-detail" class="page">
+      <div style="margin-bottom:16px">
+        <button class="btn btn-outline" onclick="navigate('trips')">← Назад к рейсам</button>
+      </div>
+      <div class="detail-grid">
+        <div>
+          <div class="card">
+            <h3 style="margin-bottom:16px">Информация о рейсе</h3>
+            <dl class="detail-info" id="detail-info"></dl>
+          </div>
+          <div class="card">
+            <h3 style="margin-bottom:12px">Алерты по рейсу</h3>
+            <div id="detail-alerts"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="margin-bottom:12px">История чата</h3>
+          <div id="detail-chat"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS PAGE -->
+    <div id="page-stats" class="page">
+      <h2 style="margin-bottom:16px">Статистика</h2>
+      <div class="kpi-row" id="stats-kpis"></div>
+      <div class="chart-grid">
+        <div class="card"><canvas id="chart-timeline"></canvas></div>
+        <div class="card"><canvas id="chart-customers"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let token = null, userRole = null, userName = null, demoMode = false;
+let pollInterval = null;
+let timelineChart = null, customerChart = null;
+
+// Auth
+async function doLogin() {
+  const user = document.getElementById('login-user').value;
+  const pass = document.getElementById('login-pass').value;
+  try {
+    const r = await fetch(API + '/api/auth/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username: user, password: pass})
+    });
+    if (!r.ok) { document.getElementById('login-error').style.display='block'; document.getElementById('login-error').textContent='Неверный логин или пароль'; return; }
+    const d = await r.json();
+    token = d.token; userRole = d.role; userName = d.username;
+    localStorage.setItem('marshall_token', token);
+    localStorage.setItem('marshall_role', userRole);
+    localStorage.setItem('marshall_user', userName);
+    showApp();
+  } catch(e) { document.getElementById('login-error').style.display='block'; document.getElementById('login-error').textContent='Ошибка подключения'; }
+}
+
+function doLogout() {
+  token = null; userRole = null; userName = null;
+  localStorage.removeItem('marshall_token');
+  localStorage.removeItem('marshall_role');
+  localStorage.removeItem('marshall_user');
+  if (pollInterval) clearInterval(pollInterval);
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-page').style.display = 'flex';
+}
+
+async function showApp() {
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('nav-user').textContent = userName + ' (' + userRole + ')';
+  // Check demo mode
+  try {
+    const r = await apiFetch('/api/config');
+    demoMode = r.demo_mode;
+    document.getElementById('demo-badge').style.display = demoMode ? 'inline-block' : 'none';
+  } catch(e) {}
+  navigate('trips');
+  pollInterval = setInterval(() => { refreshCurrentPage(); }, 5000);
+}
+
+async function apiFetch(url, opts = {}) {
+  opts.headers = { ...opts.headers, 'Authorization': 'Bearer ' + token };
+  if (opts.body) opts.headers['Content-Type'] = 'application/json';
+  const r = await fetch(API + url, opts);
+  if (r.status === 401) { doLogout(); return null; }
+  return r.json();
+}
+
+// Navigation
+function navigate(page, param) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (el) el.classList.add('active');
+  const link = document.querySelector(`.nav-link[data-page="${page}"]`);
+  if (link) link.classList.add('active');
+  if (page === 'trips') loadTrips();
+  else if (page === 'alerts') loadAlerts();
+  else if (page === 'stats') loadStats();
+  else if (page === 'detail') loadTripDetail(param);
+  window._currentPage = page;
+  window._currentParam = param;
+}
+
+function refreshCurrentPage() {
+  if (window._currentPage === 'trips') loadTrips();
+  else if (window._currentPage === 'alerts') loadAlerts();
+  else if (window._currentPage === 'stats') loadStats();
+}
+
+// Trips
+async function loadTrips() {
+  const customer = document.getElementById('filter-customer').value;
+  const status = document.getElementById('filter-status').value;
+  let url = '/api/trips?limit=20';
+  if (customer) url += '&customer=' + encodeURIComponent(customer);
+  if (status) url += '&status=' + status;
+  const data = await apiFetch(url);
+  if (!data) return;
+  const tbody = document.getElementById('trips-tbody');
+  tbody.innerHTML = data.items.map(t => `
+    <tr onclick="navigate('detail','${t.trip_id}')">
+      <td><strong>${t.trip_id}</strong></td>
+      <td>${t.route_from || '—'} → ${t.route_to || '—'}</td>
+      <td>${t.customer || '—'}</td>
+      <td>${t.driver_name || '—'}</td>
+      <td><span class="badge-status status-${t.status}">${statusLabel(t.status)}</span></td>
+      <td>${t.alert_count > 0 ? '<span class="badge badge-high">'+t.alert_count+'</span>' : '0'}</td>
+      <td class="time">${fmtTime(t.updated_at)}</td>
+    </tr>
+  `).join('');
+}
+
+// Alerts
+async function loadAlerts() {
+  const sev = document.getElementById('alert-severity').value;
+  const st = document.getElementById('alert-status').value;
+  const cust = document.getElementById('alert-customer').value;
+  let url = '/api/alerts?limit=30';
+  if (sev) url += '&severity=' + sev;
+  if (st) url += '&status=' + st;
+  if (cust) url += '&customer=' + encodeURIComponent(cust);
+  const data = await apiFetch(url);
+  if (!data) return;
+  const list = document.getElementById('alerts-list');
+  list.innerHTML = data.items.map(a => `
+    <div class="alert-card ${a.severity}">
+      <div class="alert-header">
+        <div>
+          <span class="badge badge-${a.severity}">${a.severity.toUpperCase()}</span>
+          <span class="badge badge-${a.status}" style="margin-left:6px">${statusAlertLabel(a.status)}</span>
+          <strong style="margin-left:8px">${alertTypeLabel(a.type)}</strong>
+        </div>
+        ${a.trip_id ? '<a style="color:var(--primary);cursor:pointer;font-size:13px" onclick="navigate(\'detail\',\''+a.trip_id+'\')">Рейс '+a.trip_id+' →</a>' : ''}
+      </div>
+      <div>${a.message}</div>
+      <div class="alert-meta">
+        ${a.customer ? 'Заказчик: '+a.customer+' · ' : ''}${fmtTime(a.created_at)}
+        ${a.reviewed_by ? ' · Обработал: '+a.reviewed_by : ''}
+      </div>
+      ${userRole !== 'viewer' && a.status !== 'resolved' ? `
+        <div class="alert-actions">
+          ${a.status === 'new' ? '<button class="btn btn-primary" onclick="patchAlert('+a.id+',\'reviewed\')">Взять в работу</button>' : ''}
+          ${a.status !== 'resolved' ? '<button class="btn btn-success" onclick="patchAlert('+a.id+',\'resolved\')">Решено</button>' : ''}
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+async function patchAlert(id, status) {
+  await apiFetch('/api/alerts/' + id, { method: 'PATCH', body: JSON.stringify({status}) });
+  loadAlerts();
+}
+
+// Trip Detail
+async function loadTripDetail(tripId) {
+  const data = await apiFetch('/api/trips/' + tripId);
+  if (!data) return;
+  const t = data.trip;
+  document.getElementById('detail-info').innerHTML = `
+    <dt>Номер рейса</dt><dd>${t.trip_id}</dd>
+    <dt>Маршрут</dt><dd>${t.route_from || '—'} → ${t.route_to || '—'}</dd>
+    <dt>Заказчик</dt><dd>${t.customer || '—'}</dd>
+    <dt>Водитель</dt><dd>${t.driver_name || '—'}</dd>
+    <dt>Диспетчер</dt><dd>${t.dispatcher_name || '—'}</dd>
+    <dt>Статус</dt><dd><span class="badge-status status-${t.status}">${statusLabel(t.status)}</span></dd>
+    <dt>Слот</dt><dd>${t.slot_time ? fmtTime(t.slot_time) : '—'}</dd>
+    <dt>Алертов</dt><dd>${t.alert_count}</dd>
+  `;
+  document.getElementById('detail-alerts').innerHTML = data.alerts.length === 0 ? '<p style="color:var(--muted)">Нет алертов</p>' :
+    data.alerts.map(a => `
+      <div class="alert-card ${a.severity}" style="margin-bottom:8px">
+        <span class="badge badge-${a.severity}">${a.severity.toUpperCase()}</span>
+        <span class="badge badge-${a.status}" style="margin-left:4px">${statusAlertLabel(a.status)}</span>
+        <strong style="margin-left:6px">${alertTypeLabel(a.type)}</strong>
+        <div style="margin-top:6px">${a.message}</div>
+        <div class="alert-meta">${fmtTime(a.created_at)}</div>
+      </div>
+    `).join('');
+  document.getElementById('detail-chat').innerHTML = data.messages.length === 0 ? '<p style="color:var(--muted)">Нет сообщений</p>' :
+    data.messages.sort((a,b) => new Date(a.msg_time) - new Date(b.msg_time)).map(m => `
+      <div class="chat-msg">
+        <span class="sender">${m.sender_name || 'Unknown'}</span>
+        <span class="time">${fmtTime(m.msg_time)}</span>
+        <div class="text">${escHtml(m.raw_text)}</div>
+      </div>
+    `).join('');
+}
+
+// Stats
+async function loadStats() {
+  const [summary, timeline, byCust] = await Promise.all([
+    apiFetch('/api/stats/summary'),
+    apiFetch('/api/stats/timeline'),
+    apiFetch('/api/stats/by-customer'),
+  ]);
+  if (!summary) return;
+
+  document.getElementById('stats-kpis').innerHTML = `
+    <div class="kpi-card"><div class="kpi-value">${summary.trips_active}</div><div class="kpi-label">Активных рейсов</div></div>
+    <div class="kpi-card danger"><div class="kpi-value">${summary.alerts_high}</div><div class="kpi-label">HIGH-алертов</div></div>
+    <div class="kpi-card warning"><div class="kpi-value">${summary.alerts_new}</div><div class="kpi-label">Новых алертов</div></div>
+    <div class="kpi-card success"><div class="kpi-value">${summary.resolve_rate}%</div><div class="kpi-label">Решено</div></div>
+    <div class="kpi-card"><div class="kpi-value">${summary.trips_total}</div><div class="kpi-label">Всего рейсов</div></div>
+    <div class="kpi-card"><div class="kpi-value">${summary.messages_total}</div><div class="kpi-label">Сообщений</div></div>
+  `;
+
+  // Timeline chart
+  if (timelineChart) timelineChart.destroy();
+  const tl = timeline.items || [];
+  timelineChart = new Chart(document.getElementById('chart-timeline'), {
+    type: 'bar',
+    data: {
+      labels: tl.map(r => r.day),
+      datasets: [
+        { label: 'HIGH', data: tl.map(r => r.high), backgroundColor: '#ef4444' },
+        { label: 'MEDIUM', data: tl.map(r => r.medium), backgroundColor: '#f59e0b' },
+        { label: 'LOW', data: tl.map(r => r.low), backgroundColor: '#3b82f6' },
+      ]
+    },
+    options: { responsive: true, plugins: { title: { display: true, text: 'Алерты за 14 дней' } }, scales: { x: { stacked: true }, y: { stacked: true } } }
+  });
+
+  // Customers chart
+  if (customerChart) customerChart.destroy();
+  const cust = byCust.items || [];
+  customerChart = new Chart(document.getElementById('chart-customers'), {
+    type: 'doughnut',
+    data: {
+      labels: cust.map(r => r.customer),
+      datasets: [{ data: cust.map(r => r.alert_count), backgroundColor: ['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6','#ec4899'] }]
+    },
+    options: { responsive: true, plugins: { title: { display: true, text: 'Алерты по заказчикам' } } }
+  });
+}
+
+// Helpers
+function statusLabel(s) {
+  const m = {assigned:'Назначен',in_transit:'В пути',loading:'Погрузка',unloading:'Выгрузка',completed:'Завершён',problem:'Проблема',cancelled:'Отменён'};
+  return m[s] || s;
+}
+function statusAlertLabel(s) {
+  const m = {new:'Новый',reviewed:'В работе',resolved:'Решено'};
+  return m[s] || s;
+}
+function alertTypeLabel(t) {
+  const m = {delay:'Задержка',equipment_failure:'Поломка',downtime:'Простой',safety_violation:'Нарушение ТБ',docs_missing:'Документы'};
+  return m[t] || t;
+}
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+}
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// Init
+(function() {
+  const t = localStorage.getItem('marshall_token');
+  if (t) {
+    token = t;
+    userRole = localStorage.getItem('marshall_role');
+    userName = localStorage.getItem('marshall_user');
+    showApp();
+  }
+})();
+</script>
+</body>
+</html>
