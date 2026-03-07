@@ -12,3 +12,11 @@ JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_HOURS = 24
 DEMO_MODE = os.getenv("DEMO_MODE", "true").lower() == "true"
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
+
+# Telegram Bot API
+TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "")
+TG_ALLOWED_CHATS = [int(x) for x in os.getenv("TG_ALLOWED_CHATS", "").split(",") if x.strip()]
+
+# LLM API keys
+MINIMAX_API_KEY = os.getenv("MINIMAX_API_KEY", "")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")

@@ -6,7 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pathlib import Path
 
-from src.api.config import CORS_ORIGINS, DEMO_MODE
+from src.api.config import (
+    CORS_ORIGINS, DEMO_MODE, TG_BOT_TOKEN, TG_ALLOWED_CHATS,
+    MINIMAX_API_KEY, GROQ_API_KEY,
+)
 from src.db.connection import get_pool, close_pool
 from src.api.routes import auth, trips, alerts, stats, config
 
@@ -33,16 +36,31 @@ async def lifespan(app: FastAPI):
             await _seed_demo_data(pool)
             logger.info("Demo data seeded")
 
-    # Start demo simulator
+    # Start demo simulator or live listener
     sim_task = None
+    listener_transport = None
+    pipeline = None
+    llm_client = None
+
     if DEMO_MODE:
         sim_task = asyncio.create_task(_demo_simulator())
         logger.info("Demo simulator started")
+    elif TG_BOT_TOKEN:
+        llm_client, listener_transport, pipeline = await _start_live_listener()
+        logger.info("Live listener started")
+    else:
+        logger.warning("Not in demo mode but no TG_BOT_TOKEN — nothing to listen to")
 
     yield
 
     if sim_task:
         sim_task.cancel()
+    if pipeline:
+        await pipeline.stop()
+    if listener_transport:
+        await listener_transport.stop()
+    if llm_client:
+        await llm_client.close()
     await close_pool()
     logger.info("Marshall API shut down")
 
@@ -85,6 +103,27 @@ async def serve_static(path: str):
     if file_path.is_file():
         return FileResponse(file_path)
     return FileResponse(FRONTEND_DIR / "index.html")
+
+
+async def _start_live_listener():
+    """Initialize and start the live Telegram listener pipeline."""
+    from src.listener.bot_api import BotApiTransport
+    from src.listener.pipeline import Pipeline
+    from src.parser.llm import LLMClient
+    from src.parser.core import MessageParser
+
+    queue = asyncio.Queue(maxsize=100)
+    llm_client = LLMClient(
+        minimax_api_key=MINIMAX_API_KEY or None,
+        groq_api_key=GROQ_API_KEY or None,
+    )
+    parser = MessageParser(llm_client)
+    pipeline = Pipeline(queue, parser, workers=2)
+    transport = BotApiTransport(TG_BOT_TOKEN, queue, TG_ALLOWED_CHATS or None)
+
+    await pipeline.start()
+    await transport.start()
+    return llm_client, transport, pipeline
 
 
 async def _seed_demo_data(pool):
