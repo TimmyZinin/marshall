@@ -1,0 +1,104 @@
+# Alert rules per customer — Marshall AI Listener
+# Each rule defines when to generate an alert based on parsed message data.
+
+defaults:
+  delay_threshold_min: 30
+  downtime_threshold_hours: 2
+  confidence_threshold: 0.6
+
+customers:
+  Тандер:
+    delay:
+      threshold_min: 30
+      fine_text: "Штраф Тандер за опоздание >4ч = 15% от стоимости рейса"
+      severity: high
+    equipment_failure:
+      severity: high
+    docs_missing:
+      required: [термограмма, ТТН, накладная]
+      severity: medium
+    safety_violation:
+      severity: medium
+    downtime:
+      threshold_hours: 3
+      severity: medium
+
+  WB:
+    delay:
+      threshold_min: 20
+      fine_text: "WB: штраф за опоздание = 100% от стоимости рейса"
+      severity: high
+    equipment_failure:
+      severity: high
+    docs_missing:
+      required: [термограмма, ТТН]
+      severity: high
+    safety_violation:
+      severity: medium
+    downtime:
+      threshold_hours: 2
+      severity: medium
+
+  X5:
+    delay:
+      threshold_min: 30
+      fine_text: "X5: штраф за опоздание >2ч = 10%, >4ч = 20%"
+      severity: high
+    equipment_failure:
+      severity: high
+    docs_missing:
+      required: [термограмма, ТТН]
+      severity: medium
+    safety_violation:
+      severity: high
+    downtime:
+      threshold_hours: 2
+      severity: medium
+
+  Магнит:
+    delay:
+      threshold_min: 45
+      fine_text: "Магнит: штраф за опоздание по регламенту"
+      severity: high
+    equipment_failure:
+      severity: high
+    docs_missing:
+      required: [термограмма]
+      severity: medium
+    safety_violation:
+      severity: medium
+    downtime:
+      threshold_hours: 3
+      severity: low
+
+  Сельта:
+    delay:
+      threshold_min: 30
+      fine_text: "Сельта: штраф за опоздание по договору"
+      severity: high
+    equipment_failure:
+      severity: high
+    docs_missing:
+      required: [термограмма, ТТН]
+      severity: medium
+    safety_violation:
+      severity: medium
+    downtime:
+      threshold_hours: 2
+      severity: medium
+
+  Сибур:
+    delay:
+      threshold_min: 30
+      fine_text: "Сибур: пропуск аннулируется при опоздании >30мин"
+      severity: high
+    equipment_failure:
+      severity: high
+    docs_missing:
+      required: [термограмма, пропуск, ТТН]
+      severity: high
+    safety_violation:
+      severity: high
+    downtime:
+      threshold_hours: 1
+      severity: high

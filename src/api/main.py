@@ -111,6 +111,7 @@ async def _start_live_listener():
     from src.listener.pipeline import Pipeline
     from src.parser.llm import LLMClient
     from src.parser.core import MessageParser
+    from src.alerts.engine import AlertEngine
 
     queue = asyncio.Queue(maxsize=100)
     llm_client = LLMClient(
@@ -118,7 +119,8 @@ async def _start_live_listener():
         groq_api_key=GROQ_API_KEY or None,
     )
     parser = MessageParser(llm_client)
-    pipeline = Pipeline(queue, parser, workers=2)
+    alert_engine = AlertEngine()
+    pipeline = Pipeline(queue, parser, alert_engine=alert_engine, workers=2)
     transport = BotApiTransport(TG_BOT_TOKEN, queue, TG_ALLOWED_CHATS or None)
 
     await pipeline.start()
