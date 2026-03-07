@@ -4,241 +4,572 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Marshall AI Listener</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
 :root {
-  --primary: #2563eb; --primary-dark: #1d4ed8; --primary-light: #dbeafe;
-  --success: #10b981; --success-light: #d1fae5;
-  --warning: #f59e0b; --warning-light: #fef3c7;
-  --danger: #ef4444; --danger-light: #fee2e2;
-  --bg: #f1f5f9; --card: #fff; --text: #1e293b; --muted: #64748b; --border: #e2e8f0;
+  --sidebar-w: 240px;
+  --sidebar-bg: #0c1222;
+  --sidebar-active: rgba(59,130,246,.15);
+  --sidebar-hover: rgba(255,255,255,.06);
+  --sidebar-text: rgba(255,255,255,.55);
+  --sidebar-text-active: #fff;
+
+  --bg: #f0f2f5;
+  --surface: #fff;
+  --surface-hover: #f8fafc;
+  --text: #0f172a;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+
+  --blue: #3b82f6;
+  --blue-dark: #2563eb;
+  --blue-light: #eff6ff;
+  --green: #10b981;
+  --green-light: #ecfdf5;
+  --amber: #f59e0b;
+  --amber-light: #fffbeb;
+  --red: #ef4444;
+  --red-light: #fef2f2;
+  --purple: #8b5cf6;
+  --purple-light: #f5f3ff;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.04);
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.05);
+  --transition: .2s cubic-bezier(.4,0,.2,1);
 }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
 
-/* Nav */
-.nav { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); padding: 0 24px; display: flex; align-items: center; height: 56px; box-shadow: 0 2px 8px rgba(0,0,0,.15); position: sticky; top: 0; z-index: 100; }
-.nav-brand { color: #fff; font-weight: 700; font-size: 18px; margin-right: 32px; cursor: pointer; }
-.nav-links { display: flex; gap: 4px; flex: 1; }
-.nav-link { color: rgba(255,255,255,.8); text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all .2s; }
-.nav-link:hover, .nav-link.active { background: rgba(255,255,255,.2); color: #fff; }
-.nav-right { display: flex; align-items: center; gap: 12px; }
-.nav-user { color: rgba(255,255,255,.8); font-size: 13px; }
-.nav-btn { background: rgba(255,255,255,.15); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-.nav-btn:hover { background: rgba(255,255,255,.3); }
-.demo-badge { background: var(--warning); color: #000; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+/* ═══════════ LOGIN ═══════════ */
+.login-page {
+  display: flex; min-height: 100vh;
+}
+.login-visual {
+  flex: 1; background: linear-gradient(135deg, #0c1222 0%, #162036 50%, #1a2744 100%);
+  display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;
+}
+.login-visual::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 30% 40%, rgba(59,130,246,.12) 0%, transparent 60%),
+              radial-gradient(circle at 70% 70%, rgba(16,185,129,.08) 0%, transparent 50%);
+}
+.login-visual-content { position: relative; z-index: 1; text-align: center; color: #fff; padding: 40px; max-width: 500px; }
+.login-visual-content h1 { font-size: 42px; font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; line-height: 1.1; }
+.login-visual-content h1 span { background: linear-gradient(135deg, #3b82f6, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.login-visual-content p { font-size: 16px; color: rgba(255,255,255,.6); line-height: 1.6; }
+.login-grid {
+  position: absolute; inset: 0; opacity: .04;
+  background-image: linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.login-dots { position: absolute; width: 100%; height: 100%; }
+.login-dot {
+  position: absolute; width: 4px; height: 4px; border-radius: 50%; background: rgba(59,130,246,.3);
+  animation: pulse-dot 3s ease-in-out infinite;
+}
+.login-dot:nth-child(1) { top: 20%; left: 15%; animation-delay: 0s; }
+.login-dot:nth-child(2) { top: 60%; left: 25%; animation-delay: .5s; }
+.login-dot:nth-child(3) { top: 30%; left: 70%; animation-delay: 1s; }
+.login-dot:nth-child(4) { top: 75%; left: 65%; animation-delay: 1.5s; }
+.login-dot:nth-child(5) { top: 45%; left: 45%; animation-delay: 2s; background: rgba(16,185,129,.3); }
+@keyframes pulse-dot { 0%, 100% { opacity: .3; transform: scale(1); } 50% { opacity: 1; transform: scale(2.5); } }
 
-/* Layout */
-.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.login-form-side {
+  width: 480px; display: flex; align-items: center; justify-content: center;
+  background: #fff; padding: 48px;
+}
+.login-card { width: 100%; max-width: 360px; }
+.login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; }
+.login-logo-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 18px;
+}
+.login-logo-text { font-size: 20px; font-weight: 700; color: var(--text); }
+.login-card h2 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.login-card .subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 28px; }
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+.form-input {
+  width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px; font-family: inherit; color: var(--text); background: #fff;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.form-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+.login-btn {
+  width: 100%; padding: 12px; font-size: 14px; font-weight: 600; font-family: inherit;
+  background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff;
+  border: none; border-radius: var(--radius-sm); cursor: pointer;
+  transition: all var(--transition); margin-top: 4px;
+}
+.login-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,.35); }
+.login-btn:active { transform: translateY(0); }
+.login-error { color: var(--red); font-size: 13px; margin-top: 10px; display: none; font-weight: 500; }
+
+@media (max-width: 900px) {
+  .login-visual { display: none; }
+  .login-form-side { width: 100%; }
+}
+
+/* ═══════════ SIDEBAR ═══════════ */
+.sidebar {
+  width: var(--sidebar-w); height: 100vh; position: fixed; left: 0; top: 0;
+  background: var(--sidebar-bg); display: flex; flex-direction: column;
+  z-index: 100; transition: transform .3s ease;
+}
+.sidebar-brand {
+  padding: 20px 20px 24px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.sidebar-brand-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 15px; flex-shrink: 0;
+}
+.sidebar-brand-text { color: #fff; font-size: 16px; font-weight: 700; }
+
+.sidebar-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; }
+.sidebar-link {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border-radius: var(--radius-sm); color: var(--sidebar-text);
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: all var(--transition); text-decoration: none; position: relative;
+}
+.sidebar-link:hover { background: var(--sidebar-hover); color: rgba(255,255,255,.85); }
+.sidebar-link.active { background: var(--sidebar-active); color: var(--sidebar-text-active); }
+.sidebar-link.active::before {
+  content: ''; position: absolute; left: -12px; top: 8px; bottom: 8px; width: 3px;
+  background: var(--blue); border-radius: 0 3px 3px 0;
+}
+.sidebar-icon {
+  width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; opacity: .7;
+}
+.sidebar-link.active .sidebar-icon { opacity: 1; }
+.sidebar-badge {
+  margin-left: auto; background: var(--red); color: #fff;
+  font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; min-width: 20px; text-align: center;
+}
+
+.sidebar-footer {
+  padding: 16px; border-top: 1px solid rgba(255,255,255,.06);
+}
+.sidebar-user {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+  border-radius: var(--radius-sm); cursor: pointer;
+  transition: background var(--transition);
+}
+.sidebar-user:hover { background: var(--sidebar-hover); }
+.sidebar-avatar {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.sidebar-user-info { flex: 1; overflow: hidden; }
+.sidebar-user-name { color: rgba(255,255,255,.9); font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar-user-role { color: rgba(255,255,255,.4); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+.sidebar-logout {
+  color: rgba(255,255,255,.3); background: none; border: none; cursor: pointer;
+  padding: 6px; border-radius: 6px; transition: all var(--transition);
+}
+.sidebar-logout:hover { color: rgba(255,255,255,.7); background: rgba(255,255,255,.06); }
+
+/* ═══════════ MAIN CONTENT ═══════════ */
+.main { margin-left: var(--sidebar-w); min-height: 100vh; }
+
+.topbar {
+  height: 60px; background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px; position: sticky; top: 0; z-index: 50;
+}
+.topbar-title { font-size: 18px; font-weight: 700; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.demo-badge {
+  background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff;
+  padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase; display: none;
+}
+.live-indicator {
+  display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--green); font-weight: 600;
+}
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+  animation: live-pulse 2s ease-in-out infinite;
+}
+@keyframes live-pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16,185,129,.4); } 50% { opacity: .8; box-shadow: 0 0 0 6px rgba(16,185,129,0); } }
+
+.content { padding: 24px 28px; }
 .page { display: none; }
-.page.active { display: block; }
+.page.active { display: block; animation: fadeIn .25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Cards */
-.card { background: var(--card); border-radius: 12px; padding: 24px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 20px; }
+/* ═══════════ CARDS ═══════════ */
+.card {
+  background: var(--surface); border-radius: var(--radius);
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition);
+}
+.card-header {
+  padding: 18px 22px; border-bottom: 1px solid var(--border-light);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-header h3 { font-size: 14px; font-weight: 600; color: var(--text); }
+.card-body { padding: 22px; }
+.card-body-flush { padding: 0; }
 
-/* KPI row */
-.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
-.kpi-card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); text-align: center; }
-.kpi-value { font-size: 2rem; font-weight: 700; color: var(--primary); }
-.kpi-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
-.kpi-card.danger .kpi-value { color: var(--danger); }
-.kpi-card.success .kpi-value { color: var(--success); }
-.kpi-card.warning .kpi-value { color: var(--warning); }
+/* ═══════════ KPI ═══════════ */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.kpi-card {
+  background: var(--surface); border-radius: var(--radius); padding: 22px;
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  display: flex; align-items: flex-start; gap: 14px;
+  transition: all var(--transition); position: relative; overflow: hidden;
+}
+.kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.kpi-icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 20px;
+}
+.kpi-icon.blue { background: var(--blue-light); color: var(--blue); }
+.kpi-icon.red { background: var(--red-light); color: var(--red); }
+.kpi-icon.amber { background: var(--amber-light); color: var(--amber); }
+.kpi-icon.green { background: var(--green-light); color: var(--green); }
+.kpi-icon.purple { background: var(--purple-light); color: var(--purple); }
+.kpi-content { flex: 1; }
+.kpi-value { font-size: 28px; font-weight: 800; line-height: 1; color: var(--text); letter-spacing: -0.5px; }
+.kpi-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: .3px; }
 
-/* Table */
+/* ═══════════ TABLE ═══════════ */
 table { width: 100%; border-collapse: collapse; }
-th { background: var(--bg); color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--border); }
-td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
-tr:hover { background: var(--primary-light); cursor: pointer; }
-tr.no-hover:hover { background: transparent; cursor: default; }
+thead th {
+  padding: 10px 16px; font-size: 11px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .5px; text-align: left;
+  border-bottom: 1px solid var(--border); background: var(--surface);
+}
+tbody td { padding: 14px 16px; font-size: 13px; border-bottom: 1px solid var(--border-light); }
+tbody tr { transition: background var(--transition); cursor: pointer; }
+tbody tr:hover { background: #f8fafc; }
+tbody tr:last-child td { border-bottom: none; }
+.cell-trip-id { font-weight: 700; color: var(--blue-dark); font-size: 13px; }
+.cell-route { color: var(--text); font-weight: 500; }
+.cell-route svg { vertical-align: middle; margin: 0 4px; color: var(--text-muted); }
+.cell-time { color: var(--text-muted); font-size: 12px; }
 
-/* Badges */
-.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
-.badge-high { background: var(--danger-light); color: var(--danger); }
-.badge-medium { background: var(--warning-light); color: #b45309; }
-.badge-low { background: var(--primary-light); color: var(--primary); }
-.badge-new { background: var(--danger-light); color: var(--danger); }
-.badge-reviewed { background: var(--warning-light); color: #b45309; }
-.badge-resolved { background: var(--success-light); color: var(--success); }
-.badge-status { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
-.status-assigned { background: var(--primary-light); color: var(--primary); }
-.status-in_transit { background: #dbeafe; color: #1d4ed8; }
-.status-loading { background: var(--warning-light); color: #b45309; }
-.status-unloading { background: #fef3c7; color: #92400e; }
-.status-completed { background: var(--success-light); color: var(--success); }
-.status-problem { background: var(--danger-light); color: var(--danger); }
-.status-cancelled { background: #f1f5f9; color: var(--muted); }
+/* ═══════════ STATUS BADGES ═══════════ */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; letter-spacing: .2px;
+}
+.badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.badge-assigned { background: var(--blue-light); color: var(--blue); }
+.badge-assigned .badge-dot { background: var(--blue); }
+.badge-in_transit { background: #e0f2fe; color: #0369a1; }
+.badge-in_transit .badge-dot { background: #0369a1; }
+.badge-loading { background: var(--amber-light); color: #b45309; }
+.badge-loading .badge-dot { background: #b45309; }
+.badge-unloading { background: #fef3c7; color: #92400e; }
+.badge-unloading .badge-dot { background: #92400e; }
+.badge-completed { background: var(--green-light); color: var(--green); }
+.badge-completed .badge-dot { background: var(--green); }
+.badge-problem { background: var(--red-light); color: var(--red); }
+.badge-problem .badge-dot { background: var(--red); }
+.badge-cancelled { background: #f1f5f9; color: var(--text-muted); }
+.badge-cancelled .badge-dot { background: var(--text-muted); }
 
-/* Filters */
-.filters { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
-.filters select, .filters input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #fff; }
+.badge-severity-high { background: var(--red-light); color: var(--red); }
+.badge-severity-medium { background: var(--amber-light); color: #b45309; }
+.badge-severity-low { background: var(--blue-light); color: var(--blue); }
+.badge-alert-new { background: var(--red-light); color: var(--red); }
+.badge-alert-reviewed { background: var(--amber-light); color: #b45309; }
+.badge-alert-resolved { background: var(--green-light); color: var(--green); }
 
-/* Alert cards */
-.alert-card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); margin-bottom: 12px; border-left: 4px solid var(--border); }
-.alert-card.high { border-left-color: var(--danger); }
-.alert-card.medium { border-left-color: var(--warning); }
-.alert-card.low { border-left-color: var(--primary); }
-.alert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.alert-meta { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.alert-count-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 22px; padding: 0 6px;
+  border-radius: 11px; font-size: 11px; font-weight: 700;
+  background: var(--red); color: #fff;
+}
+.alert-count-badge.zero { background: var(--border-light); color: var(--text-muted); }
+
+/* ═══════════ FILTERS ═══════════ */
+.filters { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+.filter-select {
+  padding: 8px 32px 8px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; font-family: inherit; color: var(--text); background: #fff;
+  appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  transition: border-color var(--transition);
+}
+.filter-select:focus { outline: none; border-color: var(--blue); }
+
+/* ═══════════ ALERT CARDS ═══════════ */
+.alert-feed-item {
+  background: var(--surface); border-radius: var(--radius); padding: 18px 20px;
+  border: 1px solid var(--border); margin-bottom: 10px;
+  transition: all var(--transition); position: relative;
+  border-left: 3px solid var(--border);
+}
+.alert-feed-item:hover { box-shadow: var(--shadow-md); }
+.alert-feed-item.sev-high { border-left-color: var(--red); }
+.alert-feed-item.sev-medium { border-left-color: var(--amber); }
+.alert-feed-item.sev-low { border-left-color: var(--blue); }
+.alert-feed-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.alert-feed-type { font-weight: 700; font-size: 14px; color: var(--text); }
+.alert-feed-body { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+.alert-feed-meta { display: flex; align-items: center; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--text-muted); flex-wrap: wrap; }
+.alert-feed-meta svg { width: 14px; height: 14px; }
+.alert-feed-trip {
+  color: var(--blue); font-weight: 600; font-size: 12px; cursor: pointer;
+  text-decoration: none; transition: color var(--transition);
+}
+.alert-feed-trip:hover { color: var(--blue-dark); }
 .alert-actions { display: flex; gap: 8px; margin-top: 12px; }
 
-/* Buttons */
-.btn { padding: 6px 16px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer; font-weight: 500; transition: all .2s; }
-.btn-primary { background: var(--primary); color: #fff; }
-.btn-primary:hover { background: var(--primary-dark); }
-.btn-success { background: var(--success); color: #fff; }
-.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
-.btn-outline:hover { background: var(--bg); }
-.btn:disabled { opacity: .5; cursor: not-allowed; }
+/* ═══════════ BUTTONS ═══════════ */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 16px; border-radius: var(--radius-xs); border: none;
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: all var(--transition);
+}
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: var(--blue-dark); box-shadow: 0 2px 8px rgba(37,99,235,.3); }
+.btn-success { background: var(--green); color: #fff; }
+.btn-success:hover { box-shadow: 0 2px 8px rgba(16,185,129,.3); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover { background: var(--bg); color: var(--text); }
+.btn-outline { background: #fff; border: 1.5px solid var(--border); color: var(--text); }
+.btn-outline:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
 
-/* Login */
-.login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #1e293b, #0f172a); }
-.login-card { background: #fff; border-radius: 16px; padding: 48px; width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
-.login-card h1 { font-size: 24px; margin-bottom: 8px; }
-.login-card p { color: var(--muted); margin-bottom: 24px; }
-.form-group { margin-bottom: 16px; }
-.form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; }
-.form-group input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
-.login-btn { width: 100%; padding: 12px; font-size: 15px; margin-top: 8px; }
-.login-error { color: var(--danger); font-size: 13px; margin-top: 8px; display: none; }
+/* ═══════════ TRIP DETAIL ═══════════ */
+.detail-grid { display: grid; grid-template-columns: 380px 1fr; gap: 20px; }
+.detail-meta dt { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+.detail-meta dd { font-size: 14px; font-weight: 500; margin-bottom: 14px; color: var(--text); }
+.chat-bubble { padding: 12px 16px; border-radius: 12px 12px 12px 2px; background: #f1f5f9; margin-bottom: 8px; max-width: 90%; }
+.chat-bubble .sender { font-size: 11px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: .3px; }
+.chat-bubble .time { font-size: 10px; color: var(--text-muted); float: right; margin-top: 2px; }
+.chat-bubble .text { font-size: 13px; margin-top: 4px; line-height: 1.5; color: var(--text); }
 
-/* Trip detail */
-.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.detail-info dt { font-size: 12px; color: var(--muted); text-transform: uppercase; }
-.detail-info dd { font-size: 15px; font-weight: 500; margin-bottom: 12px; }
-.chat-msg { padding: 10px 14px; border-radius: 10px; background: var(--bg); margin-bottom: 8px; }
-.chat-msg .sender { font-size: 12px; font-weight: 600; color: var(--primary); }
-.chat-msg .time { font-size: 11px; color: var(--muted); float: right; }
-.chat-msg .text { font-size: 14px; margin-top: 4px; }
+/* ═══════════ CHARTS ═══════════ */
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-/* Charts */
-.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-@media (max-width: 768px) { .chart-grid, .detail-grid { grid-template-columns: 1fr; } }
+/* ═══════════ PAGINATION ═══════════ */
+.pagination { display: flex; justify-content: center; gap: 6px; margin-top: 20px; }
 
-/* Pagination */
-.pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+/* ═══════════ RESPONSIVE ═══════════ */
+@media (max-width: 1024px) {
+  .detail-grid { grid-template-columns: 1fr; }
+  .chart-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .topbar { padding: 0 16px; }
+  .content { padding: 16px; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ═══════════ SCROLLBAR ═══════════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 </style>
 </head>
 <body>
 
-<!-- LOGIN PAGE -->
+<!-- ═══════════ LOGIN ═══════════ -->
 <div id="login-page" class="login-page">
-  <div class="login-card">
-    <h1>Marshall AI Listener</h1>
-    <p>Система мониторинга диспетчерских чатов</p>
-    <div class="form-group">
-      <label>Логин</label>
-      <input type="text" id="login-user" placeholder="username" value="manager">
+  <div class="login-visual">
+    <div class="login-grid"></div>
+    <div class="login-dots">
+      <div class="login-dot"></div><div class="login-dot"></div>
+      <div class="login-dot"></div><div class="login-dot"></div><div class="login-dot"></div>
     </div>
-    <div class="form-group">
-      <label>Пароль</label>
-      <input type="password" id="login-pass" placeholder="password" value="manager123">
+    <div class="login-visual-content">
+      <h1>AI-мониторинг<br><span>диспетчерских чатов</span></h1>
+      <p>Автоматическое отслеживание рейсов, парсинг сообщений и алерты в реальном времени для 500+ партнёров</p>
     </div>
-    <button class="btn btn-primary login-btn" onclick="doLogin()">Войти</button>
-    <div id="login-error" class="login-error"></div>
+  </div>
+  <div class="login-form-side">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="login-logo-icon">M</div>
+        <div class="login-logo-text">Marshall</div>
+      </div>
+      <h2>Вход в систему</h2>
+      <p class="subtitle">Введите данные для доступа к дашборду</p>
+      <div class="form-group">
+        <label>Логин</label>
+        <input class="form-input" type="text" id="login-user" placeholder="username" value="manager">
+      </div>
+      <div class="form-group">
+        <label>Пароль</label>
+        <input class="form-input" type="password" id="login-pass" placeholder="password" value="manager123">
+      </div>
+      <button class="login-btn" onclick="doLogin()">Войти</button>
+      <div id="login-error" class="login-error"></div>
+    </div>
   </div>
 </div>
 
-<!-- MAIN APP -->
+<!-- ═══════════ APP ═══════════ -->
 <div id="app" style="display:none">
-  <div class="nav">
-    <span class="nav-brand" onclick="navigate('trips')">Marshall</span>
-    <div class="nav-links">
-      <a class="nav-link active" data-page="trips" onclick="navigate('trips')">Рейсы</a>
-      <a class="nav-link" data-page="alerts" onclick="navigate('alerts')">Алерты</a>
-      <a class="nav-link" data-page="stats" onclick="navigate('stats')">Статистика</a>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">M</div>
+      <div class="sidebar-brand-text">Marshall</div>
     </div>
-    <div class="nav-right">
-      <span id="demo-badge" class="demo-badge" style="display:none">DEMO</span>
-      <span class="nav-user" id="nav-user"></span>
-      <button class="nav-btn" onclick="doLogout()">Выйти</button>
+    <nav class="sidebar-nav">
+      <a class="sidebar-link active" data-page="trips" onclick="navigate('trips')">
+        <span class="sidebar-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10m10 0H3m10 0h2m0 0a1 1 0 011-1V8h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 01.293.707V15a1 1 0 01-1 1h-1"/></svg></span>
+        Рейсы
+      </a>
+      <a class="sidebar-link" data-page="alerts" onclick="navigate('alerts')">
+        <span class="sidebar-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg></span>
+        Алерты
+        <span class="sidebar-badge" id="alert-badge" style="display:none">0</span>
+      </a>
+      <a class="sidebar-link" data-page="stats" onclick="navigate('stats')">
+        <span class="sidebar-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></span>
+        Аналитика
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">M</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebar-username">manager</div>
+          <div class="sidebar-user-role" id="sidebar-role">manager</div>
+        </div>
+        <button class="sidebar-logout" onclick="doLogout()" title="Выйти">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
+      </div>
     </div>
-  </div>
+  </aside>
 
-  <div class="container">
-    <!-- TRIPS PAGE -->
-    <div id="page-trips" class="page active">
-      <h2 style="margin-bottom:16px">Активные рейсы</h2>
-      <div class="filters">
-        <select id="filter-customer" onchange="loadTrips()">
-          <option value="">Все заказчики</option>
-          <option>Тандер</option><option>WB</option><option>X5</option>
-          <option>Магнит</option><option>Сельта</option><option>Сибур</option>
-        </select>
-        <select id="filter-status" onchange="loadTrips()">
-          <option value="">Все статусы</option>
-          <option value="assigned">Назначен</option>
-          <option value="in_transit">В пути</option>
-          <option value="loading">Погрузка</option>
-          <option value="unloading">Выгрузка</option>
-          <option value="completed">Завершён</option>
-          <option value="problem">Проблема</option>
-        </select>
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title" id="topbar-title">Рейсы</div>
+      <div class="topbar-right">
+        <span id="demo-badge" class="demo-badge">DEMO</span>
+        <div class="live-indicator"><div class="live-dot"></div>Live</div>
       </div>
-      <div class="card" style="padding:0;overflow-x:auto">
-        <table>
-          <thead><tr>
-            <th>Рейс</th><th>Маршрут</th><th>Заказчик</th><th>Водитель</th>
-            <th>Статус</th><th>Алерты</th><th>Обновлён</th>
-          </tr></thead>
-          <tbody id="trips-tbody"></tbody>
-        </table>
-      </div>
-      <div class="pagination" id="trips-pagination"></div>
-    </div>
+    </header>
 
-    <!-- ALERTS PAGE -->
-    <div id="page-alerts" class="page">
-      <h2 style="margin-bottom:16px">Лента алертов</h2>
-      <div class="filters">
-        <select id="alert-severity" onchange="loadAlerts()">
-          <option value="">Все уровни</option>
-          <option value="high">HIGH</option><option value="medium">MEDIUM</option><option value="low">LOW</option>
-        </select>
-        <select id="alert-status" onchange="loadAlerts()">
-          <option value="">Все статусы</option>
-          <option value="new">Новые</option><option value="reviewed">В работе</option><option value="resolved">Решено</option>
-        </select>
-        <select id="alert-customer" onchange="loadAlerts()">
-          <option value="">Все заказчики</option>
-          <option>Тандер</option><option>WB</option><option>X5</option>
-          <option>Магнит</option><option>Сельта</option><option>Сибур</option>
-        </select>
-      </div>
-      <div id="alerts-list"></div>
-      <div class="pagination" id="alerts-pagination"></div>
-    </div>
-
-    <!-- TRIP DETAIL PAGE -->
-    <div id="page-detail" class="page">
-      <div style="margin-bottom:16px">
-        <button class="btn btn-outline" onclick="navigate('trips')">← Назад к рейсам</button>
-      </div>
-      <div class="detail-grid">
-        <div>
-          <div class="card">
-            <h3 style="margin-bottom:16px">Информация о рейсе</h3>
-            <dl class="detail-info" id="detail-info"></dl>
-          </div>
-          <div class="card">
-            <h3 style="margin-bottom:12px">Алерты по рейсу</h3>
-            <div id="detail-alerts"></div>
-          </div>
+    <div class="content">
+      <!-- ═══ TRIPS ═══ -->
+      <div id="page-trips" class="page active">
+        <div class="kpi-grid" id="trips-kpis"></div>
+        <div class="filters">
+          <select class="filter-select" id="filter-customer" onchange="loadTrips()">
+            <option value="">Все заказчики</option>
+            <option>Тандер</option><option>WB</option><option>X5</option>
+            <option>Магнит</option><option>Сельта</option><option>Сибур</option>
+          </select>
+          <select class="filter-select" id="filter-status" onchange="loadTrips()">
+            <option value="">Все статусы</option>
+            <option value="assigned">Назначен</option>
+            <option value="in_transit">В пути</option>
+            <option value="loading">Погрузка</option>
+            <option value="unloading">Выгрузка</option>
+            <option value="completed">Завершён</option>
+            <option value="problem">Проблема</option>
+          </select>
         </div>
         <div class="card">
-          <h3 style="margin-bottom:12px">История чата</h3>
-          <div id="detail-chat"></div>
+          <div class="card-body-flush" style="overflow-x:auto">
+            <table>
+              <thead><tr>
+                <th>Рейс</th><th>Маршрут</th><th>Заказчик</th><th>Водитель</th>
+                <th>Статус</th><th>Алерты</th><th>Обновлён</th>
+              </tr></thead>
+              <tbody id="trips-tbody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- STATS PAGE -->
-    <div id="page-stats" class="page">
-      <h2 style="margin-bottom:16px">Статистика</h2>
-      <div class="kpi-row" id="stats-kpis"></div>
-      <div class="chart-grid">
-        <div class="card"><canvas id="chart-timeline"></canvas></div>
-        <div class="card"><canvas id="chart-customers"></canvas></div>
+      <!-- ═══ ALERTS ═══ -->
+      <div id="page-alerts" class="page">
+        <div class="filters">
+          <select class="filter-select" id="alert-severity" onchange="loadAlerts()">
+            <option value="">Все уровни</option>
+            <option value="high">Критические</option><option value="medium">Средние</option><option value="low">Низкие</option>
+          </select>
+          <select class="filter-select" id="alert-status" onchange="loadAlerts()">
+            <option value="">Все статусы</option>
+            <option value="new">Новые</option><option value="reviewed">В работе</option><option value="resolved">Решено</option>
+          </select>
+          <select class="filter-select" id="alert-customer" onchange="loadAlerts()">
+            <option value="">Все заказчики</option>
+            <option>Тандер</option><option>WB</option><option>X5</option>
+            <option>Магнит</option><option>Сельта</option><option>Сибур</option>
+          </select>
+        </div>
+        <div id="alerts-list"></div>
+      </div>
+
+      <!-- ═══ TRIP DETAIL ═══ -->
+      <div id="page-detail" class="page">
+        <div style="margin-bottom:16px">
+          <button class="btn btn-ghost" onclick="navigate('trips')">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+            Назад к рейсам
+          </button>
+        </div>
+        <div class="detail-grid">
+          <div>
+            <div class="card" style="margin-bottom:16px">
+              <div class="card-header"><h3>Информация о рейсе</h3></div>
+              <div class="card-body"><dl class="detail-meta" id="detail-info"></dl></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><h3>Алерты по рейсу</h3></div>
+              <div class="card-body" id="detail-alerts"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>История чата</h3></div>
+            <div class="card-body" id="detail-chat" style="max-height:600px;overflow-y:auto"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ STATS ═══ -->
+      <div id="page-stats" class="page">
+        <div class="kpi-grid" id="stats-kpis"></div>
+        <div class="chart-grid">
+          <div class="card">
+            <div class="card-header"><h3>Алерты за 14 дней</h3></div>
+            <div class="card-body"><canvas id="chart-timeline"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Алерты по заказчикам</h3></div>
+            <div class="card-body"><canvas id="chart-customers"></canvas></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -250,7 +581,7 @@ let token = null, userRole = null, userName = null, demoMode = false;
 let pollInterval = null;
 let timelineChart = null, customerChart = null;
 
-// Auth
+// ═══ Auth ═══
 async function doLogin() {
   const user = document.getElementById('login-user').value;
   const pass = document.getElementById('login-pass').value;
@@ -259,14 +590,19 @@ async function doLogin() {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({username: user, password: pass})
     });
-    if (!r.ok) { document.getElementById('login-error').style.display='block'; document.getElementById('login-error').textContent='Неверный логин или пароль'; return; }
+    if (!r.ok) { showLoginError('Неверный логин или пароль'); return; }
     const d = await r.json();
     token = d.token; userRole = d.role; userName = d.username;
     localStorage.setItem('marshall_token', token);
     localStorage.setItem('marshall_role', userRole);
     localStorage.setItem('marshall_user', userName);
     showApp();
-  } catch(e) { document.getElementById('login-error').style.display='block'; document.getElementById('login-error').textContent='Ошибка подключения'; }
+  } catch(e) { showLoginError('Ошибка подключения к серверу'); }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.style.display = 'block'; el.textContent = msg;
 }
 
 function doLogout() {
@@ -282,15 +618,16 @@ function doLogout() {
 async function showApp() {
   document.getElementById('login-page').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  document.getElementById('nav-user').textContent = userName + ' (' + userRole + ')';
-  // Check demo mode
+  document.getElementById('sidebar-username').textContent = userName;
+  document.getElementById('sidebar-role').textContent = userRole;
+  document.getElementById('sidebar-avatar').textContent = (userName || 'U')[0].toUpperCase();
   try {
     const r = await apiFetch('/api/config');
     demoMode = r.demo_mode;
     document.getElementById('demo-badge').style.display = demoMode ? 'inline-block' : 'none';
   } catch(e) {}
   navigate('trips');
-  pollInterval = setInterval(() => { refreshCurrentPage(); }, 5000);
+  pollInterval = setInterval(() => refreshCurrentPage(), 5000);
 }
 
 async function apiFetch(url, opts = {}) {
@@ -301,14 +638,17 @@ async function apiFetch(url, opts = {}) {
   return r.json();
 }
 
-// Navigation
+// ═══ Navigation ═══
+const pageTitles = { trips: 'Рейсы', alerts: 'Алерты', stats: 'Аналитика', detail: 'Детали рейса' };
+
 function navigate(page, param) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
   const el = document.getElementById('page-' + page);
   if (el) el.classList.add('active');
-  const link = document.querySelector(`.nav-link[data-page="${page}"]`);
+  const link = document.querySelector(`.sidebar-link[data-page="${page}"]`);
   if (link) link.classList.add('active');
+  document.getElementById('topbar-title').textContent = pageTitles[page] || '';
   if (page === 'trips') loadTrips();
   else if (page === 'alerts') loadAlerts();
   else if (page === 'stats') loadStats();
@@ -323,30 +663,55 @@ function refreshCurrentPage() {
   else if (window._currentPage === 'stats') loadStats();
 }
 
-// Trips
+// ═══ Trips ═══
 async function loadTrips() {
   const customer = document.getElementById('filter-customer').value;
   const status = document.getElementById('filter-status').value;
-  let url = '/api/trips?limit=20';
+  let url = '/api/trips?limit=30';
   if (customer) url += '&customer=' + encodeURIComponent(customer);
   if (status) url += '&status=' + status;
   const data = await apiFetch(url);
   if (!data) return;
+
+  // Mini KPIs on trips page
+  const items = data.items || [];
+  const active = items.filter(t => !['completed','cancelled'].includes(t.status)).length;
+  const problems = items.filter(t => t.status === 'problem').length;
+  const totalAlerts = items.reduce((s, t) => s + (t.alert_count || 0), 0);
+  document.getElementById('trips-kpis').innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-icon blue"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10m10 0H3m10 0h2"/></svg></div>
+      <div class="kpi-content"><div class="kpi-value">${items.length}</div><div class="kpi-label">Всего рейсов</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon green"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
+      <div class="kpi-content"><div class="kpi-value">${active}</div><div class="kpi-label">Активных</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon red"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+      <div class="kpi-content"><div class="kpi-value">${problems}</div><div class="kpi-label">Проблемы</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon amber"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg></div>
+      <div class="kpi-content"><div class="kpi-value">${totalAlerts}</div><div class="kpi-label">Алертов</div></div>
+    </div>
+  `;
+
   const tbody = document.getElementById('trips-tbody');
-  tbody.innerHTML = data.items.map(t => `
+  tbody.innerHTML = items.map(t => `
     <tr onclick="navigate('detail','${t.trip_id}')">
-      <td><strong>${t.trip_id}</strong></td>
-      <td>${t.route_from || '—'} → ${t.route_to || '—'}</td>
+      <td><span class="cell-trip-id">${t.trip_id}</span></td>
+      <td class="cell-route">${t.route_from || '—'} <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7l7 7-7 7"/></svg> ${t.route_to || '—'}</td>
       <td>${t.customer || '—'}</td>
       <td>${t.driver_name || '—'}</td>
-      <td><span class="badge-status status-${t.status}">${statusLabel(t.status)}</span></td>
-      <td>${t.alert_count > 0 ? '<span class="badge badge-high">'+t.alert_count+'</span>' : '0'}</td>
-      <td class="time">${fmtTime(t.updated_at)}</td>
+      <td><span class="badge badge-${t.status}"><span class="badge-dot"></span>${statusLabel(t.status)}</span></td>
+      <td>${t.alert_count > 0 ? '<span class="alert-count-badge">'+t.alert_count+'</span>' : '<span class="alert-count-badge zero">0</span>'}</td>
+      <td class="cell-time">${fmtTime(t.updated_at)}</td>
     </tr>
   `).join('');
 }
 
-// Alerts
+// ═══ Alerts ═══
 async function loadAlerts() {
   const sev = document.getElementById('alert-severity').value;
   const st = document.getElementById('alert-status').value;
@@ -357,26 +722,33 @@ async function loadAlerts() {
   if (cust) url += '&customer=' + encodeURIComponent(cust);
   const data = await apiFetch(url);
   if (!data) return;
+  const items = data.items || [];
+
+  // Update sidebar badge
+  const newCount = items.filter(a => a.status === 'new').length;
+  const badge = document.getElementById('alert-badge');
+  if (newCount > 0) { badge.style.display = 'inline'; badge.textContent = newCount; }
+  else { badge.style.display = 'none'; }
+
   const list = document.getElementById('alerts-list');
-  list.innerHTML = data.items.map(a => `
-    <div class="alert-card ${a.severity}">
-      <div class="alert-header">
-        <div>
-          <span class="badge badge-${a.severity}">${a.severity.toUpperCase()}</span>
-          <span class="badge badge-${a.status}" style="margin-left:6px">${statusAlertLabel(a.status)}</span>
-          <strong style="margin-left:8px">${alertTypeLabel(a.type)}</strong>
-        </div>
-        ${a.trip_id ? '<a style="color:var(--primary);cursor:pointer;font-size:13px" onclick="navigate(\'detail\',\''+a.trip_id+'\')">Рейс '+a.trip_id+' →</a>' : ''}
+  list.innerHTML = items.map(a => `
+    <div class="alert-feed-item sev-${a.severity}">
+      <div class="alert-feed-header">
+        <span class="badge badge-severity-${a.severity}">${a.severity.toUpperCase()}</span>
+        <span class="badge badge-alert-${a.status}">${statusAlertLabel(a.status)}</span>
+        <span class="alert-feed-type">${alertTypeLabel(a.type)}</span>
+        ${a.trip_id ? '<a class="alert-feed-trip" onclick="navigate(\'detail\',\''+a.trip_id+'\')">'+a.trip_id+' &rarr;</a>' : ''}
       </div>
-      <div>${a.message}</div>
-      <div class="alert-meta">
-        ${a.customer ? 'Заказчик: '+a.customer+' · ' : ''}${fmtTime(a.created_at)}
-        ${a.reviewed_by ? ' · Обработал: '+a.reviewed_by : ''}
+      <div class="alert-feed-body">${escHtml(a.message)}</div>
+      <div class="alert-feed-meta">
+        ${a.customer ? '<span>'+a.customer+'</span>' : ''}
+        <span>${fmtTime(a.created_at)}</span>
+        ${a.reviewed_by ? '<span>'+a.reviewed_by+'</span>' : ''}
       </div>
       ${userRole !== 'viewer' && a.status !== 'resolved' ? `
         <div class="alert-actions">
-          ${a.status === 'new' ? '<button class="btn btn-primary" onclick="patchAlert('+a.id+',\'reviewed\')">Взять в работу</button>' : ''}
-          ${a.status !== 'resolved' ? '<button class="btn btn-success" onclick="patchAlert('+a.id+',\'resolved\')">Решено</button>' : ''}
+          ${a.status === 'new' ? '<button class="btn btn-outline" onclick="patchAlert('+a.id+\',\'reviewed\')">Взять в работу</button>' : ''}
+          ${a.status !== 'resolved' ? '<button class="btn btn-success" onclick="patchAlert('+a.id+\',\'resolved\')">Решено</button>' : ''}
         </div>
       ` : ''}
     </div>
@@ -388,34 +760,39 @@ async function patchAlert(id, status) {
   loadAlerts();
 }
 
-// Trip Detail
+// ═══ Trip Detail ═══
 async function loadTripDetail(tripId) {
   const data = await apiFetch('/api/trips/' + tripId);
   if (!data) return;
   const t = data.trip;
+  document.getElementById('topbar-title').textContent = 'Рейс ' + t.trip_id;
   document.getElementById('detail-info').innerHTML = `
     <dt>Номер рейса</dt><dd>${t.trip_id}</dd>
-    <dt>Маршрут</dt><dd>${t.route_from || '—'} → ${t.route_to || '—'}</dd>
+    <dt>Маршрут</dt><dd>${t.route_from || '—'} &rarr; ${t.route_to || '—'}</dd>
     <dt>Заказчик</dt><dd>${t.customer || '—'}</dd>
     <dt>Водитель</dt><dd>${t.driver_name || '—'}</dd>
     <dt>Диспетчер</dt><dd>${t.dispatcher_name || '—'}</dd>
-    <dt>Статус</dt><dd><span class="badge-status status-${t.status}">${statusLabel(t.status)}</span></dd>
+    <dt>Статус</dt><dd><span class="badge badge-${t.status}"><span class="badge-dot"></span>${statusLabel(t.status)}</span></dd>
     <dt>Слот</dt><dd>${t.slot_time ? fmtTime(t.slot_time) : '—'}</dd>
     <dt>Алертов</dt><dd>${t.alert_count}</dd>
   `;
-  document.getElementById('detail-alerts').innerHTML = data.alerts.length === 0 ? '<p style="color:var(--muted)">Нет алертов</p>' :
-    data.alerts.map(a => `
-      <div class="alert-card ${a.severity}" style="margin-bottom:8px">
-        <span class="badge badge-${a.severity}">${a.severity.toUpperCase()}</span>
-        <span class="badge badge-${a.status}" style="margin-left:4px">${statusAlertLabel(a.status)}</span>
-        <strong style="margin-left:6px">${alertTypeLabel(a.type)}</strong>
-        <div style="margin-top:6px">${a.message}</div>
-        <div class="alert-meta">${fmtTime(a.created_at)}</div>
+  document.getElementById('detail-alerts').innerHTML = data.alerts.length === 0
+    ? '<p style="color:var(--text-muted);font-size:13px">Нет алертов</p>'
+    : data.alerts.map(a => `
+      <div class="alert-feed-item sev-${a.severity}" style="margin-bottom:8px">
+        <div class="alert-feed-header">
+          <span class="badge badge-severity-${a.severity}">${a.severity.toUpperCase()}</span>
+          <span class="badge badge-alert-${a.status}">${statusAlertLabel(a.status)}</span>
+          <span class="alert-feed-type">${alertTypeLabel(a.type)}</span>
+        </div>
+        <div class="alert-feed-body">${escHtml(a.message)}</div>
+        <div class="alert-feed-meta"><span>${fmtTime(a.created_at)}</span></div>
       </div>
     `).join('');
-  document.getElementById('detail-chat').innerHTML = data.messages.length === 0 ? '<p style="color:var(--muted)">Нет сообщений</p>' :
-    data.messages.sort((a,b) => new Date(a.msg_time) - new Date(b.msg_time)).map(m => `
-      <div class="chat-msg">
+  document.getElementById('detail-chat').innerHTML = data.messages.length === 0
+    ? '<p style="color:var(--text-muted);font-size:13px">Нет сообщений</p>'
+    : data.messages.sort((a,b) => new Date(a.msg_time) - new Date(b.msg_time)).map(m => `
+      <div class="chat-bubble">
         <span class="sender">${m.sender_name || 'Unknown'}</span>
         <span class="time">${fmtTime(m.msg_time)}</span>
         <div class="text">${escHtml(m.raw_text)}</div>
@@ -423,7 +800,7 @@ async function loadTripDetail(tripId) {
     `).join('');
 }
 
-// Stats
+// ═══ Stats ═══
 async function loadStats() {
   const [summary, timeline, byCust] = await Promise.all([
     apiFetch('/api/stats/summary'),
@@ -433,12 +810,30 @@ async function loadStats() {
   if (!summary) return;
 
   document.getElementById('stats-kpis').innerHTML = `
-    <div class="kpi-card"><div class="kpi-value">${summary.trips_active}</div><div class="kpi-label">Активных рейсов</div></div>
-    <div class="kpi-card danger"><div class="kpi-value">${summary.alerts_high}</div><div class="kpi-label">HIGH-алертов</div></div>
-    <div class="kpi-card warning"><div class="kpi-value">${summary.alerts_new}</div><div class="kpi-label">Новых алертов</div></div>
-    <div class="kpi-card success"><div class="kpi-value">${summary.resolve_rate}%</div><div class="kpi-label">Решено</div></div>
-    <div class="kpi-card"><div class="kpi-value">${summary.trips_total}</div><div class="kpi-label">Всего рейсов</div></div>
-    <div class="kpi-card"><div class="kpi-value">${summary.messages_total}</div><div class="kpi-label">Сообщений</div></div>
+    <div class="kpi-card">
+      <div class="kpi-icon blue"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg></div>
+      <div class="kpi-content"><div class="kpi-value">${summary.trips_active}</div><div class="kpi-label">Активных рейсов</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon red"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+      <div class="kpi-content"><div class="kpi-value">${summary.alerts_high}</div><div class="kpi-label">Критических алертов</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon amber"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg></div>
+      <div class="kpi-content"><div class="kpi-value">${summary.alerts_new}</div><div class="kpi-label">Новых алертов</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon green"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+      <div class="kpi-content"><div class="kpi-value">${summary.resolve_rate}%</div><div class="kpi-label">Решено</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon purple"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10m10 0H3m10 0h2"/></svg></div>
+      <div class="kpi-content"><div class="kpi-value">${summary.trips_total}</div><div class="kpi-label">Всего рейсов</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon blue"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div>
+      <div class="kpi-content"><div class="kpi-value">${summary.messages_total}</div><div class="kpi-label">Сообщений</div></div>
+    </div>
   `;
 
   // Timeline chart
@@ -447,14 +842,21 @@ async function loadStats() {
   timelineChart = new Chart(document.getElementById('chart-timeline'), {
     type: 'bar',
     data: {
-      labels: tl.map(r => r.day),
+      labels: tl.map(r => { const d = r.day.split('-'); return d[2]+'.'+d[1]; }),
       datasets: [
-        { label: 'HIGH', data: tl.map(r => r.high), backgroundColor: '#ef4444' },
-        { label: 'MEDIUM', data: tl.map(r => r.medium), backgroundColor: '#f59e0b' },
-        { label: 'LOW', data: tl.map(r => r.low), backgroundColor: '#3b82f6' },
+        { label: 'HIGH', data: tl.map(r => r.high), backgroundColor: '#ef4444', borderRadius: 4 },
+        { label: 'MEDIUM', data: tl.map(r => r.medium), backgroundColor: '#f59e0b', borderRadius: 4 },
+        { label: 'LOW', data: tl.map(r => r.low), backgroundColor: '#3b82f6', borderRadius: 4 },
       ]
     },
-    options: { responsive: true, plugins: { title: { display: true, text: 'Алерты за 14 дней' } }, scales: { x: { stacked: true }, y: { stacked: true } } }
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, font: { family: 'Inter', size: 12 } } } },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } },
+        y: { stacked: true, grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Inter', size: 11 } } }
+      }
+    }
   });
 
   // Customers chart
@@ -464,33 +866,34 @@ async function loadStats() {
     type: 'doughnut',
     data: {
       labels: cust.map(r => r.customer),
-      datasets: [{ data: cust.map(r => r.alert_count), backgroundColor: ['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6','#ec4899'] }]
+      datasets: [{ data: cust.map(r => r.alert_count), backgroundColor: ['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6','#ec4899'], borderWidth: 0, hoverOffset: 6 }]
     },
-    options: { responsive: true, plugins: { title: { display: true, text: 'Алерты по заказчикам' } } }
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, font: { family: 'Inter', size: 12 } } } }
+    }
   });
 }
 
-// Helpers
+// ═══ Helpers ═══
 function statusLabel(s) {
-  const m = {assigned:'Назначен',in_transit:'В пути',loading:'Погрузка',unloading:'Выгрузка',completed:'Завершён',problem:'Проблема',cancelled:'Отменён'};
-  return m[s] || s;
+  return {assigned:'Назначен',in_transit:'В пути',loading:'Погрузка',unloading:'Выгрузка',completed:'Завершён',problem:'Проблема',cancelled:'Отменён'}[s] || s;
 }
 function statusAlertLabel(s) {
-  const m = {new:'Новый',reviewed:'В работе',resolved:'Решено'};
-  return m[s] || s;
+  return {new:'Новый',reviewed:'В работе',resolved:'Решено'}[s] || s;
 }
 function alertTypeLabel(t) {
-  const m = {delay:'Задержка',equipment_failure:'Поломка',downtime:'Простой',safety_violation:'Нарушение ТБ',docs_missing:'Документы'};
-  return m[t] || t;
+  return {delay:'Задержка',equipment_failure:'Поломка',downtime:'Простой',safety_violation:'Нарушение ТБ',docs_missing:'Документы'}[t] || t;
 }
 function fmtTime(ts) {
   if (!ts) return '—';
   const d = new Date(ts);
   return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
 }
-function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function escHtml(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-// Init
+// ═══ Init ═══
 (function() {
   const t = localStorage.getItem('marshall_token');
   if (t) {
