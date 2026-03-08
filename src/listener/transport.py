@@ -1,7 +1,7 @@
 """Pluggable transport abstraction for Telegram message listeners."""
 import asyncio
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 
@@ -15,6 +15,9 @@ class IncomingMessage:
     message_id: int
     text: str
     timestamp: float  # unix timestamp
+    source_type: str = "group_chat"  # group_chat | dm | voice_transcription
+    is_voice: bool = False
+    audio_duration_sec: int = 0
 
 
 class ListenerTransport(ABC):

@@ -9,6 +9,8 @@ from pathlib import Path
 from src.api.config import (
     CORS_ORIGINS, DEMO_MODE, TG_BOT_TOKEN, TG_ALLOWED_CHATS,
     MINIMAX_API_KEY, GROQ_API_KEY,
+    TG_API_ID, TG_API_HASH, MTPROTO_LISTEN_GROUPS,
+    STT_ENABLED, parse_dispatcher_sessions,
 )
 from src.db.connection import get_pool, close_pool
 from src.api.routes import auth, trips, alerts, stats, config
@@ -23,10 +25,10 @@ async def lifespan(app: FastAPI):
     pool = await get_pool()
 
     # Run migrations
-    migrations = Path(__file__).parent.parent / "db" / "migrations" / "001_init.sql"
-    if migrations.is_file():
-        await pool.execute(migrations.read_text())
-        logger.info("Migrations applied")
+    migrations_dir = Path(__file__).parent.parent / "db" / "migrations"
+    for mig in sorted(migrations_dir.glob("*.sql")):
+        await pool.execute(mig.read_text())
+    logger.info("Migrations applied")
 
     # Seed demo data if tables empty
     if DEMO_MODE:
@@ -36,20 +38,22 @@ async def lifespan(app: FastAPI):
             await _seed_demo_data(pool)
             logger.info("Demo data seeded")
 
-    # Start demo simulator or live listener
+    # Start demo simulator or live listener(s)
     sim_task = None
-    listener_transport = None
+    transports = []
     pipeline = None
     llm_client = None
+    transcriber = None
 
     if DEMO_MODE:
         sim_task = asyncio.create_task(_demo_simulator())
         logger.info("Demo simulator started")
-    elif TG_BOT_TOKEN:
-        llm_client, listener_transport, pipeline = await _start_live_listener()
-        logger.info("Live listener started")
     else:
-        logger.warning("Not in demo mode but no TG_BOT_TOKEN — nothing to listen to")
+        llm_client, transports, pipeline, transcriber = await _start_live_listeners()
+        if transports:
+            logger.info("Live listeners started: %d transports", len(transports))
+        else:
+            logger.warning("No transports configured — nothing to listen to")
 
     yield
 
@@ -57,10 +61,12 @@ async def lifespan(app: FastAPI):
         sim_task.cancel()
     if pipeline:
         await pipeline.stop()
-    if listener_transport:
-        await listener_transport.stop()
+    for t in transports:
+        await t.stop()
     if llm_client:
         await llm_client.close()
+    if transcriber:
+        await transcriber.close()
     await close_pool()
     logger.info("Marshall API shut down")
 
@@ -105,8 +111,8 @@ async def serve_static(path: str):
     return FileResponse(FRONTEND_DIR / "index.html")
 
 
-async def _start_live_listener():
-    """Initialize and start the live Telegram listener pipeline."""
+async def _start_live_listeners():
+    """Initialize and start all configured live listener transports."""
     from src.listener.bot_api import BotApiTransport
     from src.listener.pipeline import Pipeline
     from src.parser.llm import LLMClient
@@ -121,11 +127,47 @@ async def _start_live_listener():
     parser = MessageParser(llm_client)
     alert_engine = AlertEngine()
     pipeline = Pipeline(queue, parser, alert_engine=alert_engine, workers=2)
-    transport = BotApiTransport(TG_BOT_TOKEN, queue, TG_ALLOWED_CHATS or None)
+
+    transports = []
+    transcriber = None
+
+    # Initialize STT if enabled
+    if STT_ENABLED and GROQ_API_KEY:
+        from src.stt.transcriber import Transcriber
+        transcriber = Transcriber(groq_api_key=GROQ_API_KEY)
+        logger.info("STT enabled (Groq Whisper)")
+
+    # Initialize voice handler
+    voice_handler = None
+    if transcriber:
+        from src.listener.voice_handler import VoiceHandler
+        voice_handler = VoiceHandler(transcriber)
+
+    # Transport 1: Bot API (group chats)
+    if TG_BOT_TOKEN:
+        bot_transport = BotApiTransport(TG_BOT_TOKEN, queue, TG_ALLOWED_CHATS or None)
+        await bot_transport.start()
+        transports.append(bot_transport)
+        logger.info("Bot API transport started")
+
+    # Transport 2: MTProto (DM + optionally groups)
+    dispatcher_sessions = parse_dispatcher_sessions()
+    if TG_API_ID and TG_API_HASH and dispatcher_sessions:
+        from src.listener.mtproto import MTProtoTransport
+        mtproto_transport = MTProtoTransport(
+            queue=queue,
+            api_id=TG_API_ID,
+            api_hash=TG_API_HASH,
+            sessions=dispatcher_sessions,
+            listen_groups=MTPROTO_LISTEN_GROUPS,
+            voice_handler=voice_handler,
+        )
+        await mtproto_transport.start()
+        transports.append(mtproto_transport)
+        logger.info("MTProto transport started (%d sessions)", len(dispatcher_sessions))
 
     await pipeline.start()
-    await transport.start()
-    return llm_client, transport, pipeline
+    return llm_client, transports, pipeline, transcriber
 
 
 async def _seed_demo_data(pool):
